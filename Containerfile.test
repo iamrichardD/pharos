@@ -1,0 +1,37 @@
+# ========================================================================
+# Project: pharos
+# Component: DevSecOps Foundation
+# File: Containerfile.test
+# Author: Richard D. (https://github.com/iamrichardd)
+# License: AGPL-3.0 (See LICENSE file for details)
+# * Purpose (The "Why"):
+# This file provides an isolated, automated test environment for pharos.
+# It is used for CI/CD, unit tests, and regression verification inside a container.
+# * Traceability:
+# Related to Task 1.2, Issue #2
+# ========================================================================
+
+FROM public.ecr.aws/docker/library/ubuntu:24.04
+
+# Prevent interactive prompts
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Install core dependencies (minimal for testing)
+RUN apt-get update && apt-get install -y \
+    curl \
+    pkg-config \
+    libssl-dev \
+    build-essential \
+    lld \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Rust via rustup
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+# Set up working directory
+WORKDIR /workspace
+
+# Default command for tests
+CMD ["cargo", "test", "--all-features"]

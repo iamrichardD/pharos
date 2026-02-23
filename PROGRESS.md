@@ -1,14 +1,15 @@
 # Pharos State & Progress
 
 ## Current Status
-**Phase:** 1 (Zero-Host & DevSecOps Foundation)
-**Active Task:** Task 1.1 - Initialize internal project directory structure within the current root.
+**Phase:** 2 (Core Server MVP)
+**Active Task:** Task 2.1 - Implement core TCP listener and base RFC 2378 (Ph) syntax parser.
 **Active GitHub Issue:** #TBD
 **Blockers:** None.
 
 ## Recent Completions
 - [x] Project inception and system prompt (`GEMINI.md`) finalized.
 - [x] Strict Zero-Host (Podman), Clean Architecture, and DORA metric tracking established.
+- [x] Phase 1: Zero-Host & DevSecOps Foundation (Issue #1, #2, #3, #4, #5).
 
 ## AI Agent Instructions for Next Session
 1. Read `GEMINI.md` to internalize strict Zero-Host constraints, Clean Code philosophies, and persona requirements.

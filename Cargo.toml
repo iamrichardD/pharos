@@ -1,0 +1,7 @@
+[workspace]
+members = [
+    "pharos-server",
+    "ph",
+    "mdb",
+]
+resolver = "2"

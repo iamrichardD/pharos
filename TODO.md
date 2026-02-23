@@ -1,11 +1,11 @@
 # Pharos Project Backlog
 
 ## Phase 1: Zero-Host & DevSecOps Foundation
-- [ ] **Task 1.1 (Issue #TBD):** Initialize internal project directory structure within the current root (create workspaces for `pharos-server` backend, `ph` CLI, and `mdb` CLI).
-- [ ] **Task 1.2 (Issue #TBD):** Create `Containerfile.test` and `Containerfile.debug` for Podman-based Zero-Host execution.
-- [ ] **Task 1.3 (Issue #TBD):** Select primary programming language and initialize dependency management inside the `Containerfile.debug` environment.
-- [ ] **Task 1.4 (Issue #TBD):** Create `SECURITY.md` detailing DevSecOps practices.
-- [ ] **Task 1.5 (Issue #TBD):** Scaffold initial GitHub Actions workflow for cross-compiling target triples (`x86_64-unknown-linux-gnu`, `aarch64-apple-darwin`, `x86_64-pc-windows-msvc`).
+- [x] **Task 1.1 (Issue #1):** Initialize internal project directory structure within the current root (create workspaces for `pharos-server` backend, `ph` CLI, and `mdb` CLI).
+- [x] **Task 1.2 (Issue #2):** Create `Containerfile.test` and `Containerfile.debug` for Podman-based Zero-Host execution.
+- [x] **Task 1.3 (Issue #3):** Select primary programming language and initialize dependency management inside the `Containerfile.debug` environment.
+- [x] **Task 1.4 (Issue #4):** Create `SECURITY.md` detailing DevSecOps practices.
+- [x] **Task 1.5 (Issue #5):** Scaffold initial GitHub Actions workflow for cross-compiling target triples (`x86_64-unknown-linux-gnu`, `aarch64-apple-darwin`, `x86_64-pc-windows-msvc`).
 
 ## Phase 2: Core Server (`pharos`) MVP
 - [ ] **Task 2.1 (Issue #TBD):** Implement core TCP listener and base RFC 2378 (Ph) syntax parser.
