@@ -2,11 +2,12 @@
 
 ## Current Status
 **Phase:** 2 (Core Server MVP)
-**Active Task:** Task 2.1 - Implement core TCP listener and base RFC 2378 (Ph) syntax parser.
+**Active Task:** Task 2.2 - Implement the in-memory storage engine (Development Tier).
 **Active GitHub Issue:** #TBD
 **Blockers:** None.
 
 ## Recent Completions
+- [x] Task 2.1: Core TCP listener and base RFC 2378 (Ph) syntax parser implemented. (Issue #6)
 - [x] Project inception and system prompt (`GEMINI.md`) finalized.
 - [x] Strict Zero-Host (Podman), Clean Architecture, and DORA metric tracking established.
 - [x] Phase 1: Zero-Host & DevSecOps Foundation (Issue #1, #2, #3, #4, #5).

@@ -8,7 +8,7 @@
 - [x] **Task 1.5 (Issue #5):** Scaffold initial GitHub Actions workflow for cross-compiling target triples (`x86_64-unknown-linux-gnu`, `aarch64-apple-darwin`, `x86_64-pc-windows-msvc`).
 
 ## Phase 2: Core Server (`pharos`) MVP
-- [ ] **Task 2.1 (Issue #TBD):** Implement core TCP listener and base RFC 2378 (Ph) syntax parser.
+- [x] **Task 2.1 (Issue #6):** Implement core TCP listener and base RFC 2378 (Ph) syntax parser.
 - [ ] **Task 2.2 (Issue #TBD):** Implement the in-memory storage engine (Development Tier).
 - [ ] **Task 2.3 (Issue #TBD):** Implement the "Discriminator" logic to route requests as either `people` or `machine` records.
 - [ ] **Task 2.4 (Issue #TBD):** Implement standard application metrics (Push/Pull) and the "Health Monitor" threshold warnings.
