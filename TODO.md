@@ -1,5 +1,13 @@
 # Pharos Project Backlog
 
+## Definition of Done (DoD)
+A task is considered complete and may be marked `[x]` only when:
+1. **Local Verification:** All tests/builds pass inside the `Containerfile.test` Podman environment.
+2. **Standardization:** All new files include the Standardized File Prologue.
+3. **CI Validation:** GitHub Actions (CI) pass successfully on all target platforms (`linux`, `macos`, `windows`).
+4. **AI-Handover:** The GitHub Issue is closed with a structured "Fix Summary" and an "AI-Ready Verification Prompt."
+5. **State Sync:** `@PROGRESS.md` and `@TODO.md` are updated.
+
 ## Phase 1: Zero-Host & DevSecOps Foundation
 - [x] **Task 1.1 (Issue #1):** Initialize internal project directory structure within the current root (create workspaces for `pharos-server` backend, `ph` CLI, and `mdb` CLI).
 - [x] **Task 1.2 (Issue #2):** Create `Containerfile.test` and `Containerfile.debug` for Podman-based Zero-Host execution.
@@ -31,6 +39,11 @@
 
 ## Bug Tracker & Unplanned Work
 *(Log any bugs discovered during feature development here. Do not fix them until the current task is complete. Ensure each gets a GitHub issue created via `gh`).*
+
+**Verification Protocol (Strict Requirement):**
+- **Issue Creation:** Include `**Failure Specifics**`, `**Proposed Fix**`, and `**Verification Strategy**`.
+- **Issue Closure:** Include an **AI-Ready Verification Prompt** (Podman command) and a human-readable **Fix Summary**.
+
 - [x] **Task 6.1 (Issue #20):** CI: Verify standardized headers fails on Windows runner (bash syntax in pwsh).
 - [x] **Task 6.2 (Issue #21):** Build: `pharos-server` compilation failure due to dependencies and type inference.
 
