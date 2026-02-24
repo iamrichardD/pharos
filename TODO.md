@@ -52,3 +52,8 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Task 6.4 (Issue #25):** Advocacy: Create high-quality architecture diagrams and "How-To" guides for Home Labbers and Enterprise Engineers.
 - [x] **Task 6.5 (Issue #26):** Advocacy: Integrate DORA Metrics & Project Velocity Stats into the marketing site.
 
+## Phase 7: Personal Website Integration (iamrichardd.com)
+- [x] **Task 7.1 (Issue #27):** Advocacy: Integrate Pharos Landing Page into iamrichardd.com using existing Astro design system.
+- [ ] **Task 7.2 (Issue #28):** Advocacy: Port Pharos technical documentation to Astro MDX with Shiki highlighting.
+- [ ] **Task 7.3 (Issue #29):** Advocacy: Implement visual DORA Metrics & Project Velocity dashboard on the marketing site.
+

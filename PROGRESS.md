@@ -1,12 +1,13 @@
 # Pharos State & Progress
 
 ## Current Status
-**Phase:** 6 (Marketing & Advocacy)
-**Active Task:** Project Phase 6 Complete. Awaiting further architectural guidance.
-**Active GitHub Issue:** None.
+**Phase:** 7 (Personal Website Integration)
+**Active Task:** Task 7.2: Port Pharos technical documentation to Astro MDX with Shiki highlighting.
+**Active GitHub Issue:** #28.
 **Blockers:** None.
 
 ## Recent Completions
+- [x] Task 7.1: Advocacy: Integrate Pharos Landing Page into iamrichardd.com using existing Astro design system. (Issue #27)
 - [x] Task 6.5: Advocacy: Integrate DORA Metrics & Project Velocity Stats into the marketing site. (Issue #26)
 - [x] Task 6.4: Advocacy: Create architecture diagrams and "How-To" guides. (Issue #25)
 - [x] Task 6.3: Advocacy: Scaffold GitHub Pages site with Sierra-inspired UX. (Issue #24)
