@@ -10,9 +10,9 @@
 
 ## Phase 2: Core Server (`pharos`) MVP
 - [x] **Task 2.1 (Issue #6):** Implement core TCP listener and base RFC 2378 (Ph) syntax parser.
-- [ ] **Task 2.2 (Issue #TBD):** Implement the in-memory storage engine (Development Tier).
-- [ ] **Task 2.3 (Issue #TBD):** Implement the "Discriminator" logic to route requests as either `people` or `machine` records.
-- [ ] **Task 2.4 (Issue #TBD):** Implement standard application metrics (Push/Pull) and the "Health Monitor" threshold warnings.
+- [x] **Task 2.2 (Issue #8):** Implement the in-memory storage engine (Development Tier).
+- [x] **Task 2.3 (Issue #9):** Implement the "Discriminator" logic to route requests as either `people` or `machine` records.
+- [ ] **Task 2.4 (Issue #10):** Implement standard application metrics (Push/Pull) and the "Health Monitor" threshold warnings.
 
 ## Phase 3: CLI Clients MVP
 - [ ] **Task 3.1 (Issue #TBD):** Implement read-only `ph` CLI client with basic query formatting.

@@ -2,11 +2,13 @@
 
 ## Current Status
 **Phase:** 2 (Core Server MVP)
-**Active Task:** Task 2.2 - Implement the in-memory storage engine (Development Tier).
-**Active GitHub Issue:** #TBD
+**Active Task:** Task 2.4 - Implement standard application metrics (Push/Pull) and the "Health Monitor" threshold warnings.
+**Active GitHub Issue:** #10
 **Blockers:** None.
 
 ## Recent Completions
+- [x] Task 2.3: Implement the "Discriminator" logic to route requests as either `people` or `machine` records. (Issue #9)
+- [x] Task 2.2: Implement the in-memory storage engine (Development Tier). (Issue #8)
 - [x] Task 1.6: Refined the release process in `GEMINI.md` to include Git tags and SemVer. (Issue #7)
 - [x] Task 2.1: Core TCP listener and base RFC 2378 (Ph) syntax parser implemented. (Issue #6)
 - [x] Project inception and system prompt (`GEMINI.md`) finalized.
