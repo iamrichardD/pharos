@@ -1,0 +1,18 @@
+title: Pharos
+description: Highly performant, read-optimized client-server ecosystem based on RFC 2378.
+baseurl: "/pharos" # the subpath of your site, e.g. /blog
+url: "https://iamrichardd.com" # the base hostname & protocol for your site
+theme: jekyll-theme-cayman
+
+# Sierra's "Making Badass Developers" focus
+sierra:
+  focus: "Making infrastructure management awesome for Home Labbers and Enterprise Engineers."
+  target_audiences:
+    - name: Home Labber
+      context: "Proxmox / LXC"
+    - name: Enterprise Engineer
+      context: "LDAP / DevSecOps"
+
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
