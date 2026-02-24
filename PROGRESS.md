@@ -2,11 +2,13 @@
 
 ## Current Status
 **Phase:** 6 (Marketing & Advocacy)
-**Active Task:** Task 6.4: Advocacy: Create architecture diagrams and "How-To" guides.
-**Active GitHub Issue:** #25
+**Active Task:** Project Phase 6 Complete. Awaiting further architectural guidance.
+**Active GitHub Issue:** None.
 **Blockers:** None.
 
 ## Recent Completions
+- [x] Task 6.5: Advocacy: Integrate DORA Metrics & Project Velocity Stats into the marketing site. (Issue #26)
+- [x] Task 6.4: Advocacy: Create architecture diagrams and "How-To" guides. (Issue #25)
 - [x] Task 6.3: Advocacy: Scaffold GitHub Pages site with Sierra-inspired UX. (Issue #24)
 - [x] Task 5.3: Prepare v1.0.0 release with annotated Git tags and GitHub Release. (Issue #19)
 - [x] Task 5.2: Generate high-quality architecture diagrams and "How-To" guides. (Issue #18)
