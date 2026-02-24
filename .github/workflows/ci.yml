@@ -26,6 +26,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Verify standardized headers
+      shell: bash
       run: |
         missing_headers=()
         while IFS= read -r file; do
