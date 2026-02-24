@@ -83,7 +83,7 @@ async fn main() -> anyhow::Result<()> {
             sys.refresh_all();
             
             // Record CPU Usage (average over all CPUs)
-            let cpu_load: f32 = sys.cpus().iter().map(|cpu| cpu.cpu_usage()).sum::<f32>() / sys.cpus().len() as f32;
+            let cpu_load: f32 = sys.cpus().iter().map(|cpu: &sysinfo::Cpu| cpu.cpu_usage()).sum::<f32>() / sys.cpus().len() as f32;
             CPU_USAGE.set(cpu_load as f64);
 
             // Record Memory Usage
