@@ -38,6 +38,60 @@ graph TD
     Metrics -.->|Observe| TCP
 ```
 
+## Storage Tiering Logic
+
+Pharos uses a tiered storage approach to cater to different deployment environments.
+
+```mermaid
+graph LR
+    subgraph "Tier 1: Development"
+        Mem[MemoryStorage]
+        Mem -.->|Volatile| Data((In-Memory))
+    end
+
+    subgraph "Tier 2: Home Lab"
+        File[FileStorage]
+        File -.->|Persistent| JSON[(Local JSON File)]
+    end
+
+    subgraph "Tier 3: Enterprise"
+        LDAP[LdapStorage]
+        LDAP -.->|Centralized| Directory[(LDAP Server)]
+    end
+```
+
+## Core Protocol: RFC 2378 (Modified)
+
+Pharos implements the Phonebook Protocol with extensions for modern infrastructure management.
+
+### Message Flow
+1. **QUERY:** Client sends a search string.
+2. **DISCRIMINATE:** Server identifies if the target is a `person` or `machine`.
+3. **AUTH (if Write):** Server issues an SSH challenge. Client signs and returns.
+4. **RESPONSE:** Server returns records in Ph format.
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Server
+    participant Auth
+    participant Storage
+
+    Client->>Server: QUERY "name=John"
+    Server->>Storage: Search(people, "John")
+    Storage-->>Server: [Records]
+    Server-->>Client: 200: [Ph Records]
+
+    Note over Client,Server: Write Operation
+    Client->>Server: ADD "name=Jane"
+    Server->>Auth: Challenge(SSH-Key)
+    Auth-->>Client: Challenge
+    Client-->>Auth: Signed-Response
+    Auth-->>Server: Verified
+    Server->>Storage: Commit(Jane)
+    Server-->>Client: 200: Success
+```
+
 ## Core Components
 
 ### 1. Pharos Server (`pharos-server`)
