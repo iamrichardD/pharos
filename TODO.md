@@ -27,7 +27,7 @@
 ## Phase 5: Release & Documentation
 - [x] **Task 5.1 (Issue #17):** Finalize AGPL-3.0 License enforcement and headers in CI/CD.
 - [x] **Task 5.2 (Issue #18):** Generate high-quality architecture diagrams and "How-To" guides.
-- [ ] **Task 5.3 (Issue #19):** Prepare v1.0.0 release with annotated Git tags and GitHub Release.
+- [x] **Task 5.3 (Issue #19):** Prepare v1.0.0 release with annotated Git tags and GitHub Release.
 
 ## Bug Tracker & Unplanned Work
 *(Log any bugs discovered during feature development here. Do not fix them until the current task is complete. Ensure each gets a GitHub issue created via `gh`).*
