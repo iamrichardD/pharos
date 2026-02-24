@@ -26,10 +26,11 @@
 - [x] Phase 1: Zero-Host & DevSecOps Foundation (Issue #1, #2, #3, #4, #5).
 
 ## AI Agent Instructions for Next Session
-1. Read `GEMINI.md` to internalize strict Zero-Host constraints, Clean Code philosophies, and persona requirements.
-2. Read `TODO.md` to understand the upcoming roadmap.
-3. If the Active Task does not have a GitHub Issue (marked `#TBD`), use the `gh` CLI to create one, tag it appropriately (e.g., `phase-1`, `enhancement`), and update `TODO.md` and `PROGRESS.md` with the new Issue number.
+1. Read `GEMINI.md` to internalize strict Zero-Host constraints, Clean Code philosophies, and the **AI Handover** protocol.
+2. Read `TODO.md` to understand the roadmap and the **Definition of Done (DoD)**.
+3. If the Active Task does not have a GitHub Issue (marked `#TBD`), use the `gh` CLI to create one using the **Structured Issue Schema** (Specifics, Proposed Fix, Verification Strategy).
 4. Begin execution on the Active Task, utilizing Podman commands exclusively for execution.
-5. Document the "Why" in any created files, ensuring the Standardized File Prologue is applied to all source files.
-6. **Crucial:** Before concluding the session, push your commits, use `gh` to update or close the active GitHub issue (to maintain accurate DORA metrics), and update this `PROGRESS.md` file.
+5. **Validation:** Verify changes locally via `Containerfile.test` and remotely via GitHub Actions using `gh run watch`.
+6. **AI-Handover:** Before concluding, push commits and close the GitHub issue with a **Fix Summary** and an **AI-Ready Verification Prompt**.
+7. Update this `PROGRESS.md` and `@TODO.md` only after all DoD criteria are met.
 

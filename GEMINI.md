@@ -96,12 +96,16 @@ EVERY source code file MUST begin with a standardized prologue block. This ensur
     - **Do NOT hallucinate project status;** always read these files before taking action.
 - **GitHub Issue Synchronization (Strict Requirement):** Every task in `@TODO.md` MUST have a corresponding GitHub Issue managed via the `gh` CLI.
     - **Action:** You must create, proactively update (adding comments on progress), assign tags (e.g., `enhancement`, `bug`, `phase-1`), and close issues as tasks are completed.
-    - **The "Why":** This meticulous issue tracking is explicitly designed to extrapolate **DORA metrics** (Lead Time for Changes, Deployment Frequency). This data highlights the Software Engineering Management and Agile delivery capabilities of the human engineer. You must ensure issue timestamps and states accurately reflect the development lifecycle.
+    - **Structured Issue Schema:** 
+        - **Creation:** Descriptions MUST include `**Failure Specifics**` (or requirements), `**Proposed Fix**` (or implementation plan), and `**Verification Strategy**`.
+        - **Closure:** Comments MUST include a human-readable **Fix Summary** and an **AI-Ready Verification Prompt** (the exact Podman command needed to verify the fix in a clean session).
+    - **The "Why":** This meticulous issue tracking is explicitly designed to extrapolate **DORA metrics** (Lead Time for Changes, Deployment Frequency) and ensure **AI-to-AI Handover** continuity. This data highlights the Software Engineering Management and Agile delivery capabilities of the human engineer. You must ensure issue timestamps and states accurately reflect the development lifecycle.
 
 ### 2. Security & CI/CD
 - Generate and maintain a `SECURITY.md` file detailing reporting and DevSecOps best practices.
 - **Git Flow:** Utilize feature branches tied directly to GitHub Issues (e.g., `feat/issue-4-tcp-listener`). Merge to `main` only after validation in Podman and update the corresponding issue.
 - **CI/CD:** Create GitHub Actions for automated cross-compilation, testing, and GitHub Releases. Ensure the build pipeline injects the License and Prologue data appropriately. **Releases MUST be triggered by Git tags.**
+- **CI Monitoring (Strict Requirement):** After pushing changes, you MUST identify the GitHub Action `run_id` and monitor its progress via `gh run watch <run_id>`. A task is ONLY complete when CI returns a success status on ALL target platforms.
 
 ### 3. Release Management & Versioning (Strict Requirement)
 - **Versioning:** Strictly adhere to **Semantic Versioning (SemVer)** (e.g., `v1.0.0`).
