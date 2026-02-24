@@ -63,6 +63,11 @@ impl MemoryStorage {
     }
 
     #[instrument(skip(self))]
+    pub fn record_count(&self) -> usize {
+        self.records.len()
+    }
+
+    #[instrument(skip(self))]
     pub fn add_record(&mut self, fields: HashMap<String, String>) {
         let record_type = fields.get("type").map(|s| RecordType::from(s.as_str()));
         let record = Record {

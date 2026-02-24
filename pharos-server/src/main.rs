@@ -13,6 +13,7 @@
 
 mod protocol;
 mod storage;
+mod metrics;
 
 use tokio::net::{TcpListener, TcpStream};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
@@ -20,7 +21,11 @@ use tracing::{info, error, instrument};
 use tracing_subscriber;
 use crate::protocol::{Command, parse_command, ProtocolError};
 use crate::storage::MemoryStorage;
+use crate::metrics::{register_metrics, CPU_USAGE, MEMORY_USAGE_BYTES, TOTAL_RECORDS, gather_metrics, check_health_thresholds};
 use std::sync::{Arc, RwLock};
+use sysinfo::System;
+use warp::Filter;
+use std::time::Duration;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -29,6 +34,50 @@ async fn main() -> anyhow::Result<()> {
 
     // In-memory storage for development tier
     let storage = Arc::new(RwLock::new(MemoryStorage::new()));
+
+    // --- Metrics Scrape Server (Pull Method) ---
+    let storage_for_metrics = Arc::clone(&storage);
+    let metrics_route = warp::path("metrics").map(move || {
+        // Update storage count on scrape
+        if let Ok(lock) = storage_for_metrics.read() {
+            TOTAL_RECORDS.set(lock.record_count() as i64);
+        }
+        gather_metrics()
+    });
+    
+    tokio::spawn(async move {
+        info!("Prometheus metrics server starting on 0.0.0.0:9090/metrics");
+        warp::serve(metrics_route).run(([0, 0, 0, 0], 9090)).await;
+    });
+
+    // --- Background Metrics Collection & Health Monitoring ---
+    let storage_for_monitor = Arc::clone(&storage);
+    tokio::spawn(async move {
+        let mut sys = System::new_all();
+        loop {
+            // Update system info
+            sys.refresh_all();
+            
+            // Record CPU Usage (average over all CPUs)
+            let cpu_load: f32 = sys.cpus().iter().map(|cpu| cpu.cpu_usage()).sum::<f32>() / sys.cpus().len() as f32;
+            CPU_USAGE.set(cpu_load as f64);
+
+            // Record Memory Usage
+            let used_mem = sys.used_memory();
+            MEMORY_USAGE_BYTES.set(used_mem as i64);
+
+            // Record Storage Count
+            if let Ok(lock) = storage_for_monitor.read() {
+                TOTAL_RECORDS.set(lock.record_count() as i64);
+            }
+
+            // Health Monitor Threshold Warnings
+            // CPU > 90% or Memory > 1GB (Arbitrary for MVP demonstration)
+            check_health_thresholds(90.0, 1024 * 1024 * 1024);
+
+            tokio::time::sleep(Duration::from_secs(5)).await;
+        }
+    });
 
     let addr = "0.0.0.0:1050"; // Using 1050 for dev to avoid privileged port 105
     let listener = TcpListener::bind(addr).await?;
