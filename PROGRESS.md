@@ -2,11 +2,12 @@
 
 ## Current Status
 **Phase:** 3 (CLI Clients MVP)
-**Active Task:** Task 3.1 - Implement read-only `ph` CLI client with basic query formatting.
-**Active GitHub Issue:** #11
+**Active Task:** Task 3.2 - Implement read-only `mdb` CLI client with basic query formatting.
+**Active GitHub Issue:** #TBD
 **Blockers:** None.
 
 ## Recent Completions
+- [x] Task 3.1: Implement read-only `ph` CLI client with basic query formatting. (Issue #11)
 - [x] Task 2.4: Implement standard application metrics (Push/Pull) and the "Health Monitor" threshold warnings. (Issue #10)
 - [x] Task 2.3: Implement the "Discriminator" logic to route requests as either `people` or `machine` records. (Issue #9)
 - [x] Task 2.2: Implement the in-memory storage engine (Development Tier). (Issue #8)
