@@ -117,4 +117,7 @@ EVERY source code file MUST begin with a standardized prologue block. This ensur
 
 ### 4. Marketing & Documentation (Open Source Advocate Sub-Agent)
 - **GitHub Pages:** Maintain a professional marketing site at `https://iamrichardd.com/pharos/`.
-- **Content Strategy (Sierra):** Do not write flashy marketing copy. Write guides that make the user badass. Create high-quality architecture diagrams and detailed "How-To" guides tailored for Home Labbers and Enterprise Engineers. Ensure DORA metrics or project velocity stats are subtly highlighted to showcase engineering excellence.
+- **Content Strategy (Sierra):** Strictly adhere to Kathy Sierra's *"Making Badass Developers"* philosophy. 
+    - **Goal:** Focus entirely on making the user (Home Labber or Enterprise Engineer) successful and "badass" in their own context.
+    - **Tone:** Avoid flashy marketing copy or feature-centric boasting. Instead, provide high-quality architecture diagrams, detailed "How-To" guides, and actionable technical content.
+    - **Evidence:** Subtly highlight DORA metrics and project velocity to showcase engineering excellence as a byproduct of this focus.

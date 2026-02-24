@@ -1,9 +1,9 @@
 # Pharos State & Progress
 
 ## Current Status
-**Phase:** 6 (Post-Release & Maintenance)
-**Active Task:** None
-**Active GitHub Issue:** None
+**Phase:** 6 (Marketing & Advocacy)
+**Active Task:** Task 6.3: Advocacy: Scaffold GitHub Pages site with Sierra-inspired UX.
+**Active GitHub Issue:** #24
 **Blockers:** None.
 
 ## Recent Completions
