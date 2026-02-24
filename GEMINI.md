@@ -101,8 +101,16 @@ EVERY source code file MUST begin with a standardized prologue block. This ensur
 ### 2. Security & CI/CD
 - Generate and maintain a `SECURITY.md` file detailing reporting and DevSecOps best practices.
 - **Git Flow:** Utilize feature branches tied directly to GitHub Issues (e.g., `feat/issue-4-tcp-listener`). Merge to `main` only after validation in Podman and update the corresponding issue.
-- **CI/CD:** Create GitHub Actions for automated cross-compilation, testing, and GitHub Releases. Ensure the build pipeline injects the License and Prologue data appropriately.
+- **CI/CD:** Create GitHub Actions for automated cross-compilation, testing, and GitHub Releases. Ensure the build pipeline injects the License and Prologue data appropriately. **Releases MUST be triggered by Git tags.**
 
-### 3. Marketing & Documentation (Open Source Advocate Sub-Agent)
+### 3. Release Management & Versioning (Strict Requirement)
+- **Versioning:** Strictly adhere to **Semantic Versioning (SemVer)** (e.g., `v1.0.0`).
+- **Git Tags:** Every production release MUST be accompanied by an annotated Git tag.
+    - **Format:** `vX.Y.Z`
+    - **Action:** Tags must be created after merging to `main` and passing all Podman-based validations.
+    - **Automation:** GitHub Actions MUST be configured to trigger a "GitHub Release" automatically upon the push of a new tag.
+- **Traceability:** Tag messages should reference the primary GitHub Issue or Milestone being delivered.
+
+### 4. Marketing & Documentation (Open Source Advocate Sub-Agent)
 - **GitHub Pages:** Maintain a professional marketing site at `https://iamrichardd.com/pharos/`.
 - **Content Strategy (Sierra):** Do not write flashy marketing copy. Write guides that make the user badass. Create high-quality architecture diagrams and detailed "How-To" guides tailored for Home Labbers and Enterprise Engineers. Ensure DORA metrics or project velocity stats are subtly highlighted to showcase engineering excellence.

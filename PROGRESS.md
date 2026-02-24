@@ -7,6 +7,7 @@
 **Blockers:** None.
 
 ## Recent Completions
+- [x] Task 1.6: Refined the release process in `GEMINI.md` to include Git tags and SemVer. (Issue #7)
 - [x] Task 2.1: Core TCP listener and base RFC 2378 (Ph) syntax parser implemented. (Issue #6)
 - [x] Project inception and system prompt (`GEMINI.md`) finalized.
 - [x] Strict Zero-Host (Podman), Clean Architecture, and DORA metric tracking established.
