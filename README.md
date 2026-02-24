@@ -24,9 +24,17 @@ Pharos meets you where your infrastructure is at:
 
 Pharos is designed to be easy to deploy and use.
 
-### Documentation
-- [Architecture Overview](docs/ARCHITECTURE.md) - Deep dive into the system design.
-- [How-To Guides](docs/HOWTO.md) - Deployment and usage instructions for Home Lab and Enterprise.
+## Documentation
+
+The latest documentation, architecture diagrams, and how-to guides are available on our official marketing site:
+
+👉 **[iamrichardd.github.io/pharos/](https://iamrichardd.github.io/pharos/)**
+
+Detailed guides include:
+- **[Architecture Overview](https://iamrichardd.github.io/pharos/docs/architecture/)** - Deep dive into the system design.
+- **[How-To Guides](https://iamrichardd.github.io/pharos/docs/howto/)** - Deployment and usage instructions for Home Lab and Enterprise.
+
+Local Markdown versions are also maintained in the [`docs/`](docs/) directory.
 
 ### Quick Start
 1. **Server:** Start the server using the in-memory backend for testing.
