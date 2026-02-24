@@ -1,0 +1,111 @@
+---
+/* ========================================================================
+ * Project: pharos
+ * Component: Marketing Site - Layout
+ * File: BaseLayout.astro
+ * Author: Richard D. (https://github.com/iamrichardd)
+ * License: AGPL-3.0 (See LICENSE file for details)
+ * * Purpose (The "Why"):
+ * Centralized layout component ensuring a consistent UX/UI and branding 
+ * aligned with iamrichardd.com across all pages.
+ * * Traceability:
+ * Related to GitHub Issue #30, aligns Pharos marketing site with personal branding.
+ * ======================================================================== */
+
+import '../styles/global.css';
+import DarkModeToggle from '../components/DarkModeToggle.astro';
+
+interface Props {
+  title: string;
+  description: string;
+}
+
+const { title, description } = Astro.props;
+---
+
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/pharos/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    
+    <!-- Preconnect to external domains -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- SEO Meta Tags -->
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    
+    <!-- In-lined theme script to prevent flash of light mode -->
+    <script is:inline>
+      const theme = (() => {
+        if (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) {
+          return localStorage.getItem('theme');
+        }
+        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          return 'dark';
+        }
+        return 'light';
+      })();
+    
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    </script>
+  </head>
+  
+  <body class="antialiased min-h-screen flex flex-col bg-white dark:bg-secondary-950 text-secondary-900 dark:text-secondary-100 transition-colors duration-300">
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    
+    <nav class="sticky top-0 z-40 w-full backdrop-blur flex-none transition-colors duration-500 lg:z-50 border-b border-secondary-200 dark:border-secondary-800 bg-white/75 dark:bg-secondary-950/75">
+      <div class="container-custom py-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-8">
+            <a href="/pharos/" class="text-2xl font-black tracking-tighter text-primary-600 dark:text-primary-400">
+              PHAROS
+            </a>
+            <div class="hidden md:flex items-center gap-6">
+              <a href="/pharos/docs" class="text-sm font-medium hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Documentation</a>
+              <a href="https://github.com/iamrichardD/pharos" target="_blank" class="text-sm font-medium hover:text-primary-600 dark:hover:text-primary-400 transition-colors">GitHub</a>
+            </div>
+          </div>
+          <div class="flex items-center gap-4">
+             <DarkModeToggle />
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <main id="main-content" class="flex-grow">
+      <slot />
+    </main>
+
+    <footer class="bg-secondary-50 dark:bg-secondary-900/50 py-12 border-t border-secondary-200 dark:border-secondary-800">
+      <div class="container-custom">
+        <div class="flex flex-col md:flex-row justify-between items-center gap-8">
+          <div class="flex flex-col items-center md:items-start gap-2 text-center md:text-left">
+            <span class="text-xl font-black tracking-tighter text-primary-600 dark:text-primary-400">PHAROS</span>
+            <p class="text-sm text-secondary-500 max-w-xs">A high-performance Phonebook Protocol ecosystem designed for Home Labbers and Enterprise Engineers.</p>
+          </div>
+          
+          <div class="flex flex-wrap justify-center gap-8 text-sm font-medium">
+             <a href="/pharos/" class="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Home</a>
+             <a href="/pharos/docs" class="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Documentation</a>
+             <a href="https://github.com/iamrichardD/pharos/blob/main/CONTRIBUTING.md" target="_blank" class="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Contributing</a>
+             <a href="https://github.com/iamrichardD/pharos" target="_blank" class="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Source Code</a>
+             <a href="https://iamrichardd.com" target="_blank" class="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">iamrichardd.com</a>
+          </div>
+          
+          <div class="text-xs text-secondary-500 text-center md:text-right">
+            <p>© 2026 Project Pharos. Licensed under AGPL-3.0.</p>
+            <p class="mt-1 font-mono">iamrichardd.com personal project</p>
+          </div>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

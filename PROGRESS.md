@@ -1,13 +1,14 @@
 # Pharos State & Progress
 
 ## Current Status
-**Phase:** 7 (Personal Website Integration)
-**Active Task:** Task 7.4: Align Pharos marketing site UX/UI with iamrichardd.com personal branding.
-**Backlog:** Phase 8: Community & Ecosystem Expansion.
-**Active GitHub Issue:** #30.
+**Phase:** 8 (Community & Ecosystem Expansion)
+**Active Task:** None. Task 8.1 Complete.
+**Backlog:** Phase 8.2+: Middleware/Hook system, Showcase, v1.1.0 release.
 **Blockers:** None.
 
 ## Recent Completions
+- [x] Task 8.1: Advocacy: Create a comprehensive `CONTRIBUTING.md` guide. (Issue #31)
+- [x] Task 7.4: Advocacy: Align Pharos marketing site UX/UI with iamrichardd.com personal branding. (Issue #30)
 - [x] Task 7.3: Advocacy: Implement visual DORA Metrics & Project Velocity dashboard on the marketing site. (Issue #29)
 - [x] Task 7.2: Advocacy: Port Pharos technical documentation to Astro MDX with Shiki highlighting. (Issue #28)
 - [x] Task 7.1: Advocacy: Integrate Pharos Landing Page into iamrichardd.com using existing Astro design system. (Issue #27)

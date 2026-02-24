@@ -56,5 +56,11 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Task 7.1 (Issue #27):** Advocacy: Integrate Pharos Landing Page into iamrichardd.com using existing Astro design system.
 - [x] **Task 7.2 (Issue #28):** Advocacy: Port Pharos technical documentation to Astro MDX with Shiki highlighting.
 - [x] **Task 7.3 (Issue #29):** Advocacy: Implement visual DORA Metrics & Project Velocity dashboard on the marketing site.
-- [ ] **Task 7.4 (Issue #30):** Advocacy: Align Pharos marketing site UX/UI with iamrichardd.com personal branding.
+- [x] **Task 7.4 (Issue #30):** Advocacy: Align Pharos marketing site UX/UI with iamrichardd.com personal branding.
+
+## Phase 8: Community & Ecosystem Expansion
+- [x] **Task 8.1 (Issue #31):** Advocacy: Create a comprehensive `CONTRIBUTING.md` guide and project governance model.
+- [ ] **Task 8.2 (#TBD):** Engineering: Implement a middleware/hook system in `pharos-server` for custom request processing.
+- [ ] **Task 8.3 (#TBD):** Advocacy: Expand the marketing site with a community "Showcase" and integration guide.
+- [ ] **Task 8.4 (#TBD):** Release: Prepare v1.1.0 release with the new hook system and community features.
 

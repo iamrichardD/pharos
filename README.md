@@ -33,6 +33,7 @@ The latest documentation, architecture diagrams, and how-to guides are available
 Detailed guides include:
 - **[Architecture Overview](https://iamrichardd.github.io/pharos/docs/architecture/)** - Deep dive into the system design.
 - **[How-To Guides](https://iamrichardd.github.io/pharos/docs/howto/)** - Deployment and usage instructions for Home Lab and Enterprise.
+- **[Contributing Guide](CONTRIBUTING.md)** - How to contribute to the Pharos ecosystem.
 
 Local Markdown versions are also maintained in the [`docs/`](docs/) directory.
 
