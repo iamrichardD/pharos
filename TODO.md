@@ -15,7 +15,7 @@
 - [x] **Task 2.4 (Issue #10):** Implement standard application metrics (Push/Pull) and the "Health Monitor" threshold warnings.
 
 ## Phase 3: CLI Clients MVP
-- [ ] **Task 3.1 (Issue #TBD):** Implement read-only `ph` CLI client with basic query formatting.
+- [ ] **Task 3.1 (Issue #11):** Implement read-only `ph` CLI client with basic query formatting.
 - [ ] **Task 3.2 (Issue #TBD):** Implement read-only `mdb` CLI client with basic query formatting.
 
 ## Phase 4: Advanced Storage & Authentication

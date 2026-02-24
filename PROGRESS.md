@@ -3,7 +3,7 @@
 ## Current Status
 **Phase:** 3 (CLI Clients MVP)
 **Active Task:** Task 3.1 - Implement read-only `ph` CLI client with basic query formatting.
-**Active GitHub Issue:** #TBD
+**Active GitHub Issue:** #11
 **Blockers:** None.
 
 ## Recent Completions
