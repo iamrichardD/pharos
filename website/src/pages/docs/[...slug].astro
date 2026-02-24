@@ -1,0 +1,78 @@
+---
+/* ========================================================================
+ * Project: pharos
+ * Component: Marketing Site
+ * File: [...slug].astro
+ * Author: Richard D. (https://github.com/iamrichardd)
+ * License: AGPL-3.0 (See LICENSE file for details)
+ * * Purpose (The "Why"):
+ * Dynamic route for rendering MDX documentation files.
+ * * Traceability:
+ * Related to GitHub Issue #28, implements the documentation port to MDX.
+ * ======================================================================== */
+import { getCollection } from 'astro:content';
+import '../../styles/global.css';
+
+export async function getStaticPaths() {
+  const docsEntries = await getCollection('docs');
+  return docsEntries.map(entry => ({
+    params: { slug: entry.slug }, props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await entry.render();
+---
+
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/pharos/favicon.svg" />
+    <title>{entry.data.title} - Pharos Documentation</title>
+    <meta name="description" content={entry.data.description} />
+    <script>
+      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.classList.add('dark');
+      }
+    </script>
+  </head>
+  <body class="bg-white dark:bg-secondary-900 antialiased">
+    <nav class="sticky top-0 z-40 w-full backdrop-blur flex-none transition-colors duration-500 lg:z-50 lg:border-b lg:border-secondary-900/10 dark:border-secondary-50/[0.06] bg-white/75 dark:bg-secondary-900/75">
+      <div class="container-custom py-4">
+        <div class="flex items-center justify-between">
+          <a href="/pharos/" class="text-xl font-bold text-secondary-900 dark:text-white">Pharos</a>
+          <div class="flex items-center gap-6">
+            <a href="/pharos/docs" class="text-sm font-medium text-secondary-600 dark:text-secondary-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Documentation</a>
+            <a href="https://github.com/iamrichardD/pharos" target="_blank" class="text-sm font-medium text-secondary-600 dark:text-secondary-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">GitHub</a>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <main id="main-content" class="container-custom py-12">
+      <div class="max-w-4xl mx-auto">
+        <header class="mb-12">
+          <h1 class="text-4xl font-bold text-secondary-900 dark:text-white mb-4">{entry.data.title}</h1>
+          <p class="text-lg text-secondary-600 dark:text-secondary-400">{entry.data.description}</p>
+        </header>
+        
+        <article class="prose prose-lg dark:prose-invert prose-primary max-w-none">
+          <Content />
+        </article>
+
+        <footer class="mt-16 pt-8 border-t border-secondary-200 dark:border-secondary-800">
+          <div class="flex justify-between items-center">
+            <a href="/pharos/docs" class="text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+              </svg>
+              Back to Documentation
+            </a>
+            <span class="text-sm text-secondary-500">© 2026 Project Pharos</span>
+          </div>
+        </footer>
+      </div>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,145 @@
+<!DOCTYPE html><html lang="en" class="scroll-smooth"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><link rel="icon" type="image/svg+xml" href="/pharos/favicon.svg"><title>Pharos How-To Guides - Pharos Documentation</title><meta name="description" content="Deployment and configuration guides for Home Lab and Enterprise environments."><script type="module">window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches&&document.documentElement.classList.add("dark");</script><link rel="stylesheet" href="/pharos/_assets/_slug_.BORDwVzd.css"><script type="module" src="/pharos/_assets/page.BowTmd9G.js"></script></head> <body class="bg-white dark:bg-secondary-900 antialiased"> <nav class="sticky top-0 z-40 w-full backdrop-blur flex-none transition-colors duration-500 lg:z-50 lg:border-b lg:border-secondary-900/10 dark:border-secondary-50/[0.06] bg-white/75 dark:bg-secondary-900/75"> <div class="container-custom py-4"> <div class="flex items-center justify-between"> <a href="/pharos/" class="text-xl font-bold text-secondary-900 dark:text-white">Pharos</a> <div class="flex items-center gap-6"> <a href="/pharos/docs" class="text-sm font-medium text-secondary-600 dark:text-secondary-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Documentation</a> <a href="https://github.com/iamrichardD/pharos" target="_blank" class="text-sm font-medium text-secondary-600 dark:text-secondary-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">GitHub</a> </div> </div> </div> </nav> <main id="main-content" class="container-custom py-12"> <div class="max-w-4xl mx-auto"> <header class="mb-12"> <h1 class="text-4xl font-bold text-secondary-900 dark:text-white mb-4">Pharos How-To Guides</h1> <p class="text-lg text-secondary-600 dark:text-secondary-400">Deployment and configuration guides for Home Lab and Enterprise environments.</p> </header> <article class="prose prose-lg dark:prose-invert prose-primary max-w-none"> <p>/* ========================================================================</p>
+<ul>
+<li>Project: pharos</li>
+<li>Component: Marketing Site</li>
+<li>File: howto.mdx</li>
+<li>Author: Richard D. (<a href="https://github.com/iamrichardd">https://github.com/iamrichardd</a>)</li>
+<li>License: AGPL-3.0 (See LICENSE file for details)</li>
+<li>
+<ul>
+<li>Purpose (The “Why”):</li>
+</ul>
+</li>
+<li>Practical guides for deploying and using Pharos in various environments.</li>
+<li>
+<ul>
+<li>Traceability:</li>
+</ul>
+</li>
+<li>Related to GitHub Issue #28, implements the documentation port to MDX.</li>
+<li>======================================================================== */</li>
+</ul>
+<p>Welcome to Project Pharos. These guides will help you get started whether you are a Home Labber or an Enterprise Engineer.</p>
+<h2 id="-home-lab-tier-restart-survivable-storage">🏠 Home Lab Tier: Restart-Survivable Storage</h2>
+<p>For Home Lab environments (e.g., Proxmox LXC), Pharos provides a file-based storage engine that survives server restarts.</p>
+<h3 id="proxmox--lxc-5-minute-deployment">Proxmox / LXC: 5-Minute Deployment</h3>
+<p>This guide will help you set up Pharos as your infrastructure source of truth within a Proxmox LXC container.</p>
+<h4 id="1-prepare-the-lxc-container">1. Prepare the LXC Container</h4>
+<p>Create an Ubuntu 24.04 LXC container. We recommend at least 512MB RAM and 2GB Disk.</p>
+<pre class="astro-code github-dark-dimmed" style="background-color:#22272e;color:#adbac7;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#768390"># Inside the LXC container</span></span>
+<span class="line"><span style="color:#F69D50">apt-get</span><span style="color:#96D0FF"> update</span><span style="color:#ADBAC7"> &amp;&amp; </span><span style="color:#F69D50">apt-get</span><span style="color:#96D0FF"> install</span><span style="color:#6CB6FF"> -y</span><span style="color:#96D0FF"> ca-certificates</span></span></code></pre>
+<h4 id="2-install-the-pharos-server">2. Install the Pharos Server</h4>
+<p>Download the latest <code>pharos-server</code> binary for <code>x86_64-unknown-linux-gnu</code>.</p>
+<pre class="astro-code github-dark-dimmed" style="background-color:#22272e;color:#adbac7;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#F69D50">wget</span><span style="color:#96D0FF"> https://github.com/iamrichardd/pharos/releases/download/v1.0.0/pharos-server-linux-x86_64</span></span>
+<span class="line"><span style="color:#F69D50">chmod</span><span style="color:#96D0FF"> +x</span><span style="color:#96D0FF"> pharos-server-linux-x86_64</span></span>
+<span class="line"><span style="color:#F69D50">mv</span><span style="color:#96D0FF"> pharos-server-linux-x86_64</span><span style="color:#96D0FF"> /usr/local/bin/pharos-server</span></span></code></pre>
+<h4 id="3-configure-persistent-storage">3. Configure Persistent Storage</h4>
+<p>Create a directory for your data and set the environment variable.</p>
+<pre class="astro-code github-dark-dimmed" style="background-color:#22272e;color:#adbac7;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#F69D50">mkdir</span><span style="color:#6CB6FF"> -p</span><span style="color:#96D0FF"> /var/lib/pharos</span></span>
+<span class="line"><span style="color:#F47067">export</span><span style="color:#ADBAC7"> PHAROS_STORAGE_PATH</span><span style="color:#F47067">=</span><span style="color:#96D0FF">&quot;/var/lib/pharos/data.json&quot;</span></span></code></pre>
+<h4 id="4-run-as-a-systemd-service">4. Run as a Systemd Service</h4>
+<p>To make your Home Lab truly badass, run Pharos as a service so it’s always available.</p>
+<pre class="astro-code github-dark-dimmed" style="background-color:#22272e;color:#adbac7;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#F69D50">cat</span><span style="color:#F47067"> &lt;&lt;</span><span style="color:#ADBAC7">EOF</span><span style="color:#F47067"> &gt;</span><span style="color:#96D0FF"> /etc/systemd/system/pharos.service</span></span>
+<span class="line"><span style="color:#96D0FF">[Unit]</span></span>
+<span class="line"><span style="color:#96D0FF">Description=Pharos Infrastructure Server</span></span>
+<span class="line"><span style="color:#96D0FF">After=network.target</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#96D0FF">[Service]</span></span>
+<span class="line"><span style="color:#96D0FF">ExecStart=/usr/local/bin/pharos-server</span></span>
+<span class="line"><span style="color:#96D0FF">Environment=PHAROS_STORAGE_PATH=/var/lib/pharos/data.json</span></span>
+<span class="line"><span style="color:#96D0FF">Restart=always</span></span>
+<span class="line"><span style="color:#96D0FF">User=root</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#96D0FF">[Install]</span></span>
+<span class="line"><span style="color:#96D0FF">WantedBy=multi-user.target</span></span>
+<span class="line"><span style="color:#ADBAC7">EOF</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F69D50">systemctl</span><span style="color:#96D0FF"> daemon-reload</span></span>
+<span class="line"><span style="color:#F69D50">systemctl</span><span style="color:#96D0FF"> enable</span><span style="color:#6CB6FF"> --now</span><span style="color:#96D0FF"> pharos</span></span></code></pre>
+<h4 id="5-verification">5. Verification</h4>
+<p>Verify your server is responding to queries:</p>
+<pre class="astro-code github-dark-dimmed" style="background-color:#22272e;color:#adbac7;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#F69D50">telnet</span><span style="color:#96D0FF"> localhost</span><span style="color:#6CB6FF"> 1050</span></span>
+<span class="line"><span style="color:#768390"># Type: query name=test</span></span>
+<span class="line"><span style="color:#768390"># You should receive a response</span></span></code></pre>
+<h3 id="1-configuration">1. Configuration</h3>
+<p>Set the <code>PHAROS_STORAGE_PATH</code> environment variable to point to your data file.</p>
+<pre class="astro-code github-dark-dimmed" style="background-color:#22272e;color:#adbac7;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#F47067">export</span><span style="color:#ADBAC7"> PHAROS_STORAGE_PATH</span><span style="color:#F47067">=</span><span style="color:#96D0FF">&quot;/var/lib/pharos/data.json&quot;</span></span>
+<span class="line"><span style="color:#F69D50">./pharos-server</span></span></code></pre>
+<h3 id="2-record-management">2. Record Management</h3>
+<p>Add a new contact using the <code>ph</code> CLI:</p>
+<pre class="astro-code github-dark-dimmed" style="background-color:#22272e;color:#adbac7;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#768390"># Add a person</span></span>
+<span class="line"><span style="color:#F69D50">./ph</span><span style="color:#96D0FF"> add</span><span style="color:#96D0FF"> name=&quot;John Doe&quot;</span><span style="color:#96D0FF"> email=&quot;john@home.lab&quot;</span><span style="color:#96D0FF"> type=&quot;person&quot;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#768390"># Add a machine (using mdb)</span></span>
+<span class="line"><span style="color:#F69D50">./mdb</span><span style="color:#96D0FF"> add</span><span style="color:#96D0FF"> hostname=&quot;srv-01&quot;</span><span style="color:#96D0FF"> ip=&quot;192.168.1.10&quot;</span><span style="color:#96D0FF"> type=&quot;machine&quot;</span></span></code></pre>
+<h2 id="-enterprise-tier-ldap--ssh-authentication">🏢 Enterprise Tier: LDAP &amp; SSH Authentication</h2>
+<p>Pharos integrates seamlessly with Enterprise infrastructure via LDAP backends and SSH-key authorization.</p>
+<h3 id="1-ldap-integration">1. LDAP Integration</h3>
+<p>Configure LDAP connection details:</p>
+<pre class="astro-code github-dark-dimmed" style="background-color:#22272e;color:#adbac7;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#F47067">export</span><span style="color:#ADBAC7"> PHAROS_LDAP_URL</span><span style="color:#F47067">=</span><span style="color:#96D0FF">&quot;ldap://ldap.enterprise.com:389&quot;</span></span>
+<span class="line"><span style="color:#F47067">export</span><span style="color:#ADBAC7"> PHAROS_LDAP_BIND_DN</span><span style="color:#F47067">=</span><span style="color:#96D0FF">&quot;cn=pharos,ou=services,dc=enterprise,dc=com&quot;</span></span>
+<span class="line"><span style="color:#F47067">export</span><span style="color:#ADBAC7"> PHAROS_LDAP_BIND_PW</span><span style="color:#F47067">=</span><span style="color:#96D0FF">&quot;secret&quot;</span></span>
+<span class="line"><span style="color:#F47067">export</span><span style="color:#ADBAC7"> PHAROS_LDAP_BASE_DN</span><span style="color:#F47067">=</span><span style="color:#96D0FF">&quot;dc=enterprise,dc=com&quot;</span></span>
+<span class="line"><span style="color:#F69D50">./pharos-server</span></span></code></pre>
+<p>Pharos maps fields to standard object classes:</p>
+<ul>
+<li><strong>People:</strong> <code>inetOrgPerson</code> (maps <code>name</code> -&gt; <code>cn</code>, <code>email</code> -&gt; <code>mail</code>)</li>
+<li><strong>Machines:</strong> <code>ipHost</code> (maps <code>hostname</code> -&gt; <code>cn</code>, <code>ip</code> -&gt; <code>ipHostNumber</code>)</li>
+</ul>
+<h3 id="2-ssh-authentication">2. SSH Authentication</h3>
+<p>Secure your write operations by authorizing SSH keys.</p>
+<ol>
+<li>
+<p><strong>Server Setup:</strong> Place authorized public keys in a directory.</p>
+<pre class="astro-code github-dark-dimmed" style="background-color:#22272e;color:#adbac7;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#F69D50">mkdir</span><span style="color:#6CB6FF"> -p</span><span style="color:#96D0FF"> /etc/pharos/keys</span></span>
+<span class="line"><span style="color:#F69D50">cp</span><span style="color:#96D0FF"> ~/.ssh/id_ed25519.pub</span><span style="color:#96D0FF"> /etc/pharos/keys/admin.pub</span></span>
+<span class="line"><span style="color:#F47067">export</span><span style="color:#ADBAC7"> PHAROS_KEYS_DIR</span><span style="color:#F47067">=</span><span style="color:#96D0FF">&quot;/etc/pharos/keys&quot;</span></span></code></pre>
+</li>
+<li>
+<p><strong>Client Setup:</strong> The CLI clients will look for <code>~/.ssh/id_ed25519</code> by default.</p>
+<pre class="astro-code github-dark-dimmed" style="background-color:#22272e;color:#adbac7;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#768390"># Command will trigger challenge-response automatically</span></span>
+<span class="line"><span style="color:#F69D50">./ph</span><span style="color:#96D0FF"> add</span><span style="color:#96D0FF"> name=&quot;New User&quot;</span><span style="color:#96D0FF"> email=&quot;user@enterprise.com&quot;</span></span></code></pre>
+</li>
+</ol>
+<h3 id="3-devsecops-integration-infrastructure-as-code">3. DevSecOps Integration: Infrastructure as Code</h3>
+<p>Pharos is designed for high-velocity DevSecOps teams. You can automate your infrastructure records by integrating Pharos into your CI/CD pipelines.</p>
+<h4 id="1-configure-the-github-actions--ci-server">1. Configure the GitHub Actions / CI Server</h4>
+<p>Securely store the SSH private key used for infrastructure updates.</p>
+<ul>
+<li><strong>GitHub Secret:</strong> <code>PHAROS_SSH_KEY</code></li>
+</ul>
+<h4 id="2-workflow-example-automatic-infrastructure-updates">2. Workflow Example: Automatic Infrastructure Updates</h4>
+<p>Add a new machine record automatically after a successful build.</p>
+<pre class="astro-code github-dark-dimmed" style="background-color:#22272e;color:#adbac7;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="yaml"><code><span class="line"><span style="color:#8DDB8C">jobs</span><span style="color:#ADBAC7">:</span></span>
+<span class="line"><span style="color:#8DDB8C">  update-inventory</span><span style="color:#ADBAC7">:</span></span>
+<span class="line"><span style="color:#8DDB8C">    runs-on</span><span style="color:#ADBAC7">: </span><span style="color:#96D0FF">ubuntu-latest</span></span>
+<span class="line"><span style="color:#8DDB8C">    steps</span><span style="color:#ADBAC7">:</span></span>
+<span class="line"><span style="color:#ADBAC7">      - </span><span style="color:#8DDB8C">uses</span><span style="color:#ADBAC7">: </span><span style="color:#96D0FF">actions/checkout@v4</span></span>
+<span class="line"><span style="color:#ADBAC7">      - </span><span style="color:#8DDB8C">name</span><span style="color:#ADBAC7">: </span><span style="color:#96D0FF">Deploy Pharos CLI</span></span>
+<span class="line"><span style="color:#8DDB8C">        run</span><span style="color:#ADBAC7">: </span><span style="color:#F47067">|</span></span>
+<span class="line"><span style="color:#96D0FF">          wget -q https://github.com/iamrichardd/pharos/releases/download/v1.0.0/mdb-linux-x86_64</span></span>
+<span class="line"><span style="color:#96D0FF">          chmod +x mdb-linux-x86_64</span></span>
+<span class="line"><span style="color:#96D0FF">          mv mdb-linux-x86_64 /usr/local/bin/mdb</span></span>
+<span class="line"><span style="color:#ADBAC7">      - </span><span style="color:#8DDB8C">name</span><span style="color:#ADBAC7">: </span><span style="color:#96D0FF">Update Machine Record</span></span>
+<span class="line"><span style="color:#8DDB8C">        env</span><span style="color:#ADBAC7">:</span></span>
+<span class="line"><span style="color:#8DDB8C">          SSH_KEY</span><span style="color:#ADBAC7">: </span><span style="color:#96D0FF">${{ secrets.PHAROS_SSH_KEY }}</span></span>
+<span class="line"><span style="color:#8DDB8C">          PHAROS_SERVER</span><span style="color:#ADBAC7">: </span><span style="color:#96D0FF">pharos.enterprise.com</span></span>
+<span class="line"><span style="color:#8DDB8C">        run</span><span style="color:#ADBAC7">: </span><span style="color:#F47067">|</span></span>
+<span class="line"><span style="color:#96D0FF">          mkdir -p ~/.ssh</span></span>
+<span class="line"><span style="color:#96D0FF">          echo &quot;$SSH_KEY&quot; &gt; ~/.ssh/id_ed25519</span></span>
+<span class="line"><span style="color:#96D0FF">          chmod 600 ~/.ssh/id_ed25519</span></span>
+<span class="line"><span style="color:#96D0FF">          mdb add hostname=&quot;web-app-v2&quot; ip=&quot;${{ steps.deploy.outputs.ip }}&quot; type=&quot;machine&quot;</span></span></code></pre>
+<h2 id="-monitoring">📊 Monitoring</h2>
+<p>Pharos exposes Prometheus metrics on port <code>9090</code>.</p>
+<ul>
+<li><strong>Endpoint:</strong> <code>http://localhost:9090/metrics</code></li>
+<li><strong>Key Metrics:</strong>
+<ul>
+<li><code>pharos_cpu_usage_percentage</code></li>
+<li><code>pharos_memory_usage_bytes</code></li>
+<li><code>pharos_total_records</code></li>
+</ul>
+</li>
+</ul> </article> <footer class="mt-16 pt-8 border-t border-secondary-200 dark:border-secondary-800"> <div class="flex justify-between items-center"> <a href="/pharos/docs" class="text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-2"> <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path> </svg>
+Back to Documentation
+</a> <span class="text-sm text-secondary-500">© 2026 Project Pharos</span> </div> </footer> </div> </main> </body></html>

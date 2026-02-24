@@ -1,0 +1,122 @@
+<!DOCTYPE html><html lang="en" class="scroll-smooth"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><link rel="icon" type="image/svg+xml" href="/pharos/favicon.svg"><title>Pharos Architecture - Pharos Documentation</title><meta name="description" content="High-level overview of the Pharos system design, storage tiering, and protocol."><script type="module">window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches&&document.documentElement.classList.add("dark");</script><link rel="stylesheet" href="/pharos/_assets/_slug_.BORDwVzd.css"><script type="module" src="/pharos/_assets/page.BowTmd9G.js"></script></head> <body class="bg-white dark:bg-secondary-900 antialiased"> <nav class="sticky top-0 z-40 w-full backdrop-blur flex-none transition-colors duration-500 lg:z-50 lg:border-b lg:border-secondary-900/10 dark:border-secondary-50/[0.06] bg-white/75 dark:bg-secondary-900/75"> <div class="container-custom py-4"> <div class="flex items-center justify-between"> <a href="/pharos/" class="text-xl font-bold text-secondary-900 dark:text-white">Pharos</a> <div class="flex items-center gap-6"> <a href="/pharos/docs" class="text-sm font-medium text-secondary-600 dark:text-secondary-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Documentation</a> <a href="https://github.com/iamrichardD/pharos" target="_blank" class="text-sm font-medium text-secondary-600 dark:text-secondary-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">GitHub</a> </div> </div> </div> </nav> <main id="main-content" class="container-custom py-12"> <div class="max-w-4xl mx-auto"> <header class="mb-12"> <h1 class="text-4xl font-bold text-secondary-900 dark:text-white mb-4">Pharos Architecture</h1> <p class="text-lg text-secondary-600 dark:text-secondary-400">High-level overview of the Pharos system design, storage tiering, and protocol.</p> </header> <article class="prose prose-lg dark:prose-invert prose-primary max-w-none"> <p>/* ========================================================================</p>
+<ul>
+<li>Project: pharos</li>
+<li>Component: Marketing Site</li>
+<li>File: architecture.mdx</li>
+<li>Author: Richard D. (<a href="https://github.com/iamrichardd">https://github.com/iamrichardd</a>)</li>
+<li>License: AGPL-3.0 (See LICENSE file for details)</li>
+<li>
+<ul>
+<li>Purpose (The “Why”):</li>
+</ul>
+</li>
+<li>Detailed architectural overview of the Pharos ecosystem.</li>
+<li>
+<ul>
+<li>Traceability:</li>
+</ul>
+</li>
+<li>Related to GitHub Issue #28, implements the documentation port to MDX.</li>
+<li>======================================================================== */</li>
+</ul>
+<p>Project Pharos is a highly performant, read-optimized client-server ecosystem based on RFC 2378 (Phonebook Protocol).</p>
+<h2 id="system-overview">System Overview</h2>
+<p>The following diagram illustrates the high-level architecture of Pharos, showing the interaction between CLI clients and the server components.</p>
+<pre class="astro-code github-dark-dimmed" style="background-color:#22272e;color:#adbac7;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="mermaid"><code><span class="line"><span style="color:#ADBAC7">graph TD</span></span>
+<span class="line"><span style="color:#ADBAC7">    subgraph Clients</span></span>
+<span class="line"><span style="color:#ADBAC7">        PH[ph CLI - People]</span></span>
+<span class="line"><span style="color:#ADBAC7">        MDB[mdb CLI - Machines]</span></span>
+<span class="line"><span style="color:#ADBAC7">    end</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ADBAC7">    subgraph &quot;Pharos Server&quot;</span></span>
+<span class="line"><span style="color:#ADBAC7">        TCP[TCP Listener :1050]</span></span>
+<span class="line"><span style="color:#ADBAC7">        Parser[RFC 2378 Parser]</span></span>
+<span class="line"><span style="color:#ADBAC7">        Auth[Auth Manager - SSH Keys]</span></span>
+<span class="line"><span style="color:#ADBAC7">        Metrics[Metrics Engine - Prometheus]</span></span>
+<span class="line"><span style="color:#ADBAC7">        StorageTrait[Storage Trait]</span></span>
+<span class="line"><span style="color:#ADBAC7">        </span></span>
+<span class="line"><span style="color:#ADBAC7">        subgraph &quot;Storage Backends&quot;</span></span>
+<span class="line"><span style="color:#ADBAC7">            Mem[MemoryStorage - Dev]</span></span>
+<span class="line"><span style="color:#ADBAC7">            File[FileStorage - Home Lab]</span></span>
+<span class="line"><span style="color:#ADBAC7">            LDAP[LdapStorage - Enterprise]</span></span>
+<span class="line"><span style="color:#ADBAC7">        end</span></span>
+<span class="line"><span style="color:#ADBAC7">    end</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ADBAC7">    PH --&gt;|RFC 2378| TCP</span></span>
+<span class="line"><span style="color:#ADBAC7">    MDB --&gt;|RFC 2378| TCP</span></span>
+<span class="line"><span style="color:#ADBAC7">    TCP --&gt; Parser</span></span>
+<span class="line"><span style="color:#ADBAC7">    Parser --&gt; Auth</span></span>
+<span class="line"><span style="color:#ADBAC7">    Auth --&gt; StorageTrait</span></span>
+<span class="line"><span style="color:#ADBAC7">    StorageTrait --&gt; Mem</span></span>
+<span class="line"><span style="color:#ADBAC7">    StorageTrait --&gt; File</span></span>
+<span class="line"><span style="color:#ADBAC7">    StorageTrait --&gt; LDAP</span></span>
+<span class="line"><span style="color:#ADBAC7">    </span></span>
+<span class="line"><span style="color:#ADBAC7">    Metrics -.-&gt;|Observe| StorageTrait</span></span>
+<span class="line"><span style="color:#ADBAC7">    Metrics -.-&gt;|Observe| TCP</span></span></code></pre>
+<h2 id="storage-tiering-logic">Storage Tiering Logic</h2>
+<p>Pharos uses a tiered storage approach to cater to different deployment environments, from volatile development instances to persistent enterprise-grade directory services.</p>
+<pre class="astro-code github-dark-dimmed" style="background-color:#22272e;color:#adbac7;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="mermaid"><code><span class="line"><span style="color:#ADBAC7">graph LR</span></span>
+<span class="line"><span style="color:#ADBAC7">    subgraph &quot;Tier 1: Development&quot;</span></span>
+<span class="line"><span style="color:#ADBAC7">        Mem[MemoryStorage]</span></span>
+<span class="line"><span style="color:#ADBAC7">        Mem -.-&gt;|Volatile| Data((In-Memory))</span></span>
+<span class="line"><span style="color:#ADBAC7">    end</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ADBAC7">    subgraph &quot;Tier 2: Home Lab&quot;</span></span>
+<span class="line"><span style="color:#ADBAC7">        File[FileStorage]</span></span>
+<span class="line"><span style="color:#ADBAC7">        File -.-&gt;|Persistent| JSON[(Local JSON File)]</span></span>
+<span class="line"><span style="color:#ADBAC7">    end</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ADBAC7">    subgraph &quot;Tier 3: Enterprise&quot;</span></span>
+<span class="line"><span style="color:#ADBAC7">        LDAP[LdapStorage]</span></span>
+<span class="line"><span style="color:#ADBAC7">        LDAP -.-&gt;|Centralized| Directory[(LDAP Server)]</span></span>
+<span class="line"><span style="color:#ADBAC7">    end</span></span></code></pre>
+<h2 id="core-protocol-rfc-2378-modified">Core Protocol: RFC 2378 (Modified)</h2>
+<p>Pharos implements the Phonebook Protocol with extensions for modern infrastructure management and secure authentication.</p>
+<h3 id="message-flow">Message Flow</h3>
+<ol>
+<li><strong>QUERY:</strong> Client sends a search string.</li>
+<li><strong>DISCRIMINATE:</strong> Server identifies if the target is a <code>person</code> or <code>machine</code>.</li>
+<li><strong>AUTH (if Write):</strong> Server issues an SSH challenge. Client signs and returns.</li>
+<li><strong>RESPONSE:</strong> Server returns records in Ph format.</li>
+</ol>
+<pre class="astro-code github-dark-dimmed" style="background-color:#22272e;color:#adbac7;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word" tabindex="0" data-language="mermaid"><code><span class="line"><span style="color:#ADBAC7">sequenceDiagram</span></span>
+<span class="line"><span style="color:#ADBAC7">    participant Client</span></span>
+<span class="line"><span style="color:#ADBAC7">    participant Server</span></span>
+<span class="line"><span style="color:#ADBAC7">    participant Auth</span></span>
+<span class="line"><span style="color:#ADBAC7">    participant Storage</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ADBAC7">    Client-&gt;&gt;Server: QUERY &quot;name=John&quot;</span></span>
+<span class="line"><span style="color:#ADBAC7">    Server-&gt;&gt;Storage: Search(people, &quot;John&quot;)</span></span>
+<span class="line"><span style="color:#ADBAC7">    Storage--&gt;&gt;Server: [Records]</span></span>
+<span class="line"><span style="color:#ADBAC7">    Server--&gt;&gt;Client: 200: [Ph Records]</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#ADBAC7">    Note over Client,Server: Write Operation</span></span>
+<span class="line"><span style="color:#ADBAC7">    Client-&gt;&gt;Server: ADD &quot;name=Jane&quot;</span></span>
+<span class="line"><span style="color:#ADBAC7">    Server-&gt;&gt;Auth: Challenge(SSH-Key)</span></span>
+<span class="line"><span style="color:#ADBAC7">    Auth--&gt;&gt;Client: Challenge</span></span>
+<span class="line"><span style="color:#ADBAC7">    Client--&gt;&gt;Auth: Signed-Response</span></span>
+<span class="line"><span style="color:#ADBAC7">    Auth--&gt;&gt;Server: Verified</span></span>
+<span class="line"><span style="color:#ADBAC7">    Server-&gt;&gt;Storage: Commit(Jane)</span></span>
+<span class="line"><span style="color:#ADBAC7">    Server--&gt;&gt;Client: 200: Success</span></span></code></pre>
+<h2 id="core-components">Core Components</h2>
+<h3 id="1-pharos-server-pharos-server">1. Pharos Server (<code>pharos-server</code>)</h3>
+<p>The backend engine handling connection lifecycle, protocol parsing, and storage abstraction.</p>
+<ul>
+<li><strong>Protocol:</strong> RFC 2378 (Ph) with <code>auth</code> extension.</li>
+<li><strong>Authentication:</strong> SSH-key based challenge-response for Write operations.</li>
+<li><strong>Metrics:</strong> Integrated Prometheus scrape point (<code>:9090/metrics</code>) and health monitoring.</li>
+</ul>
+<h3 id="2-cli-clients">2. CLI Clients</h3>
+<ul>
+<li><strong><code>ph</code>:</strong> Optimized for human contact management.</li>
+<li><strong><code>mdb</code>:</strong> Optimized for machine/infrastructure asset management.</li>
+<li>Both support automatic authentication via local SSH private keys.</li>
+</ul>
+<h3 id="3-storage-tiering">3. Storage Tiering</h3>
+<ul>
+<li><strong>Development:</strong> Zero-configuration in-memory storage.</li>
+<li><strong>Home Lab:</strong> File-level, restart-survivable JSON storage (optimized for LXC).</li>
+<li><strong>Enterprise:</strong> LDAP-backed storage utilizing standard schemas (<code>inetOrgPerson</code>, <code>ipHost</code>).</li>
+</ul> </article> <footer class="mt-16 pt-8 border-t border-secondary-200 dark:border-secondary-800"> <div class="flex justify-between items-center"> <a href="/pharos/docs" class="text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-2"> <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path> </svg>
+Back to Documentation
+</a> <span class="text-sm text-secondary-500">© 2026 Project Pharos</span> </div> </footer> </div> </main> </body></html>

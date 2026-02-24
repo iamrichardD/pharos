@@ -1,0 +1,79 @@
+---
+/* ========================================================================
+ * Project: pharos
+ * Component: Marketing Site
+ * File: index.astro
+ * Author: Richard D. (https://github.com/iamrichardd)
+ * License: AGPL-3.0 (See LICENSE file for details)
+ * * Purpose (The "Why"):
+ * Documentation index page listing all available guides and architectural docs.
+ * * Traceability:
+ * Related to GitHub Issue #28, implements the documentation port to MDX.
+ * ======================================================================== */
+import { getCollection } from 'astro:content';
+import '../../styles/global.css';
+
+const docsEntries = await getCollection('docs');
+const sortedDocs = docsEntries.sort((a, b) => (a.data.order || 99) - (b.data.order || 99));
+---
+
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/pharos/favicon.svg" />
+    <title>Documentation - Pharos</title>
+    <meta name="description" content="Technical documentation and how-to guides for the Pharos ecosystem." />
+    <script>
+      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.classList.add('dark');
+      }
+    </script>
+  </head>
+  <body class="bg-white dark:bg-secondary-900 antialiased">
+    <nav class="sticky top-0 z-40 w-full backdrop-blur flex-none transition-colors duration-500 lg:z-50 lg:border-b lg:border-secondary-900/10 dark:border-secondary-50/[0.06] bg-white/75 dark:bg-secondary-900/75">
+      <div class="container-custom py-4">
+        <div class="flex items-center justify-between">
+          <a href="/pharos/" class="text-xl font-bold text-secondary-900 dark:text-white">Pharos</a>
+          <div class="flex items-center gap-6">
+            <a href="/pharos/docs" class="text-sm font-medium text-primary-600 dark:text-primary-400">Documentation</a>
+            <a href="https://github.com/iamrichardD/pharos" target="_blank" class="text-sm font-medium text-secondary-600 dark:text-secondary-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">GitHub</a>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <main id="main-content" class="container-custom py-20">
+      <div class="max-w-4xl mx-auto">
+        <header class="text-center mb-16">
+          <h1 class="text-4xl md:text-5xl font-bold text-secondary-900 dark:text-white mb-6 tracking-tight">Technical Documentation</h1>
+          <p class="text-xl text-secondary-600 dark:text-secondary-400 max-w-2xl mx-auto leading-relaxed">
+            Everything you need to deploy, configure, and scale Pharos in your environment.
+          </p>
+        </header>
+
+        <div class="grid gap-8">
+          {sortedDocs.map(doc => (
+            <a href={`/pharos/docs/${doc.slug}`} class="group bg-white dark:bg-secondary-800 p-8 rounded-2xl shadow-lg border border-secondary-200 dark:border-secondary-700 hover:border-primary-500 dark:hover:border-primary-500 transition-all">
+              <div class="flex items-start justify-between">
+                <div>
+                  <h2 class="text-2xl font-bold text-secondary-900 dark:text-white mb-2 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                    {doc.data.title}
+                  </h2>
+                  <p class="text-secondary-600 dark:text-secondary-400 leading-relaxed">
+                    {doc.data.description}
+                  </p>
+                </div>
+                <div class="text-primary-500 group-hover:translate-x-1 transition-transform">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l7-7m-7 7H3"></path>
+                  </svg>
+                </div>
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
+    </main>
+  </body>
+</html>
