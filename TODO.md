@@ -31,6 +31,6 @@
 
 ## Bug Tracker & Unplanned Work
 *(Log any bugs discovered during feature development here. Do not fix them until the current task is complete. Ensure each gets a GitHub issue created via `gh`).*
-- [ ] **Task 6.1 (Issue #20):** CI: Verify standardized headers fails on Windows runner (bash syntax in pwsh).
-- [ ] **Task 6.2 (Issue #21):** Build: `pharos-server` compilation failure due to dependencies and type inference.
+- [x] **Task 6.1 (Issue #20):** CI: Verify standardized headers fails on Windows runner (bash syntax in pwsh).
+- [x] **Task 6.2 (Issue #21):** Build: `pharos-server` compilation failure due to dependencies and type inference.
 
