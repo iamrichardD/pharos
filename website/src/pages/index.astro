@@ -12,6 +12,7 @@
  * ======================================================================== */
 
 import '../styles/global.css';
+import DoraMetrics from '../components/DoraMetrics.astro';
 
 const pageTitle = "Pharos - High Performance Phonebook Protocol Ecosystem";
 const pageDescription = "Pharos is a highly performant, read-optimized client-server ecosystem based on RFC 2378 (Phonebook Protocol). Designed for Home Labbers and Enterprise Engineers.";
@@ -153,6 +154,14 @@ const pageDescription = "Pharos is a highly performant, read-optimized client-se
                 <h4 class="font-bold text-secondary-900 dark:text-secondary-100 mb-2">AGPL-3.0 Licensed</h4>
                 <p class="text-sm text-secondary-600 dark:text-secondary-400">Empowering Home Labbers while assuring that corporate deployments share modifications back with the community.</p>
               </div>
+            </div>
+
+            <div class="pt-8 border-t border-secondary-200 dark:border-secondary-700">
+              <h3 class="text-2xl font-bold text-secondary-900 dark:text-secondary-100 mb-8 text-center">Project Velocity (DORA)</h3>
+              <DoraMetrics />
+              <p class="mt-8 text-center text-xs text-secondary-500 dark:text-secondary-500 italic">
+                Metrics extrapolated from GitHub repository health and CI/CD audit logs.
+              </p>
             </div>
           </div>
         </div>

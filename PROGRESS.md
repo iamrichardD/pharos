@@ -2,11 +2,13 @@
 
 ## Current Status
 **Phase:** 7 (Personal Website Integration)
-**Active Task:** Task 7.3: Implement visual DORA Metrics & Project Velocity dashboard on the marketing site.
-**Active GitHub Issue:** #29.
+**Active Task:** Task 7.4: Align Pharos marketing site UX/UI with iamrichardd.com personal branding.
+**Backlog:** Phase 8: Community & Ecosystem Expansion.
+**Active GitHub Issue:** #30.
 **Blockers:** None.
 
 ## Recent Completions
+- [x] Task 7.3: Advocacy: Implement visual DORA Metrics & Project Velocity dashboard on the marketing site. (Issue #29)
 - [x] Task 7.2: Advocacy: Port Pharos technical documentation to Astro MDX with Shiki highlighting. (Issue #28)
 - [x] Task 7.1: Advocacy: Integrate Pharos Landing Page into iamrichardd.com using existing Astro design system. (Issue #27)
 - [x] Task 6.5: Advocacy: Integrate DORA Metrics & Project Velocity Stats into the marketing site. (Issue #26)

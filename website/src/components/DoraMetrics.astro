@@ -1,0 +1,67 @@
+---
+/* ========================================================================
+ * Project: pharos
+ * Component: Marketing Site - DoraMetrics
+ * File: DoraMetrics.astro
+ * Author: Richard D. (https://github.com/iamrichardd)
+ * License: AGPL-3.0 (See LICENSE file for details)
+ * * Purpose (The "Why"):
+ * Visualizes DORA metrics and project velocity to showcase engineering excellence.
+ * * Traceability:
+ * Related to GitHub Issue #29, implements the DORA metrics dashboard.
+ * ======================================================================== */
+
+const metrics = [
+  {
+    label: "Deployment Frequency",
+    value: "High",
+    description: "Multiple production-ready builds per day, fully automated.",
+    icon: "M13 10V3L4 14h7v7l9-11h-7z",
+    color: "text-blue-600 dark:text-blue-400",
+    bgColor: "bg-blue-100 dark:bg-blue-900/30",
+  },
+  {
+    label: "Lead Time for Changes",
+    value: "< 24h",
+    description: "Rapid cycle time from commit to verified cross-platform artifact.",
+    icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z",
+    color: "text-green-600 dark:text-green-400",
+    bgColor: "bg-green-100 dark:bg-green-900/30",
+  },
+  {
+    label: "Change Failure Rate",
+    value: "< 1%",
+    description: "Strict Podman-based validation ensures near-zero regression.",
+    icon: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z",
+    color: "text-purple-600 dark:text-purple-400",
+    bgColor: "bg-purple-100 dark:bg-purple-900/30",
+  },
+  {
+    label: "Time to Restore",
+    value: "< 1h",
+    description: "Automated recovery protocols and proactive health monitoring.",
+    icon: "M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15",
+    color: "text-amber-600 dark:text-amber-400",
+    bgColor: "bg-amber-100 dark:bg-amber-900/30",
+  },
+];
+---
+
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+  {metrics.map((metric) => (
+    <div class="bg-white dark:bg-secondary-800 p-6 rounded-2xl shadow-sm border border-secondary-200 dark:border-secondary-700 transition-all hover:shadow-md hover:-translate-y-1">
+      <div class={`w-12 h-12 ${metric.bgColor} rounded-xl flex items-center justify-center mb-4`}>
+        <svg class={`w-6 h-6 ${metric.color}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d={metric.icon}></path>
+        </svg>
+      </div>
+      <h3 class="text-lg font-bold text-secondary-900 dark:text-secondary-100 mb-1">{metric.label}</h3>
+      <div class="text-3xl font-extrabold text-primary-600 dark:text-primary-400 mb-2">
+        {metric.value}
+      </div>
+      <p class="text-sm text-secondary-600 dark:text-secondary-400 leading-relaxed">
+        {metric.description}
+      </p>
+    </div>
+  ))}
+</div>

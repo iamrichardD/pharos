@@ -55,5 +55,6 @@ A task is considered complete and may be marked `[x]` only when:
 ## Phase 7: Personal Website Integration (iamrichardd.com)
 - [x] **Task 7.1 (Issue #27):** Advocacy: Integrate Pharos Landing Page into iamrichardd.com using existing Astro design system.
 - [x] **Task 7.2 (Issue #28):** Advocacy: Port Pharos technical documentation to Astro MDX with Shiki highlighting.
-- [ ] **Task 7.3 (Issue #29):** Advocacy: Implement visual DORA Metrics & Project Velocity dashboard on the marketing site.
+- [x] **Task 7.3 (Issue #29):** Advocacy: Implement visual DORA Metrics & Project Velocity dashboard on the marketing site.
+- [ ] **Task 7.4 (Issue #30):** Advocacy: Align Pharos marketing site UX/UI with iamrichardd.com personal branding.
 
