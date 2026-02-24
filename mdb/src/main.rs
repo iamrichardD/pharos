@@ -71,7 +71,12 @@ impl MdbIo for RealIo {
     }
 }
 
-pub fn run_client<T: MdbIo>(io: &mut T, addr: &str, query: &str) -> Result<Vec<String>, String> {
+use ssh_key::PrivateKey;
+use base64::{Engine as _, engine::general_purpose::STANDARD};
+use std::path::Path;
+use std::fs;
+
+pub fn run_client<T: MdbIo>(io: &mut T, addr: &str, command_line: &str) -> Result<Vec<String>, String> {
     io.connect(addr)?;
     
     // Read banner
@@ -84,8 +89,22 @@ pub fn run_client<T: MdbIo>(io: &mut T, addr: &str, query: &str) -> Result<Vec<S
     io.write_line("id mdb")?;
     let _id_resp = io.read_line()?;
 
-    // Send Query
-    io.write_line(&format!("query {}", query))?;
+    // If it's not a query/ph command, it might be a write command
+    let lower_cmd = command_line.to_lowercase();
+    let is_query = lower_cmd.starts_with("query ") || lower_cmd.starts_with("ph ");
+    
+    let cmd_to_send = if is_query {
+        command_line.to_string()
+    } else {
+        // If it's a known write command, use as is, else default to query
+        let first_word = lower_cmd.split_whitespace().next().unwrap_or("");
+        match first_word {
+            "add" | "change" | "delete" | "status" | "siteinfo" | "quit" => command_line.to_string(),
+            _ => format!("query {}", command_line),
+        }
+    };
+
+    io.write_line(&cmd_to_send)?;
 
     let mut output = Vec::new();
     loop {
@@ -106,6 +125,29 @@ pub fn run_client<T: MdbIo>(io: &mut T, addr: &str, query: &str) -> Result<Vec<S
         }
 
         if let Ok(code) = parts[0].parse::<i32>() {
+            if code == 401 {
+                // Authentication required
+                // Expected format: 401:Authentication required. Challenge: <hex>
+                if let Some(challenge_pos) = trimmed.find("Challenge: ") {
+                    let challenge_hex = &trimmed[challenge_pos + 11..];
+                    
+                    // Sign challenge
+                    let (pub_key_ssh, sig_b64) = sign_challenge(challenge_hex)?;
+                    
+                    // Send Auth command
+                    io.write_line(&format!("auth \"{}\" \"{}\"", pub_key_ssh, sig_b64))?;
+                    let auth_resp = io.read_line()?;
+                    if auth_resp.starts_with("200") {
+                        // Retry original command
+                        io.write_line(&cmd_to_send)?;
+                        continue;
+                    } else {
+                        output.push(auth_resp);
+                        break;
+                    }
+                }
+            }
+
             if code >= 200 {
                 if code != 200 {
                     output.push(trimmed.to_string());
@@ -131,6 +173,27 @@ pub fn run_client<T: MdbIo>(io: &mut T, addr: &str, query: &str) -> Result<Vec<S
     let _ = io.write_line("quit");
 
     Ok(output)
+}
+
+fn sign_challenge(challenge_hex: &str) -> Result<(String, String), String> {
+    let priv_key_path = env::var("PHAROS_PRIVATE_KEY").unwrap_or_else(|_| {
+        let home = env::var("HOME").unwrap_or_else(|_| ".".to_string());
+        format!("{}/.ssh/id_ed25519", home)
+    });
+
+    if !Path::new(&priv_key_path).exists() {
+        return Err(format!("Private key not found at {}. Use PHAROS_PRIVATE_KEY to specify it.", priv_key_path));
+    }
+
+    let key_content = fs::read_to_string(&priv_key_path).map_err(|e| e.to_string())?;
+    let priv_key = PrivateKey::from_openssh(&key_content).map_err(|e| e.to_string())?;
+    
+    let sig = priv_key.sign("", ssh_key::HashAlg::Sha256, challenge_hex.as_bytes()).map_err(|e| e.to_string())?;
+    let sig_b64 = STANDARD.encode(sig.signature().as_bytes());
+    
+    let pub_key_ssh = priv_key.public_key().to_openssh().map_err(|e| e.to_string())?;
+    
+    Ok((pub_key_ssh, sig_b64))
 }
 
 fn main() {

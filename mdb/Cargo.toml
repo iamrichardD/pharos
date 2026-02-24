@@ -4,3 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+ssh-key = { version = "0.6", features = ["crypto"] }
+signature = "2.2"
+base64 = "0.22"
+hex = "0.4"
+rand = "0.8"

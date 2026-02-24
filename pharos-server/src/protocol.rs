@@ -42,6 +42,10 @@ pub enum Command {
         target: Option<String>,
         topics: Vec<String>,
     },
+    Auth {
+        public_key: String,
+        signature: String,
+    },
     Quit,
 }
 
@@ -71,6 +75,15 @@ pub fn parse_command(line: &str) -> Result<Command, ProtocolError> {
                 return Err(ProtocolError::SyntaxError);
             }
             Ok(Command::Id(tokens[1..].join(" ")))
+        }
+        "auth" => {
+            if tokens.len() < 3 {
+                return Err(ProtocolError::SyntaxError);
+            }
+            Ok(Command::Auth {
+                public_key: tokens[1].clone(),
+                signature: tokens[2].clone(),
+            })
         }
         "set" => Ok(Command::Set(tokens[1..].to_vec())),
         "login" => {

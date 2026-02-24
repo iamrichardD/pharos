@@ -14,29 +14,53 @@
 mod protocol;
 mod storage;
 mod metrics;
+mod auth;
 
 use tokio::net::{TcpListener, TcpStream};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tracing::{info, error, instrument};
 use tracing_subscriber;
 use crate::protocol::{Command, parse_command, ProtocolError};
-use crate::storage::MemoryStorage;
-use crate::metrics::{register_metrics, CPU_USAGE, MEMORY_USAGE_BYTES, TOTAL_RECORDS, gather_metrics, check_health_thresholds};
+use crate::storage::{Storage, MemoryStorage, FileStorage, LdapStorage};
+use crate::metrics::{CPU_USAGE, MEMORY_USAGE_BYTES, TOTAL_RECORDS, gather_metrics, check_health_thresholds};
+use crate::auth::AuthManager;
 use std::sync::{Arc, RwLock};
 use sysinfo::System;
 use warp::Filter;
 use std::time::Duration;
+use std::path::PathBuf;
+use std::env;
+use rand::RngCore;
+use rand::rngs::OsRng;
+use hex;
+use std::path::Path;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     // Initialize tracing for observability
     tracing_subscriber::fmt::init();
 
-    // In-memory storage for development tier
-    let storage = Arc::new(RwLock::new(MemoryStorage::new()));
+    // Determine storage backend based on environment variables
+    let storage: Arc<RwLock<dyn Storage>> = if let Ok(url) = env::var("PHAROS_LDAP_URL") {
+        info!("Initializing LdapStorage at {}", url);
+        let bind_dn = env::var("PHAROS_LDAP_BIND_DN").unwrap_or_default();
+        let bind_pw = env::var("PHAROS_LDAP_BIND_PW").unwrap_or_default();
+        let base_dn = env::var("PHAROS_LDAP_BASE_DN").unwrap_or_default();
+        Arc::new(RwLock::new(LdapStorage::new(url, bind_dn, bind_pw, base_dn)))
+    } else if let Ok(path) = env::var("PHAROS_STORAGE_PATH") {
+        info!("Initializing FileStorage at {:?}", path);
+        Arc::new(RwLock::new(FileStorage::new(PathBuf::from(path))))
+    } else {
+        info!("Initializing in-memory storage (Development Tier)");
+        Arc::new(RwLock::new(MemoryStorage::new()))
+    };
+
+    // Initialize AuthManager
+    let keys_dir = env::var("PHAROS_KEYS_DIR").unwrap_or_else(|_| "/home/rdelgado/.ssh/keys".to_string());
+    let auth_manager = Arc::new(AuthManager::new(Path::new(&keys_dir)));
 
     // --- Metrics Scrape Server (Pull Method) ---
-    let storage_for_metrics = Arc::clone(&storage);
+    let storage_for_metrics: Arc<RwLock<dyn Storage>> = Arc::clone(&storage);
     let metrics_route = warp::path("metrics").map(move || {
         // Update storage count on scrape
         if let Ok(lock) = storage_for_metrics.read() {
@@ -51,7 +75,7 @@ async fn main() -> anyhow::Result<()> {
     });
 
     // --- Background Metrics Collection & Health Monitoring ---
-    let storage_for_monitor = Arc::clone(&storage);
+    let storage_for_monitor: Arc<RwLock<dyn Storage>> = Arc::clone(&storage);
     tokio::spawn(async move {
         let mut sys = System::new_all();
         loop {
@@ -85,21 +109,26 @@ async fn main() -> anyhow::Result<()> {
 
     loop {
         let (socket, _) = listener.accept().await?;
-        let storage_ref = Arc::clone(&storage);
+        let storage_ref: Arc<RwLock<dyn Storage>> = Arc::clone(&storage);
+        let auth_ref = Arc::clone(&auth_manager);
         tokio::spawn(async move {
-            if let Err(e) = handle_connection(socket, storage_ref).await {
+            if let Err(e) = handle_connection(socket, storage_ref, auth_ref).await {
                 error!("Error handling connection: {:?}", e);
             }
         });
     }
 }
 
-#[instrument(skip(socket, storage))]
-async fn handle_connection(mut socket: TcpStream, storage: Arc<RwLock<MemoryStorage>>) -> anyhow::Result<()> {
+#[instrument(skip(socket, storage, auth_manager))]
+async fn handle_connection(mut socket: TcpStream, storage: Arc<RwLock<dyn Storage>>, auth_manager: Arc<AuthManager>) -> anyhow::Result<()> {
     let (reader, mut writer) = socket.split();
     let mut reader = BufReader::new(reader);
     let mut line = String::new();
     let mut client_context: Option<String> = None;
+    let mut authenticated = false;
+    let mut challenge = vec![0u8; 16];
+    OsRng.fill_bytes(&mut challenge);
+    let challenge_hex = hex::encode(challenge);
 
     // Send initial status message as per Ph protocol expectation
     // S: 200:Database ready
@@ -128,11 +157,23 @@ async fn handle_connection(mut socket: TcpStream, storage: Arc<RwLock<MemoryStor
                     client_context = Some(id.to_lowercase());
                     writer.write_all(b"200:Ok\r\n").await?;
                 }
+                Command::Auth { public_key, signature } => {
+                    if auth_manager.verify(&public_key, &signature, &challenge_hex) {
+                        authenticated = true;
+                        writer.write_all(b"200:Ok\r\n").await?;
+                    } else {
+                        writer.write_all(b"403:Forbidden\r\n").await?;
+                    }
+                }
                 Command::Quit => {
                     writer.write_all(b"200:Bye!\r\n").await?;
                     break;
                 }
                 Command::Add(fields) => {
+                    if !authenticated {
+                        writer.write_all(format!("401:Authentication required. Challenge: {}\r\n", challenge_hex).as_bytes()).await?;
+                        continue;
+                    }
                     let mut field_map = std::collections::HashMap::new();
                     for (k, v) in fields {
                         field_map.insert(k, v);
@@ -150,15 +191,17 @@ async fn handle_connection(mut socket: TcpStream, storage: Arc<RwLock<MemoryStor
                         _ => None,
                     };
 
-                    let records = {
+                    let (records, count) = {
                         let lock = storage.read().map_err(|_| anyhow::anyhow!("Storage lock poisoned"))?;
-                        lock.query(&selections, default_type).iter().map(|&r| r.clone()).collect::<Vec<_>>()
+                        let results = lock.query(&selections, default_type);
+                        let count = results.len();
+                        (results, count)
                     };
 
                     if records.is_empty() {
                         writer.write_all(b"501:No matches to query\r\n").await?;
                     } else {
-                        writer.write_all(format!("102:There were {} matches to your request.\r\n", records.len()).as_bytes()).await?;
+                        writer.write_all(format!("102:There were {} matches to your request.\r\n", count).as_bytes()).await?;
                         for (i, record) in records.iter().enumerate() {
                             let index = i + 1;
                             // Sort keys for deterministic output in response lines
@@ -178,6 +221,20 @@ async fn handle_connection(mut socket: TcpStream, storage: Arc<RwLock<MemoryStor
                         writer.write_all(b"200:Ok\r\n").await?;
                     }
                 }
+                Command::Delete(_) => {
+                    if !authenticated {
+                        writer.write_all(format!("401:Authentication required. Challenge: {}\r\n", challenge_hex).as_bytes()).await?;
+                        continue;
+                    }
+                    writer.write_all(b"598:Command not yet implemented\r\n").await?;
+                }
+                Command::Change { .. } => {
+                    if !authenticated {
+                        writer.write_all(format!("401:Authentication required. Challenge: {}\r\n", challenge_hex).as_bytes()).await?;
+                        continue;
+                    }
+                    writer.write_all(b"598:Command not yet implemented\r\n").await?;
+                }
                 _ => {
                     writer.write_all(b"598:Command not yet implemented\r\n").await?;
                 }
@@ -196,3 +253,5 @@ async fn handle_connection(mut socket: TcpStream, storage: Arc<RwLock<MemoryStor
 
     Ok(())
 }
+
+

@@ -19,10 +19,15 @@
 - [x] **Task 3.2 (Issue #12):** Implement read-only `mdb` CLI client with basic query formatting.
 
 ## Phase 4: Advanced Storage & Authentication
-- [ ] **Task 4.1 (Issue #TBD):** Implement file-level, restart-survivable storage engine (Home Lab Tier).
-- [ ] **Task 4.2 (Issue #TBD):** Implement LDAP-backed storage engine and standard schema (Enterprise Tier).
-- [ ] **Task 4.3 (Issue #TBD):** Implement SSH-key-based authentication for Write operations on the server.
-- [ ] **Task 4.4 (Issue #TBD):** Update `ph` and `mdb` CLIs to support authenticated write/update commands.
+- [x] **Task 4.1 (Issue #13):** Implement file-level, restart-survivable storage engine (Home Lab Tier).
+- [x] **Task 4.2 (Issue #14):** Implement LDAP-backed storage engine and standard schema (Enterprise Tier).
+- [x] **Task 4.3 (Issue #15):** Implement SSH-key-based authentication for Write operations on the server.
+- [x] **Task 4.4 (Issue #16):** Update `ph` and `mdb` CLIs to support authenticated write/update commands.
+
+## Phase 5: Release & Documentation
+- [ ] **Task 5.1 (Issue #TBD):** Finalize AGPL-3.0 License enforcement and headers in CI/CD.
+- [ ] **Task 5.2 (Issue #TBD):** Generate high-quality architecture diagrams and "How-To" guides.
+- [ ] **Task 5.3 (Issue #TBD):** Prepare v1.0.0 release with annotated Git tags and GitHub Release.
 
 ## Bug Tracker & Unplanned Work
 *(Log any bugs discovered during feature development here. Do not fix them until the current task is complete. Ensure each gets a GitHub issue created via `gh`).*

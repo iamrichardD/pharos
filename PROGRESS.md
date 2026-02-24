@@ -1,12 +1,16 @@
 # Pharos State & Progress
 
 ## Current Status
-**Phase:** 4 (Advanced Storage & Authentication)
+**Phase:** 5 (Release & Documentation)
 **Active Task:** None
 **Active GitHub Issue:** None
 **Blockers:** None.
 
 ## Recent Completions
+- [x] Task 4.4: Update `ph` and `mdb` CLIs to support authenticated write/update commands. (Issue #16)
+- [x] Task 4.3: Implement SSH-key-based authentication for Write operations on the server. (Issue #15)
+- [x] Task 4.2: Implement LDAP-backed storage engine and standard schema (Enterprise Tier). (Issue #14)
+- [x] Task 4.1: Implement file-level, restart-survivable storage engine (Home Lab Tier). (Issue #13)
 - [x] Task 3.2: Implement read-only `mdb` CLI client with basic query formatting. (Issue #12)
 - [x] Task 3.1: Implement read-only `ph` CLI client with basic query formatting. (Issue #11)
 - [x] Task 2.4: Implement standard application metrics (Push/Pull) and the "Health Monitor" threshold warnings. (Issue #10)
