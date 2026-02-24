@@ -48,7 +48,7 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Task 6.2 (Issue #21):** Build: `pharos-server` compilation failure due to dependencies and type inference.
 
 ## Phase 6: Marketing & Open Source Advocacy
-- [ ] **Task 6.3 (Issue #24):** Advocacy: Scaffold GitHub Pages site with Sierra-inspired UX (iamrichardd.com/pharos).
+- [x] **Task 6.3 (Issue #24):** Advocacy: Scaffold GitHub Pages site with Sierra-inspired UX (iamrichardd.com/pharos).
 - [ ] **Task 6.4 (Issue #25):** Advocacy: Create high-quality architecture diagrams and "How-To" guides for Home Labbers and Enterprise Engineers.
 - [ ] **Task 6.5 (Issue #26):** Advocacy: Integrate DORA Metrics & Project Velocity Stats into the marketing site.
 

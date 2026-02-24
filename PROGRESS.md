@@ -2,11 +2,12 @@
 
 ## Current Status
 **Phase:** 6 (Marketing & Advocacy)
-**Active Task:** Task 6.3: Advocacy: Scaffold GitHub Pages site with Sierra-inspired UX.
-**Active GitHub Issue:** #24
+**Active Task:** Task 6.4: Advocacy: Create architecture diagrams and "How-To" guides.
+**Active GitHub Issue:** #25
 **Blockers:** None.
 
 ## Recent Completions
+- [x] Task 6.3: Advocacy: Scaffold GitHub Pages site with Sierra-inspired UX. (Issue #24)
 - [x] Task 5.3: Prepare v1.0.0 release with annotated Git tags and GitHub Release. (Issue #19)
 - [x] Task 5.2: Generate high-quality architecture diagrams and "How-To" guides. (Issue #18)
 - [x] Task 5.1: Finalize AGPL-3.0 License enforcement and headers in CI/CD. (Issue #17)
