@@ -37,10 +37,7 @@ You need deep integration with existing LDAP systems and secure management via S
 
 Pharos isn't just fast to run; it's fast to build. We track our performance through DORA metrics to ensure the highest standards of engineering excellence.
 
-- **Deployment Frequency:** Weekly (v1.0.0 released Feb 2026)
-- **Lead Time for Changes:** < 24 Hours
-- **Change Failure Rate:** < 1%
-- **Time to Restore Service:** < 1 Hour
+[Explore our DORA Metrics & Velocity Stats &rarr;](./velocity.html)
 
 ---
 
