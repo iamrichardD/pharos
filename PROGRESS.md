@@ -1,12 +1,13 @@
 # Pharos State & Progress
 
 ## Current Status
-**Phase:** 3 (CLI Clients MVP)
-**Active Task:** Task 3.2 - Implement read-only `mdb` CLI client with basic query formatting.
-**Active GitHub Issue:** #TBD
+**Phase:** 4 (Advanced Storage & Authentication)
+**Active Task:** None
+**Active GitHub Issue:** None
 **Blockers:** None.
 
 ## Recent Completions
+- [x] Task 3.2: Implement read-only `mdb` CLI client with basic query formatting. (Issue #12)
 - [x] Task 3.1: Implement read-only `ph` CLI client with basic query formatting. (Issue #11)
 - [x] Task 2.4: Implement standard application metrics (Push/Pull) and the "Health Monitor" threshold warnings. (Issue #10)
 - [x] Task 2.3: Implement the "Discriminator" logic to route requests as either `people` or `machine` records. (Issue #9)

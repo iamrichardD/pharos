@@ -16,7 +16,7 @@
 
 ## Phase 3: CLI Clients MVP
 - [x] **Task 3.1 (Issue #11):** Implement read-only `ph` CLI client with basic query formatting.
-- [ ] **Task 3.2 (Issue #TBD):** Implement read-only `mdb` CLI client with basic query formatting.
+- [x] **Task 3.2 (Issue #12):** Implement read-only `mdb` CLI client with basic query formatting.
 
 ## Phase 4: Advanced Storage & Authentication
 - [ ] **Task 4.1 (Issue #TBD):** Implement file-level, restart-survivable storage engine (Home Lab Tier).
