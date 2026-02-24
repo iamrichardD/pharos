@@ -1,3 +1,15 @@
+# ========================================================================
+# Project: pharos
+# Component: Server Core
+# File: pharos-server/Cargo.toml
+# Author: Richard D. (https://github.com/iamrichardd)
+# License: AGPL-3.0 (See LICENSE file for details)
+# * Purpose (The "Why"):
+# This is the Cargo configuration for the 'pharos-server' backend.
+# * Traceability:
+# Related to Task 2.1
+# ========================================================================
+
 [package]
 name = "pharos-server"
 version = "0.1.0"

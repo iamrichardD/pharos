@@ -21,7 +21,22 @@ Pharos meets you where your infrastructure is at:
 * **Enterprise:** Full LDAP-backed integration with a customizable, standard-compliant schema.
 
 ## Getting Started
-*(Installation and configuration guides will be populated here as Phase 1 and 2 are completed).*
+
+Pharos is designed to be easy to deploy and use.
+
+### Documentation
+- [Architecture Overview](docs/ARCHITECTURE.md) - Deep dive into the system design.
+- [How-To Guides](docs/HOWTO.md) - Deployment and usage instructions for Home Lab and Enterprise.
+
+### Quick Start
+1. **Server:** Start the server using the in-memory backend for testing.
+   ```bash
+   ./pharos-server
+   ```
+2. **Client:** Query the server using `ph` or `mdb`.
+   ```bash
+   ./ph name=john
+   ```
 
 ## Engineering Philosophy
 This project is built using strict Zero-Host DevSecOps practices. All execution, testing, and dependency management happens securely within Podman containers. It enforces atomic unit testing, continuous integration, and transparent DORA metric tracking via GitHub Issues.

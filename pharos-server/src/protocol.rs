@@ -6,8 +6,8 @@
  * License: AGPL-3.0 (See LICENSE file for details)
  * * Purpose (The "Why"):
  * This module implements the RFC 2378 command syntax parser. It handles
- * keyword identification, argument splitting, and escape sequence 
- * processing (e.g., \n, \t, \", \\).
+ * keyword identification, argument splitting, escape sequence 
+ * processing (e.g., \n, \t, \", \\), and custom extensions like 'auth'.
  * * Traceability:
  * Implements RFC 2378 Section 2.1 and Appendix C.
  * ======================================================================== */

@@ -6,7 +6,8 @@
  * License: AGPL-3.0 (See LICENSE file for details)
  * * Purpose (The "Why"):
  * This is the entry point for the 'mdb' CLI client, used for machine/infrastructure
- * assets using the RFC 2378 protocol. It separates IO from logic for testability.
+ * assets using the RFC 2378 protocol. It supports both read-only queries and
+ * authenticated management operations (add, change, delete).
  * * Traceability:
  * Related to Task 3.2 (Issue #12)
  * ======================================================================== */

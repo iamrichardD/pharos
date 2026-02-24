@@ -25,6 +25,22 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - name: Verify standardized headers
+      run: |
+        missing_headers=()
+        while IFS= read -r file; do
+          if ! head -n 1 "$file" | grep -q "/* ========================================================================" && ! head -n 1 "$file" | grep -q "# ========================================================================"; then
+            missing_headers+=("$file")
+          fi
+        done < <(find . -type f \( -name "*.rs" -o -name "Cargo.toml" -o -name "Containerfile*" \) -not -path "./target/*")
+        
+        if [ ${#missing_headers[@]} -ne 0 ]; then
+          echo "Error: Standardized header missing in the following files:"
+          for file in "${missing_headers[@]}"; do
+            echo "  - $file"
+          done
+          exit 1
+        fi
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
       with:

@@ -6,7 +6,8 @@
  * License: AGPL-3.0 (See LICENSE file for details)
  * * Purpose (The "Why"):
  * This is the entry point for the 'ph' CLI client, used for people contacts
- * using the RFC 2378 protocol. It separates IO from logic for testability.
+ * using the RFC 2378 protocol. It supports both read-only queries and
+ * authenticated management operations (add, change, delete).
  * * Traceability:
  * Related to Task 3.1 (Issue #11)
  * ======================================================================== */

@@ -1,3 +1,15 @@
+# ========================================================================
+# Project: pharos
+# Component: CLI-mdb
+# File: mdb/Cargo.toml
+# Author: Richard D. (https://github.com/iamrichardd)
+# License: AGPL-3.0 (See LICENSE file for details)
+# * Purpose (The "Why"):
+# This is the Cargo configuration for the 'mdb' CLI client.
+# * Traceability:
+# Related to Task 3.2
+# ========================================================================
+
 [package]
 name = "mdb"
 version = "0.1.0"

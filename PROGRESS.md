@@ -2,11 +2,13 @@
 
 ## Current Status
 **Phase:** 5 (Release & Documentation)
-**Active Task:** None
-**Active GitHub Issue:** None
+**Active Task:** Task 5.3 - Prepare v1.0.0 release with annotated Git tags and GitHub Release.
+**Active GitHub Issue:** #19
 **Blockers:** None.
 
 ## Recent Completions
+- [x] Task 5.2: Generate high-quality architecture diagrams and "How-To" guides. (Issue #18)
+- [x] Task 5.1: Finalize AGPL-3.0 License enforcement and headers in CI/CD. (Issue #17)
 - [x] Task 4.4: Update `ph` and `mdb` CLIs to support authenticated write/update commands. (Issue #16)
 - [x] Task 4.3: Implement SSH-key-based authentication for Write operations on the server. (Issue #15)
 - [x] Task 4.2: Implement LDAP-backed storage engine and standard schema (Enterprise Tier). (Issue #14)
