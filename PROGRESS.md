@@ -1,9 +1,11 @@
 # Pharos State & Progress
 
 ## Current Status
-**Phase:** 11 (Marketing & Advocacy) - COMPLETED
-**Active Task:** None (Idle - Ready for next session)
+**Phase:** 12 (Advanced Visualization & Management) - IN PROGRESS
+**Active Task:** Task 12.1 (Issue #44)
 **Backlog:** 
+- Task 12.2: Implement real-time TUI dashboard for pharos-server.
+- Task 12.3: Integrate discovery events into the dashboard.
 
 ## Recent Completions
 - [x] Task 11.1: Advocacy: Update marketing site for v1.2.0 features (pharos-scan superpower). (Issue #43)
