@@ -1,0 +1,112 @@
+---
+/* ========================================================================
+ * Project: pharos
+ * Component: Marketing Site - Mermaid Renderer
+ * File: MermaidRenderer.astro
+ * Author: Richard D. (https://github.com/iamrichardd)
+ * License: AGPL-3.0 (See LICENSE file for details)
+ * * Purpose (The "Why"):
+ * Client-side renderer for Mermaid diagrams in MDX documentation, 
+ * bypassing Shiki highlighting to provide high-quality visual system diagrams.
+ * * Traceability:
+ * Related to GitHub Issue #36, fixes Mermaid rendering on documentation pages.
+ * ======================================================================== */
+---
+
+<script>
+  import mermaid from 'mermaid';
+
+  const initMermaid = async () => {
+    const isDark = document.documentElement.classList.contains('dark');
+    
+    // Configure mermaid
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: isDark ? 'dark' : 'neutral',
+      securityLevel: 'loose',
+      fontFamily: 'inherit',
+      themeVariables: {
+        primaryColor: isDark ? '#3b82f6' : '#2563eb',
+        primaryTextColor: isDark ? '#f8fafc' : '#1e293b',
+        primaryBorderColor: isDark ? '#334155' : '#e2e8f0',
+        lineColor: isDark ? '#64748b' : '#94a3b8',
+        secondaryColor: isDark ? '#1e293b' : '#f1f5f9',
+        tertiaryColor: isDark ? '#0f172a' : '#ffffff',
+      }
+    });
+
+    const mermaidBlocks = document.querySelectorAll('pre[data-language="mermaid"]');
+    
+    for (const block of mermaidBlocks) {
+      // Store original code if not already stored
+      if (!block.hasAttribute('data-mermaid-original')) {
+        block.setAttribute('data-mermaid-original', (block as HTMLElement).innerText);
+      }
+      
+      const code = block.getAttribute('data-mermaid-original') || '';
+      const id = `mermaid-${Math.random().toString(36).substring(2, 11)}`;
+      
+      try {
+        const { svg } = await mermaid.render(id, code);
+        
+        // Find or create container
+        let container = block.nextElementSibling as HTMLElement;
+        if (!container || !container.classList.contains('mermaid-container')) {
+           container = document.createElement('div');
+           container.className = 'mermaid-container my-12 flex justify-center bg-secondary-50/50 dark:bg-secondary-900/20 p-4 md:p-8 rounded-3xl border border-secondary-200/60 dark:border-secondary-800/60 shadow-inner overflow-hidden transition-all duration-500 hover:shadow-lg hover:border-primary-500/30';
+           block.parentNode?.insertBefore(container, block.nextSibling);
+        }
+        
+        container.innerHTML = svg;
+        // Hide the original block instead of removing it to allow theme toggling
+        (block as HTMLElement).style.display = 'none';
+        
+      } catch (error) {
+        console.error('Mermaid rendering failed:', error);
+        (block as HTMLElement).style.display = 'block';
+      }
+    }
+  };
+
+  // Run on initial load
+  if (document.readyState === 'complete') {
+    initMermaid();
+  } else {
+    window.addEventListener('load', initMermaid);
+  }
+
+  // Handle Astro page transitions (if added in the future)
+  document.addEventListener('astro:page-load', initMermaid);
+
+  // Watch for theme changes to re-render
+  let themeTimeout: number;
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+        clearTimeout(themeTimeout);
+        themeTimeout = window.setTimeout(initMermaid, 100);
+      }
+    });
+  });
+
+  observer.observe(document.documentElement, { attributes: true });
+</script>
+
+<style is:global>
+  .mermaid-container svg {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+  }
+  
+  /* Style for mermaid error blocks */
+  .mermaid-container .error-icon {
+    fill: #ef4444;
+  }
+  
+  .mermaid-container .error-text {
+    fill: #ef4444;
+    font-size: 12px;
+  }
+</style>

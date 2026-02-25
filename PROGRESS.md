@@ -7,6 +7,7 @@
 **Blockers:** None.
 
 ## Recent Completions
+- [x] Task 6.7: Bug: Mermaid diagrams not rendering on Architecture documentation page. (Issue #36)
 - [x] Task 8.4: Release: Prepare v1.1.0 release with the new hook system and community features. (Issue #35)
 - [x] Task 8.3: Advocacy: Expand the marketing site with a community "Showcase" and integration guide. (Issue #34)
 - [x] Task 8.2: Engineering: Implement a middleware/hook system in `pharos-server` for custom request processing. (Issue #33)
