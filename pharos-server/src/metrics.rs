@@ -72,15 +72,22 @@ pub fn check_health_thresholds(cpu_limit: f64, memory_limit_bytes: u64) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Mutex;
+
+    lazy_static! {
+        static ref TEST_MUTEX: Mutex<()> = Mutex::new(());
+    }
 
     #[test]
     fn test_should_track_record_count_when_incremented() {
+        let _lock = TEST_MUTEX.lock().unwrap();
         TOTAL_RECORDS.set(42);
         assert_eq!(TOTAL_RECORDS.get(), 42);
     }
 
     #[test]
     fn test_should_gather_metrics_as_prometheus_format() {
+        let _lock = TEST_MUTEX.lock().unwrap();
         TOTAL_RECORDS.set(10);
         let output = gather_metrics();
         // Prometheus format for Gauge/IntGauge typically ends with " 10" (or " 10.0")
@@ -90,6 +97,7 @@ mod tests {
 
     #[test]
     fn test_should_alert_when_thresholds_exceeded() {
+        let _lock = TEST_MUTEX.lock().unwrap();
         // This test verifies the logic of check_health_thresholds by simulating threshold breach
         // Since we can't easily capture logs in a unit test without more setup, 
         // we just ensure it doesn't panic.
