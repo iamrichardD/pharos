@@ -71,3 +71,9 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Task 9.1 (Issue #37):** Advocacy: Refine documentation headers to remove "Pharos" prefix across all MDX pages.
 - [x] **Task 9.2 (Issue #38):** Advocacy: Implement a tiered tabbed interface (Home Lab vs. Enterprise) in `howto.mdx` to reduce cognitive load.
 
+## Phase 10: Network Discovery & Automation
+- [ ] **Task 10.1 (Issue #39):** Engineering: Refactor client logic into a shared `pharos-client` library with async support and SSH-auth.
+- [ ] **Task 10.2 (Issue #40):** Engineering: Implement the `pharos-scan` engine (mDNS, ARP, and Port Fingerprinting).
+- [ ] **Task 10.3 (Issue #41):** Engineering: Implement the interactive TUI and provisioning workflow for `pharos-scan`.
+- [ ] **Task 10.4 (Issue #42):** Release: Prepare v1.2.0 release including the new network scanner tool.
+

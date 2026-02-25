@@ -1,11 +1,15 @@
 # Pharos State & Progress
 
 ## Current Status
-**Phase:** 9 (Documentation & UX Refinement)
-**Active Task:** None (Phase 9 Complete)
-**Backlog:** None.
+**Phase:** 10 (Network Discovery & Automation)
+**Active Task:** Task 10.1 (Issue #39)
+**Backlog:** 
+- Task 10.2: Implement pharos-scan engine (mDNS, ARP, Port Fingerprinting).
+- Task 10.3: Implement interactive TUI and provisioning workflow.
+- Task 10.4: Prepare v1.2.0 release.
 
 ## Recent Completions
+- [x] Planning: Designed 'pharos-scan' architecture and provisioning workflow. (Issue #39)
 - [x] Task 9.2: Advocacy: Implement a tiered tabbed interface (Home Lab vs. Enterprise) in `howto.mdx` to reduce cognitive load. (Issue #38)
 - [x] Task 9.1: Advocacy: Refine documentation headers to remove "Pharos" prefix across all MDX pages. (Issue #37)
 - [x] Task 6.7: Bug: Mermaid diagrams not rendering on Architecture documentation page. (Issue #36)
