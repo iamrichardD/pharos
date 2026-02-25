@@ -44,6 +44,7 @@
 3. If the Active Task does not have a GitHub Issue (marked `#TBD`), use the `gh` CLI to create one using the **Structured Issue Schema** (Specifics, Proposed Fix, Verification Strategy).
 4. Begin execution on the Active Task, utilizing Podman commands exclusively for execution.
 5. **Validation:** Verify changes locally via `Containerfile.test` and remotely via GitHub Actions using `gh run watch`.
-6. **AI-Handover:** Before concluding, push commits and close the GitHub issue with a **Fix Summary** and an **AI-Ready Verification Prompt**.
-7. Update this `PROGRESS.md` and `@TODO.md` only after all DoD criteria are met.
+6. **Production Verification:** BEFORE closing any task, use `web_fetch` to verify that the changes are live and rendering correctly on `https://iamrichardd.com/pharos/`.
+7. **AI-Handover:** Before concluding, push commits and close the GitHub issue with a **Fix Summary**, an **AI-Ready Verification Prompt**, and a **Production Verification** confirmation.
+8. Update this `PROGRESS.md` and `@TODO.md` only after all DoD criteria are met.
 

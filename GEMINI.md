@@ -84,6 +84,11 @@ EVERY source code file MUST begin with a standardized prologue block. This ensur
 - **The "Why":** When writing code, tests, and documentation, you MUST write in-code documentation explaining the purpose (the "Why") of the file, class, method, or function. This is critical for future humans and AI Agents implementing bug fixes or security reviews.
 - **Test Rationale:** Explain the rationale for a test's existence so future iterations understand its importance before deciding whether to modify or delete it.
 
+### 4. Production Verification (Strict Requirement)
+- **Live Verification:** Before closing a GitHub Issue or marking a task as complete in `@PROGRESS.md`, you MUST verify that the changes are successfully deployed and visible in the production environment (e.g., `https://iamrichardd.com/pharos/`).
+- **Tooling:** Use `web_fetch` to inspect the live site and confirm that new content, UI elements, or fixes are rendering as expected.
+- **Traceability:** Include a "Production Verification" confirmation in the final AI-Handover report or GitHub Issue closure comment.
+
 ---
 
 ## DevSecOps & Workflow

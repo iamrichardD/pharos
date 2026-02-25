@@ -5,8 +5,9 @@ A task is considered complete and may be marked `[x]` only when:
 1. **Local Verification:** All tests/builds pass inside the `Containerfile.test` Podman environment.
 2. **Standardization:** All new files include the Standardized File Prologue.
 3. **CI Validation:** GitHub Actions (CI) pass successfully on all target platforms (`linux`, `macos`, `windows`).
-4. **AI-Handover:** The GitHub Issue is closed with a structured "Fix Summary" and an "AI-Ready Verification Prompt."
-5. **State Sync:** `@PROGRESS.md` and `@TODO.md` are updated.
+4. **Production Verification:** The change is verified to be live and functional on the production environment (e.g., `https://iamrichardd.com/pharos/`) using `web_fetch` or manual verification.
+5. **AI-Handover:** The GitHub Issue is closed with a structured "Fix Summary" and an "AI-Ready Verification Prompt."
+6. **State Sync:** `@PROGRESS.md` and `@TODO.md` are updated.
 
 ## Phase 1: Zero-Host & DevSecOps Foundation
 - [x] **Task 1.1 (Issue #1):** Initialize internal project directory structure within the current root (create workspaces for `pharos-server` backend, `ph` CLI, and `mdb` CLI).
