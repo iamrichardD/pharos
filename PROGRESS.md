@@ -8,6 +8,7 @@
 - Task 12.3: Integrate discovery events into the dashboard.
 
 ## Recent Completions
+- [x] Planning: Multi-Tenant Architecture, `pharos-pulse` agent, and `pharos-console` (Dynamic Dashboard/MCP) documented in artifacts. Note: Separated from static marketing site.
 - [x] Task 11.1: Advocacy: Update marketing site for v1.2.0 features (pharos-scan superpower). (Issue #43)
 - [x] Task 10.4: Release: Prepare v1.2.0 release including the new network scanner tool. (Issue #42)
 - [x] Task 10.3: Engineering: Implement the interactive TUI and provisioning workflow for `pharos-scan`. (Issue #41)
