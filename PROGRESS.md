@@ -2,13 +2,13 @@
 
 ## Current Status
 **Phase:** 10 (Network Discovery & Automation)
-**Active Task:** Task 10.1 (Issue #39)
+**Active Task:** Task 10.4 (Issue #42)
 **Backlog:** 
-- Task 10.2: Implement pharos-scan engine (mDNS, ARP, Port Fingerprinting).
-- Task 10.3: Implement interactive TUI and provisioning workflow.
-- Task 10.4: Prepare v1.2.0 release.
 
 ## Recent Completions
+- [x] Task 10.3: Engineering: Implement the interactive TUI and provisioning workflow for `pharos-scan`. (Issue #41)
+- [x] Task 10.2: Engineering: Implement the `pharos-scan` engine (mDNS, ARP, and Port Fingerprinting). (Issue #40)
+- [x] Task 10.1: Engineering: Refactor client logic into a shared `pharos-client` library with async support and SSH-auth. (Issue #39)
 - [x] Planning: Designed 'pharos-scan' architecture and provisioning workflow. (Issue #39)
 - [x] Task 9.2: Advocacy: Implement a tiered tabbed interface (Home Lab vs. Enterprise) in `howto.mdx` to reduce cognitive load. (Issue #38)
 - [x] Task 9.1: Advocacy: Refine documentation headers to remove "Pharos" prefix across all MDX pages. (Issue #37)

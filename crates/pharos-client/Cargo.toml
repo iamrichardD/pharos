@@ -1,0 +1,29 @@
+# ========================================================================
+# Project: pharos
+# Component: Shared Client Library (pharos-client)
+# File: crates/pharos-client/Cargo.toml
+# Author: Richard D. (https://github.com/iamrichardd)
+# License: AGPL-3.0 (See LICENSE file for details)
+# * Purpose (The "Why"):
+# This crate provides a shared, async-first client library for interacting
+# with a Pharos server using the RFC 2378 protocol.
+# * Traceability:
+# Related to Task 10.1 (Issue #39)
+# ========================================================================
+
+[package]
+name = "pharos-client"
+version = "1.2.0"
+edition = "2024"
+
+[dependencies]
+tokio = { version = "1.37", features = ["full"] }
+tokio-util = { version = "0.7", features = ["codec"] }
+futures = "0.3"
+ssh-key = { version = "0.6", features = ["crypto"] }
+signature = "2.2"
+base64 = "0.22"
+hex = "0.4"
+anyhow = "1.0"
+log = "0.4"
+tracing = "0.1"

@@ -1,17 +1,18 @@
 # ========================================================================
 # Project: pharos
-# Component: CLI-mdb
-# File: mdb/Cargo.toml
+# Component: Network Scanner (pharos-scan)
+# File: pharos-scan/Cargo.toml
 # Author: Richard D. (https://github.com/iamrichardd)
 # License: AGPL-3.0 (See LICENSE file for details)
 # * Purpose (The "Why"):
-# This is the Cargo configuration for the 'mdb' CLI client.
+# This tool automates the discovery of network assets and integrates with
+# Pharos to facilitate bulk provisioning of machine inventory.
 # * Traceability:
-# Related to Task 3.2
+# Related to Task 10.2 (Issue #40)
 # ========================================================================
 
 [package]
-name = "mdb"
+name = "pharos-scan"
 version = "1.2.0"
 edition = "2024"
 
@@ -20,4 +21,14 @@ pharos-client = { path = "../crates/pharos-client" }
 tokio = { version = "1.37", features = ["full"] }
 anyhow = "1.0"
 log = "0.4"
-
+tracing = "0.1"
+tracing-subscriber = "0.3"
+mdns-sd = "0.11"
+ipnet = "2.9"
+pnet = "0.34"
+futures = "0.3"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+# For TUI (Task 10.3)
+inquire = "0.7"
+ratatui = "0.26"

@@ -183,6 +183,25 @@ Welcome to Project Pharos. These guides will help you get started whether you ar
   </div>
 </TieredTabs>
 
+## 🔍 Network Discovery & Automation
+
+Project Pharos includes `pharos-scan`, a powerful network discovery tool that automates the process of finding and provisioning your infrastructure.
+
+### Using Pharos-Scan
+
+The `pharos-scan` tool will browse your local network for services (like SSH, Proxmox, or Plex), probe their ports for fingerprinting, and check if they already exist in your Pharos inventory.
+
+1.  **Run the Scanner:**
+    ```bash
+    ./pharos-scan
+    ```
+
+2.  **Interactive Selection:**
+    Use the TUI to select the discovered nodes you want to provision.
+
+3.  **Metadata Input:**
+    The tool will prompt you for an alias and owner for each node before automatically adding them to the Pharos server using your authorized SSH key.
+
 ## 📊 Monitoring
 
 Pharos exposes Prometheus metrics on port `9090`.

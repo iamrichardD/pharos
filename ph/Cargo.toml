@@ -12,12 +12,12 @@
 
 [package]
 name = "ph"
-version = "1.1.0"
+version = "1.2.0"
 edition = "2024"
 
 [dependencies]
-ssh-key = { version = "0.6", features = ["crypto"] }
-signature = "2.2"
-base64 = "0.22"
-hex = "0.4"
-rand = "0.8"
+pharos-client = { path = "../crates/pharos-client" }
+tokio = { version = "1.37", features = ["full"] }
+anyhow = "1.0"
+log = "0.4"
+
