@@ -2,11 +2,12 @@
 
 ## Current Status
 **Phase:** 8 (Community & Ecosystem Expansion)
-**Active Task:** Task 8.3: Advocacy: Expand the marketing site with a community "Showcase" and integration guide.
+**Active Task:** Task 8.4+: Prepare v1.1.0 release.
 **Backlog:** Phase 8.4+: v1.1.0 release.
 **Blockers:** None.
 
 ## Recent Completions
+- [x] Task 8.3: Advocacy: Expand the marketing site with a community "Showcase" and integration guide. (Issue #34)
 - [x] Task 8.2: Engineering: Implement a middleware/hook system in `pharos-server` for custom request processing. (Issue #33)
 - [x] Task 8.1: Advocacy: Create a comprehensive `CONTRIBUTING.md` guide. (Issue #31)
 - [x] Task 7.4: Advocacy: Align Pharos marketing site UX/UI with iamrichardd.com personal branding. (Issue #30)

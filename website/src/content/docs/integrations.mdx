@@ -1,0 +1,146 @@
+---
+title: "Integration Guide"
+description: "How to integrate Project Pharos into your existing Home Lab or Enterprise infrastructure."
+order: 4
+---
+/* ========================================================================
+ * Project: pharos
+ * Component: Marketing Site
+ * File: integrations.mdx
+ * Author: Richard D. (https://github.com/iamrichardd)
+ * License: AGPL-3.0 (See LICENSE file for details)
+ * * Purpose (The "Why"):
+ * Deep-dive guides for integrating Pharos with external systems.
+ * * Traceability:
+ * Related to GitHub Issue #34, expands the documentation.
+ * ======================================================================== */
+
+# 🛠️ Integration Guide
+
+Project Pharos is designed to be the backbone of your infrastructure data. This guide will walk you through building deep integrations using the middleware system and CLI clients.
+
+---
+
+## 🏗️ Proxmox Hooks (Home Lab)
+
+Making your Home Lab "badass" means zero manual data entry. You can automate the registration of your LXC containers and VMs directly into Pharos using Proxmox hook scripts.
+
+### 1. Create the Hook Script
+Create a shell script on your Proxmox host (`/usr/local/bin/pharos-hook.sh`).
+
+```bash
+#!/bin/bash
+
+# Proxmox hook script to register new containers in Pharos
+# Usage: ./pharos-hook.sh <vmid> <phase>
+
+VMID=$1
+PHASE=$2
+
+if [ "$PHASE" == "post-start" ]; then
+    # Get the hostname and IP of the container
+    HOSTNAME=$(pct exec $VMID -- hostname)
+    IP=$(pct exec $VMID -- hostname -I | awk '{print $1}')
+    
+    # Register with Pharos mdb
+    mdb add hostname="$HOSTNAME" ip="$IP" type="machine" vmid="$VMID" status="up"
+fi
+
+if [ "$PHASE" == "pre-stop" ]; then
+    # Update status to down
+    HOSTNAME=$(pct exec $VMID -- hostname)
+    mdb update hostname="$HOSTNAME" status="down"
+fi
+```
+
+### 2. Configure the Hook in Proxmox
+Edit the container configuration (`/etc/pve/lxc/<vmid>.conf`) to use the hook script.
+
+```text
+hookscript: local:snippets/pharos-hook.sh
+```
+
+---
+
+## 🏛️ Enterprise LDAP Sync
+
+Pharos isn't just a standalone directory; it's a high-speed cache and query layer for your Enterprise LDAP.
+
+### 1. Field Mapping
+Pharos allows you to map internal fields to standard LDAP object classes.
+
+| Pharos Field | LDAP Attribute | Object Class |
+| :--- | :--- | :--- |
+| `name` | `cn` | `inetOrgPerson` |
+| `email` | `mail` | `inetOrgPerson` |
+| `hostname` | `cn` | `ipHost` |
+| `ip` | `ipHostNumber` | `ipHost` |
+
+### 2. Performance Tuning
+When using the LDAP backend, Pharos automatically implements a TTL-based cache.
+
+- **`PHAROS_LDAP_CACHE_TTL`**: Default 300s. Adjust this based on your network reliability and read requirements.
+
+---
+
+## 🔌 Custom Middleware & Hooks
+
+For advanced users, Pharos Server supports a middleware system that allows you to intercept and process requests.
+
+### Use Case: Slack Notifications on Write
+You can write a simple middleware that sends a Slack notification whenever a record is added or updated.
+
+```rust
+// Example middleware logic (pseudocode)
+pub struct SlackNotificationMiddleware;
+
+impl Middleware for SlackNotificationMiddleware {
+    fn on_request(&self, request: &Request) {
+        if request.command == Command::Add || request.command == Command::Update {
+            let message = format!("Record updated: {}", request.payload);
+            send_to_slack(message);
+        }
+    }
+}
+```
+
+To enable custom middleware, you must rebuild `pharos-server` with your module included in `src/middleware.rs`.
+
+---
+
+## 🛠️ Ansible Integration
+
+Keep your Ansible inventory in sync with Pharos using a dynamic inventory script.
+
+### Dynamic Inventory Example (Python)
+Save this as `pharos_inventory.py` and use it with `ansible-inventory`.
+
+```python
+#!/usr/bin/env python3
+import json
+import subprocess
+
+def get_inventory():
+    # Call the mdb CLI to get all machine records
+    result = subprocess.run(['mdb', 'query', 'type=machine'], capture_output=True, text=True)
+    records = json.loads(result.stdout)
+    
+    inventory = {
+        'all': {
+            'hosts': [r['hostname'] for r in records],
+            'vars': {}
+        },
+        '_meta': {
+            'hostvars': {r['hostname']: {'ansible_host': r['ip']} for r in records}
+        }
+    }
+    return inventory
+
+if __name__ == "__main__":
+    print(json.dumps(get_inventory()))
+```
+
+---
+
+### Need Help?
+Building a custom integration? Check out our [Architecture Overview](/docs/architecture) or join our [Community Discussion](https://github.com/iamrichardd/pharos/discussions).
