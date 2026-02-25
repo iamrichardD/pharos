@@ -1,11 +1,12 @@
 # Pharos State & Progress
 
 ## Current Status
-**Phase:** 10 (Network Discovery & Automation) - COMPLETED
-**Active Task:** None (Idle - Ready for next Phase)
+**Phase:** 11 (Marketing & Advocacy) - COMPLETED
+**Active Task:** None (Idle - Ready for next session)
 **Backlog:** 
 
 ## Recent Completions
+- [x] Task 11.1: Advocacy: Update marketing site for v1.2.0 features (pharos-scan superpower). (Issue #43)
 - [x] Task 10.4: Release: Prepare v1.2.0 release including the new network scanner tool. (Issue #42)
 - [x] Task 10.3: Engineering: Implement the interactive TUI and provisioning workflow for `pharos-scan`. (Issue #41)
 - [x] Task 10.2: Engineering: Implement the `pharos-scan` engine (mDNS, ARP, and Port Fingerprinting). (Issue #40)

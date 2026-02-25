@@ -75,5 +75,9 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Task 10.1 (Issue #39):** Engineering: Refactor client logic into a shared `pharos-client` library with async support and SSH-auth.
 - [x] **Task 10.2 (Issue #40):** Engineering: Implement the `pharos-scan` engine (mDNS, ARP, and Port Fingerprinting).
 - [x] **Task 10.3 (Issue #41):** Engineering: Implement the interactive TUI and provisioning workflow for `pharos-scan`.
-- [ ] **Task 10.4 (Issue #42):** Release: Prepare v1.2.0 release including the new network scanner tool.
+- [x] **Task 10.4 (Issue #42):** Release: Prepare v1.2.0 release including the new network scanner tool.
 
+## Phase 11: Marketing & Advocacy (v1.2.0)
+- [x] **Task 11.1 (Issue #43):** Advocacy: Update marketing site with Kathy Sierra-inspired 'Making Badass' messaging and pharos-scan 'Purple Cow' feature.
+
+## Phase 12: Future Expansion
