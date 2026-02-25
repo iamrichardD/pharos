@@ -22,16 +22,23 @@
     // Configure mermaid
     mermaid.initialize({
       startOnLoad: false,
-      theme: isDark ? 'dark' : 'neutral',
+      theme: isDark ? 'dark' : 'default',
       securityLevel: 'loose',
       fontFamily: 'inherit',
       themeVariables: {
-        primaryColor: isDark ? '#3b82f6' : '#2563eb',
+        primaryColor: isDark ? '#3b82f6' : '#eff6ff',
         primaryTextColor: isDark ? '#f8fafc' : '#1e293b',
-        primaryBorderColor: isDark ? '#334155' : '#e2e8f0',
-        lineColor: isDark ? '#64748b' : '#94a3b8',
-        secondaryColor: isDark ? '#1e293b' : '#f1f5f9',
+        primaryBorderColor: isDark ? '#3b82f6' : '#3b82f6',
+        lineColor: isDark ? '#94a3b8' : '#334155',
+        secondaryColor: isDark ? '#1e293b' : '#f8fafc',
         tertiaryColor: isDark ? '#0f172a' : '#ffffff',
+        mainBkg: isDark ? '#1e293b' : '#ffffff',
+        nodeBorder: isDark ? '#3b82f6' : '#3b82f6',
+        clusterBkg: isDark ? '#0f172a' : '#f8fafc',
+        clusterBorder: isDark ? '#334155' : '#e2e8f0',
+        defaultLinkColor: isDark ? '#94a3b8' : '#334155',
+        titleColor: isDark ? '#f8fafc' : '#1e293b',
+        edgeLabelBackground: isDark ? '#1e293b' : '#ffffff',
       }
     });
 
