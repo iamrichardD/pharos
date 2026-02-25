@@ -1,0 +1,99 @@
+---
+/* ========================================================================
+ * Project: pharos
+ * Component: Marketing Site - TieredTabs
+ * File: TieredTabs.astro
+ * Author: Richard D. (https://github.com/iamrichardd)
+ * License: AGPL-3.0 (See LICENSE file for details)
+ * * Purpose (The "Why"):
+ * A custom tabbed interface for documentation to reduce cognitive load by 
+ * separating Home Lab and Enterprise content.
+ * * Traceability:
+ * Related to GitHub Issue #38, implements the tiered tabbed interface.
+ * ======================================================================== */
+---
+
+<div class="tiered-tabs-wrapper my-12" id="tiered-tabs">
+  <div class="flex flex-col sm:flex-row gap-2 mb-8 bg-secondary-100/50 dark:bg-secondary-800/50 p-1.5 rounded-2xl border border-secondary-200 dark:border-secondary-700 transition-all">
+    <button 
+      class="tab-btn active flex-1 px-6 py-3 rounded-xl font-black text-sm uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2"
+      data-tab="homelab"
+    >
+      <span class="text-lg">🏠</span> Home Lab Tier
+    </button>
+    <button 
+      class="tab-btn flex-1 px-6 py-3 rounded-xl font-black text-sm uppercase tracking-widest text-secondary-500 dark:text-secondary-400 hover:text-secondary-900 dark:hover:text-white transition-all duration-300 flex items-center justify-center gap-2"
+      data-tab="enterprise"
+    >
+      <span class="text-lg">🏢</span> Enterprise Tier
+    </button>
+  </div>
+
+  <div class="tab-content transition-all duration-500">
+    <div id="homelab-panel" class="tab-panel active opacity-100 block">
+      <slot name="homelab" />
+    </div>
+    <div id="enterprise-panel" class="tab-panel opacity-0 hidden">
+      <slot name="enterprise" />
+    </div>
+  </div>
+</div>
+
+<style>
+  .tab-btn.active {
+    @apply bg-white dark:bg-secondary-700 text-primary-600 dark:text-primary-400 shadow-lg scale-[1.02];
+  }
+  
+  .tab-panel.active {
+    animation: fadeIn 0.5s ease-out forwards;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+
+<script is:inline>
+  function setupTabs() {
+    const tabsContainer = document.getElementById('tiered-tabs');
+    if (!tabsContainer) return;
+
+    const buttons = tabsContainer.querySelectorAll('.tab-btn');
+    const panels = tabsContainer.querySelectorAll('.tab-panel');
+
+    buttons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = btn.getAttribute('data-tab');
+
+        // Update buttons
+        buttons.forEach(b => {
+          b.classList.remove('active');
+          if (b === btn) {
+            b.classList.add('active');
+          }
+        });
+
+        // Update panels
+        panels.forEach(panel => {
+          if (panel.id === `${target}-panel`) {
+            panel.classList.remove('hidden');
+            setTimeout(() => {
+                panel.classList.add('active', 'opacity-100');
+                panel.classList.remove('opacity-0');
+            }, 10);
+          } else {
+            panel.classList.remove('active', 'opacity-100');
+            panel.classList.add('hidden', 'opacity-0');
+          }
+        });
+      });
+    });
+  }
+
+  // Run on page load
+  setupTabs();
+  
+  // Also run on view transitions if enabled
+  document.addEventListener('astro:after-swap', setupTabs);
+</script>

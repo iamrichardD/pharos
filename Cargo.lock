@@ -906,7 +906,7 @@ checksum = "5e5032e24019045c762d3c0f28f5b6b8bbf38563a65908389bf7978758920897"
 
 [[package]]
 name = "mdb"
-version = "0.1.0"
+version = "1.1.0"
 dependencies = [
  "base64 0.22.1",
  "hex",
@@ -1191,7 +1191,7 @@ checksum = "9b4f627cb1b25917193a259e49bdad08f671f8d9708acfd5fe0a8c1455d87220"
 
 [[package]]
 name = "ph"
-version = "0.1.0"
+version = "1.1.0"
 dependencies = [
  "base64 0.22.1",
  "hex",
@@ -1202,7 +1202,7 @@ dependencies = [
 
 [[package]]
 name = "pharos-server"
-version = "0.1.0"
+version = "1.1.0"
 dependencies = [
  "anyhow",
  "base64 0.22.1",

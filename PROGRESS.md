@@ -2,11 +2,12 @@
 
 ## Current Status
 **Phase:** 9 (Documentation & UX Refinement)
-**Active Task:** Task 9.1 (Issue #37)
-**Backlog:** Task 9.2 (Issue #38)
-**Blockers:** None.
+**Active Task:** None (Phase 9 Complete)
+**Backlog:** None.
 
 ## Recent Completions
+- [x] Task 9.2: Advocacy: Implement a tiered tabbed interface (Home Lab vs. Enterprise) in `howto.mdx` to reduce cognitive load. (Issue #38)
+- [x] Task 9.1: Advocacy: Refine documentation headers to remove "Pharos" prefix across all MDX pages. (Issue #37)
 - [x] Task 6.7: Bug: Mermaid diagrams not rendering on Architecture documentation page. (Issue #36)
 - [x] Task 8.4: Release: Prepare v1.1.0 release with the new hook system and community features. (Issue #35)
 - [x] Task 8.3: Advocacy: Expand the marketing site with a community "Showcase" and integration guide. (Issue #34)
