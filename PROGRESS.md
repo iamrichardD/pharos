@@ -7,6 +7,7 @@
 **Blockers:** None.
 
 ## Recent Completions
+- [x] Task 6.6: Deploy: GitHub Actions website deployment fails due to environment branch policy. (Issue #32)
 - [x] Task 8.1: Advocacy: Create a comprehensive `CONTRIBUTING.md` guide. (Issue #31)
 - [x] Task 7.4: Advocacy: Align Pharos marketing site UX/UI with iamrichardd.com personal branding. (Issue #30)
 - [x] Task 7.3: Advocacy: Implement visual DORA Metrics & Project Velocity dashboard on the marketing site. (Issue #29)
