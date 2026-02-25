@@ -26,6 +26,7 @@ graph TD
     subgraph Clients
         PH[ph CLI - People]
         MDB[mdb CLI - Machines]
+        SCAN[pharos-scan - Discovery]
     end
 
     subgraph "Pharos Server"
@@ -44,6 +45,9 @@ graph TD
 
     PH -->|RFC 2378| TCP
     MDB -->|RFC 2378| TCP
+    SCAN -->|mDNS / Port Probes| LAN((Local Network))
+    LAN --> SCAN
+    SCAN -->|RFC 2378| TCP
     TCP --> Parser
     Parser --> Auth
     Auth --> StorageTrait
@@ -120,7 +124,8 @@ The backend engine handling connection lifecycle, protocol parsing, and storage 
 ### 2. CLI Clients
 - **`ph`:** Optimized for human contact management.
 - **`mdb`:** Optimized for machine/infrastructure asset management.
-- Both support automatic authentication via local SSH private keys.
+- **`pharos-scan`:** Automated discovery engine using mDNS and port probes to identify and provision assets into Pharos.
+- All clients support automatic authentication via local SSH private keys and share a common async core.
 
 ### 3. Storage Tiering
 - **Development:** Zero-configuration in-memory storage.

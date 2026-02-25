@@ -1,11 +1,12 @@
 # Pharos State & Progress
 
 ## Current Status
-**Phase:** 10 (Network Discovery & Automation)
-**Active Task:** Task 10.4 (Issue #42)
+**Phase:** 10 (Network Discovery & Automation) - COMPLETED
+**Active Task:** None (Idle - Ready for next Phase)
 **Backlog:** 
 
 ## Recent Completions
+- [x] Task 10.4: Release: Prepare v1.2.0 release including the new network scanner tool. (Issue #42)
 - [x] Task 10.3: Engineering: Implement the interactive TUI and provisioning workflow for `pharos-scan`. (Issue #41)
 - [x] Task 10.2: Engineering: Implement the `pharos-scan` engine (mDNS, ARP, and Port Fingerprinting). (Issue #40)
 - [x] Task 10.1: Engineering: Refactor client logic into a shared `pharos-client` library with async support and SSH-auth. (Issue #39)
