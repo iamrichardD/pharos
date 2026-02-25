@@ -5,34 +5,26 @@
  * Author: Richard D. (https://github.com/iamrichardd)
  * License: AGPL-3.0 (See LICENSE file for details)
  * * Purpose (The "Why"):
- * This is the entry point for the pharos backend server. It handles the 
- * lifecycle of the TCP listener and the RFC 2378 protocol implementation.
+ * This is the binary entry point for the pharos backend server. It initializes
+ * the environment, storage, and middleware before starting the TCP listener.
  * * Traceability:
  * Implements RFC 2378 Section 2.
  * ======================================================================== */
 
-mod protocol;
-mod storage;
-mod metrics;
-mod auth;
-
-use tokio::net::{TcpListener, TcpStream};
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-use tracing::{info, error, instrument};
+use pharos_server::storage::{Storage, MemoryStorage, FileStorage, LdapStorage};
+use pharos_server::metrics::{CPU_USAGE, MEMORY_USAGE_BYTES, TOTAL_RECORDS, gather_metrics, check_health_thresholds};
+use pharos_server::auth::AuthManager;
+use pharos_server::middleware::{MiddlewareChain, LoggingMiddleware, ReadOnlyMiddleware};
+use pharos_server::handle_connection;
+use tokio::net::TcpListener;
+use tracing::{info, error};
 use tracing_subscriber;
-use crate::protocol::{Command, parse_command, ProtocolError};
-use crate::storage::{Storage, MemoryStorage, FileStorage, LdapStorage};
-use crate::metrics::{CPU_USAGE, MEMORY_USAGE_BYTES, TOTAL_RECORDS, gather_metrics, check_health_thresholds};
-use crate::auth::AuthManager;
 use std::sync::{Arc, RwLock};
 use sysinfo::System;
 use warp::Filter;
 use std::time::Duration;
 use std::path::PathBuf;
 use std::env;
-use rand::RngCore;
-use rand::rngs::OsRng;
-use hex;
 use std::path::Path;
 
 #[tokio::main]
@@ -58,6 +50,14 @@ async fn main() -> anyhow::Result<()> {
     // Initialize AuthManager
     let keys_dir = env::var("PHAROS_KEYS_DIR").unwrap_or_else(|_| "/home/rdelgado/.ssh/keys".to_string());
     let auth_manager = Arc::new(AuthManager::new(Path::new(&keys_dir)));
+
+    // Initialize Middleware Chain
+    let mut middleware_chain = MiddlewareChain::new();
+    middleware_chain.add(Arc::new(LoggingMiddleware));
+    middleware_chain.add(Arc::new(ReadOnlyMiddleware {
+        read_only_ids: vec!["guest".to_string()],
+    }));
+    let middleware_chain = Arc::new(middleware_chain);
 
     // --- Metrics Scrape Server (Pull Method) ---
     let storage_for_metrics: Arc<RwLock<dyn Storage>> = Arc::clone(&storage);
@@ -111,147 +111,11 @@ async fn main() -> anyhow::Result<()> {
         let (socket, _) = listener.accept().await?;
         let storage_ref: Arc<RwLock<dyn Storage>> = Arc::clone(&storage);
         let auth_ref = Arc::clone(&auth_manager);
+        let middleware_ref = Arc::clone(&middleware_chain);
         tokio::spawn(async move {
-            if let Err(e) = handle_connection(socket, storage_ref, auth_ref).await {
+            if let Err(e) = handle_connection(socket, storage_ref, auth_ref, middleware_ref).await {
                 error!("Error handling connection: {:?}", e);
             }
         });
     }
 }
-
-#[instrument(skip(socket, storage, auth_manager))]
-async fn handle_connection(mut socket: TcpStream, storage: Arc<RwLock<dyn Storage>>, auth_manager: Arc<AuthManager>) -> anyhow::Result<()> {
-    let (reader, mut writer) = socket.split();
-    let mut reader = BufReader::new(reader);
-    let mut line = String::new();
-    let mut client_context: Option<String> = None;
-    let mut authenticated = false;
-    let mut challenge = vec![0u8; 16];
-    OsRng.fill_bytes(&mut challenge);
-    let challenge_hex = hex::encode(challenge);
-
-    // Send initial status message as per Ph protocol expectation
-    // S: 200:Database ready
-    writer.write_all(b"200:Database ready\r\n").await?;
-
-    loop {
-        line.clear();
-        let bytes_read = reader.read_line(&mut line).await?;
-        if bytes_read == 0 {
-            break; // Connection closed
-        }
-
-        let input = line.trim();
-        if input.is_empty() {
-            continue;
-        }
-
-        info!("Received command: {}", input);
-
-        match parse_command(input) {
-            Ok(command) => match command {
-                Command::Status => {
-                    writer.write_all(b"100:Pharos server active\r\n200:Ok\r\n").await?;
-                }
-                Command::Id(id) => {
-                    client_context = Some(id.to_lowercase());
-                    writer.write_all(b"200:Ok\r\n").await?;
-                }
-                Command::Auth { public_key, signature } => {
-                    if auth_manager.verify(&public_key, &signature, &challenge_hex) {
-                        authenticated = true;
-                        writer.write_all(b"200:Ok\r\n").await?;
-                    } else {
-                        writer.write_all(b"403:Forbidden\r\n").await?;
-                    }
-                }
-                Command::Quit => {
-                    writer.write_all(b"200:Bye!\r\n").await?;
-                    break;
-                }
-                Command::Add(fields) => {
-                    if !authenticated {
-                        writer.write_all(format!("401:Authentication required. Challenge: {}\r\n", challenge_hex).as_bytes()).await?;
-                        continue;
-                    }
-                    let mut field_map = std::collections::HashMap::new();
-                    for (k, v) in fields {
-                        field_map.insert(k, v);
-                    }
-                    {
-                        let mut lock = storage.write().map_err(|_| anyhow::anyhow!("Storage lock poisoned"))?;
-                        lock.add_record(field_map);
-                    }
-                    writer.write_all(b"200:Ok\r\n").await?;
-                }
-                Command::Query { selections, returns } => {
-                    let default_type = match client_context.as_deref() {
-                        Some(ctx) if ctx.contains("ph") => Some(crate::storage::RecordType::Person),
-                        Some(ctx) if ctx.contains("mdb") => Some(crate::storage::RecordType::Machine),
-                        _ => None,
-                    };
-
-                    let (records, count) = {
-                        let lock = storage.read().map_err(|_| anyhow::anyhow!("Storage lock poisoned"))?;
-                        let results = lock.query(&selections, default_type);
-                        let count = results.len();
-                        (results, count)
-                    };
-
-                    if records.is_empty() {
-                        writer.write_all(b"501:No matches to query\r\n").await?;
-                    } else {
-                        writer.write_all(format!("102:There were {} matches to your request.\r\n", count).as_bytes()).await?;
-                        for (i, record) in records.iter().enumerate() {
-                            let index = i + 1;
-                            // Sort keys for deterministic output in response lines
-                            let mut keys: Vec<&String> = if returns.is_empty() {
-                                record.fields.keys().collect()
-                            } else {
-                                returns.iter().filter(|k| record.fields.contains_key(*k)).collect()
-                            };
-                            keys.sort();
-
-                            for field_name in keys {
-                                let field_val = record.fields.get(field_name).unwrap();
-                                let line = format!("-200:{}:{}: {}\r\n", index, field_name, field_val);
-                                writer.write_all(line.as_bytes()).await?;
-                            }
-                        }
-                        writer.write_all(b"200:Ok\r\n").await?;
-                    }
-                }
-                Command::Delete(_) => {
-                    if !authenticated {
-                        writer.write_all(format!("401:Authentication required. Challenge: {}\r\n", challenge_hex).as_bytes()).await?;
-                        continue;
-                    }
-                    writer.write_all(b"598:Command not yet implemented\r\n").await?;
-                }
-                Command::Change { .. } => {
-                    if !authenticated {
-                        writer.write_all(format!("401:Authentication required. Challenge: {}\r\n", challenge_hex).as_bytes()).await?;
-                        continue;
-                    }
-                    writer.write_all(b"598:Command not yet implemented\r\n").await?;
-                }
-                _ => {
-                    writer.write_all(b"598:Command not yet implemented\r\n").await?;
-                }
-            },
-            Err(ProtocolError::UnknownCommand) => {
-                writer.write_all(b"598:Command unknown\r\n").await?;
-            }
-            Err(ProtocolError::SyntaxError) => {
-                writer.write_all(b"599:Syntax error\r\n").await?;
-            }
-            Err(ProtocolError::InvalidArgument) => {
-                writer.write_all(b"512:Illegal value\r\n").await?;
-            }
-        }
-    }
-
-    Ok(())
-}
-
-
