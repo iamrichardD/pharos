@@ -66,3 +66,7 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Task 8.3 (Issue #34):** Advocacy: Expand the marketing site with a community "Showcase" and integration guide.
 - [x] **Task 8.4 (Issue #35):** Release: Prepare v1.1.0 release with the new hook system and community features.
 
+## Phase 9: Documentation & UX Refinement
+- [ ] **Task 9.1 (Issue #37):** Advocacy: Refine documentation headers to remove "Pharos" prefix across all MDX pages.
+- [ ] **Task 9.2 (Issue #38):** Advocacy: Implement a tiered tabbed interface (Home Lab vs. Enterprise) in `howto.mdx` to reduce cognitive load.
+

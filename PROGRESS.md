@@ -1,9 +1,9 @@
 # Pharos State & Progress
 
 ## Current Status
-**Phase:** 9 (Stability & Long-Term Support)
-**Active Task:** TBD
-**Backlog:** TBD
+**Phase:** 9 (Documentation & UX Refinement)
+**Active Task:** Task 9.1 (Issue #37)
+**Backlog:** Task 9.2 (Issue #38)
 **Blockers:** None.
 
 ## Recent Completions
