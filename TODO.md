@@ -63,5 +63,5 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Task 8.1 (Issue #31):** Advocacy: Create a comprehensive `CONTRIBUTING.md` guide and project governance model.
 - [x] **Task 8.2 (Issue #33):** Engineering: Implement a middleware/hook system in `pharos-server` for custom request processing.
 - [x] **Task 8.3 (Issue #34):** Advocacy: Expand the marketing site with a community "Showcase" and integration guide.
-- [ ] **Task 8.4 (#TBD):** Release: Prepare v1.1.0 release with the new hook system and community features.
+- [x] **Task 8.4 (Issue #35):** Release: Prepare v1.1.0 release with the new hook system and community features.
 

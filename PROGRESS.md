@@ -1,12 +1,13 @@
 # Pharos State & Progress
 
 ## Current Status
-**Phase:** 8 (Community & Ecosystem Expansion)
-**Active Task:** Task 8.4+: Prepare v1.1.0 release.
-**Backlog:** Phase 8.4+: v1.1.0 release.
+**Phase:** 9 (Stability & Long-Term Support)
+**Active Task:** TBD
+**Backlog:** TBD
 **Blockers:** None.
 
 ## Recent Completions
+- [x] Task 8.4: Release: Prepare v1.1.0 release with the new hook system and community features. (Issue #35)
 - [x] Task 8.3: Advocacy: Expand the marketing site with a community "Showcase" and integration guide. (Issue #34)
 - [x] Task 8.2: Engineering: Implement a middleware/hook system in `pharos-server` for custom request processing. (Issue #33)
 - [x] Task 8.1: Advocacy: Create a comprehensive `CONTRIBUTING.md` guide. (Issue #31)
