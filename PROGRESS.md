@@ -2,10 +2,11 @@
 
 ## Current Status
 **Phase:** 14 (Pulse & Multi-Tenant Architecture) - IN PROGRESS
-**Active Task:** Task 14.3 (Issue #51): Engineering: Develop `pharos-console` (MCP Server)
+**Active Task:** None
 **Backlog:** 
 
 ## Recent Completions
+- [x] Task 14.3: Engineering: Develop `pharos-console` (MCP Server). (Issue #51)
 - [x] Task 14.2: Engineering: Extend `pharos-server` security model to support Triple-Tier Security. (Issue #49)
 - [x] Task 14.1: Engineering: Implement `pharos-pulse` heartbeat agent in Rust. (Issue #47)
 - [x] Task 12.3: Integrate live `pharos-scan` events into the dashboard view. (Issue #46)

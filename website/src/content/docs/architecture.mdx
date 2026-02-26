@@ -131,3 +131,61 @@ The backend engine handling connection lifecycle, protocol parsing, and storage 
 - **Development:** Zero-configuration in-memory storage.
 - **Home Lab:** File-level, restart-survivable JSON storage (optimized for LXC).
 - **Enterprise:** LDAP-backed storage utilizing standard schemas (`inetOrgPerson`, `ipHost`).
+
+## Multi-Tenant & Triple-Tier Security
+
+Pharos implements a flexible security model designed to scale from a single user's "YOLO Lab" to a multi-tenant Enterprise environment.
+
+### 1. Triple-Tier Security Model
+Security is enforced at the server level based on the `PHAROS_SECURITY_MODE` configuration.
+
+| Tier | Name | Read Access | Write Access | Use Case |
+| :--- | :--- | :--- | :--- | :--- |
+| **Tier 1** | **Open (YOLO)** | Anonymous (Unauthenticated) | SSH-Key Authorized | Default Home Lab setup. High speed, low friction. |
+| **Tier 2** | **Protected** | Token or IP-Based | SSH-Key Authorized | Shared Lab environments requiring basic privacy. |
+| **Tier 3** | **Scoped** | Identity-Based (LDAP/OIDC) | Identity-Based (Team Scoped) | Multi-tenant Enterprise environments with strict isolation. |
+
+### 2. Multi-Tenant Isolation
+In **Scoped** mode, every record is associated with a `tenant_id` or `team_scope`.
+- **Filtering**: Queries automatically inject a `(team_scope=...)` filter based on the requester's authenticated identity.
+- **Provenance**: Every record contains metadata tracking the `created_by` identity and the `provisioned_at` timestamp.
+
+## The Dual-Site Ecosystem
+
+Pharos distinguishes between documentation (static) and management (dynamic) to ensure high availability and security.
+
+```mermaid
+graph LR
+    User((User))
+    Agent((AI Agent))
+    
+    subgraph "Public Internet"
+        Marketing[Marketing Site / Docs]
+        Marketing -.->|Self-Help| User
+    end
+    
+    subgraph "Private Network / Lab"
+        Server[Pharos Server]
+        Console[Pharos Console]
+        Pulse[pharos-pulse Agents]
+        
+        Console --- Server
+        Pulse -->|Heartbeat| Server
+        Console -.->|WebMCP| Agent
+        Agent -.->|Tool Calls| Console
+        User --- Console
+    end
+```
+
+### 1. Marketing & Documentation (`iamrichardd.com/pharos/`)
+- **Type**: Static Site (Astro/MDX).
+- **Purpose**: Architecture guides, "How-To" tutorials, and open-source advocacy.
+- **Why**: Ensures that even if your Pharos server is down, you still have access to the documentation on how to fix it.
+
+### 2. Pharos Console (`pharos-console`)
+- **Type**: Dynamic Web Application & MCP Server.
+- **Purpose**: Real-time TUI/Web dashboard, SSH key management, and AI Agent orchestration.
+- **Features**:
+    - **WebMCP Bridge**: Allows your browser to act as a secure proxy for AI Agents.
+    - **Pulse Monitor**: Real-time heartbeat visualization for all `pharos-pulse` agents.
+    - **Enrollment**: One-click provisioning for new nodes.
