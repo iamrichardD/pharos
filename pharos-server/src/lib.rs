@@ -39,11 +39,13 @@ pub async fn handle_connection(mut socket: TcpStream, storage: Arc<RwLock<dyn St
     let mut context = ClientContext {
         id: None,
         authenticated: false,
-        peer_addr,
+        peer_addr: peer_addr.clone(),
     };
     let mut challenge = vec![0u8; 16];
     OsRng.fill_bytes(&mut challenge);
     let challenge_hex = hex::encode(challenge);
+
+    let _ = crate::tui::EVENT_TX.send(format!("Connection established from {}", peer_addr));
 
     // Send initial status message as per Ph protocol expectation
     // S: 200:Database ready
@@ -121,6 +123,7 @@ pub async fn handle_connection(mut socket: TcpStream, storage: Arc<RwLock<dyn St
                             let mut lock = storage.write().map_err(|_| anyhow::anyhow!("Storage lock poisoned"))?;
                             lock.add_record(field_map);
                         }
+                        let _ = crate::tui::EVENT_TX.send(format!("[{}] Added new record", context.peer_addr));
                         writer.write_all(b"200:Ok
 ").await?;
                     }
@@ -137,6 +140,8 @@ pub async fn handle_connection(mut socket: TcpStream, storage: Arc<RwLock<dyn St
                             let count = results.len();
                             (results, count)
                         };
+
+                        let _ = crate::tui::EVENT_TX.send(format!("[{}] Queried records, matches: {}", context.peer_addr, count));
 
                         if records.is_empty() {
                             writer.write_all(b"501:No matches to query

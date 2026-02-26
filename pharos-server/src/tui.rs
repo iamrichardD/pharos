@@ -28,8 +28,17 @@ use crossterm::{
 use std::io::{self};
 use std::time::Duration;
 use tokio::time;
+use tokio::sync::broadcast;
+use lazy_static::lazy_static;
 
 use crate::metrics::{CPU_USAGE, MEMORY_USAGE_BYTES, TOTAL_RECORDS};
+
+lazy_static! {
+    pub static ref EVENT_TX: broadcast::Sender<String> = {
+        let (tx, _) = broadcast::channel(100);
+        tx
+    };
+}
 
 pub struct AppState {
     pub events: Vec<String>,
@@ -51,7 +60,8 @@ pub async fn run_tui() -> anyhow::Result<()> {
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
-    let _state = AppState::new();
+    let mut state = AppState::new();
+    let mut rx = EVENT_TX.subscribe();
     let mut interval = time::interval(Duration::from_millis(250));
 
     loop {
@@ -68,14 +78,6 @@ pub async fn run_tui() -> anyhow::Result<()> {
                         ])
                         .split(size);
 
-                    let top_chunks = Layout::default()
-                        .direction(Direction::Horizontal)
-                        .constraints([
-                            Constraint::Percentage(50),
-                            Constraint::Percentage(50),
-                        ])
-                        .split(chunks[1]);
-
                     // Header
                     let header = Paragraph::new(vec![Line::from(vec![
                         Span::styled("Pharos Server TUI ", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
@@ -83,6 +85,22 @@ pub async fn run_tui() -> anyhow::Result<()> {
                     ])])
                     .block(Block::default().borders(Borders::ALL).title("Status"));
                     f.render_widget(header, chunks[0]);
+
+                    let center_chunks = Layout::default()
+                        .direction(Direction::Vertical)
+                        .constraints([
+                            Constraint::Length(5),
+                            Constraint::Min(5),
+                        ])
+                        .split(chunks[1]);
+
+                    let metrics_stats_chunks = Layout::default()
+                        .direction(Direction::Horizontal)
+                        .constraints([
+                            Constraint::Percentage(50),
+                            Constraint::Percentage(50),
+                        ])
+                        .split(center_chunks[0]);
 
                     // Metrics Panel (Left)
                     let cpu = CPU_USAGE.get();
@@ -93,7 +111,7 @@ pub async fn run_tui() -> anyhow::Result<()> {
                     ];
                     let metrics = Paragraph::new(metrics_text)
                         .block(Block::default().borders(Borders::ALL).title("Metrics"));
-                    f.render_widget(metrics, top_chunks[0]);
+                    f.render_widget(metrics, metrics_stats_chunks[0]);
 
                     // Stats Panel (Right)
                     let records = TOTAL_RECORDS.get();
@@ -102,13 +120,32 @@ pub async fn run_tui() -> anyhow::Result<()> {
                     ];
                     let stats = Paragraph::new(stats_text)
                         .block(Block::default().borders(Borders::ALL).title("Database Stats"));
-                    f.render_widget(stats, top_chunks[1]);
+                    f.render_widget(stats, metrics_stats_chunks[1]);
+
+                    // Event Stream Panel (Bottom)
+                    let event_lines: Vec<Line> = state.events.iter()
+                        .map(|e| Line::from(Span::raw(e)))
+                        .collect();
+                    let mut scroll_offset = 0;
+                    if event_lines.len() as u16 > center_chunks[1].height.saturating_sub(2) {
+                        scroll_offset = event_lines.len() as u16 - center_chunks[1].height.saturating_sub(2);
+                    }
+                    let events_widget = Paragraph::new(event_lines)
+                        .block(Block::default().borders(Borders::ALL).title("Event Stream"))
+                        .scroll((scroll_offset, 0));
+                    f.render_widget(events_widget, center_chunks[1]);
 
                     // Footer
                     let footer = Paragraph::new("Press 'q' to quit")
                         .block(Block::default().borders(Borders::ALL));
                     f.render_widget(footer, chunks[2]);
                 })?;
+            }
+            Ok(event_str) = rx.recv() => {
+                state.events.push(event_str);
+                if state.events.len() > 100 {
+                    state.events.remove(0);
+                }
             }
             event_res = tokio::task::spawn_blocking(|| event::read()) => {
                 match event_res {
