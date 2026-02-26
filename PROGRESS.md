@@ -2,7 +2,7 @@
 
 ## Current Status
 **Phase:** 14 (Pulse & Multi-Tenant Architecture) - IN PROGRESS
-**Active Task:** None
+**Active Task:** Task 14.2 (Issue #49): Engineering: Extend `pharos-server` security model
 **Backlog:** 
 
 ## Recent Completions

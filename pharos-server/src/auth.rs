@@ -18,14 +18,35 @@ use base64::{Engine as _, engine::general_purpose::STANDARD};
 use std::fs;
 use std::path::Path;
 use tracing::{info, error};
+use std::collections::HashMap;
+
+/// Defines the operational security tier of the server.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SecurityTier {
+    /// Unauthenticated read-only access, authenticated writes.
+    Open,
+    /// Authenticated access for both reads and writes.
+    Protected,
+    /// Role-based access control based on provenance metadata.
+    Scoped,
+}
+
+impl Default for SecurityTier {
+    fn default() -> Self {
+        SecurityTier::Open
+    }
+}
 
 pub struct AuthManager {
     authorized_keys: Vec<PublicKey>,
+    key_roles: HashMap<String, Vec<String>>, // Maps base64 public key to a list of roles
 }
 
 impl AuthManager {
     pub fn new(keys_dir: &Path) -> Self {
         let mut authorized_keys = Vec::new();
+        let mut key_roles = HashMap::new();
+
         if keys_dir.exists() && keys_dir.is_dir() {
             if let Ok(entries) = fs::read_dir(keys_dir) {
                 for entry in entries.flatten() {
@@ -35,7 +56,19 @@ impl AuthManager {
                             match PublicKey::from_openssh(&content) {
                                 Ok(key) => {
                                     info!("Loaded authorized key from {:?}", path);
+                                    let key_b64 = STANDARD.encode(key.to_bytes().unwrap_or_default());
                                     authorized_keys.push(key);
+
+                                    // Extract roles from comment or filename
+                                    let mut roles = Vec::new();
+                                    if let Some(filename) = path.file_stem().and_then(|s| s.to_str()) {
+                                        if filename.contains("admin") {
+                                            roles.push("admin".to_string());
+                                        } else if filename.contains("user") {
+                                            roles.push("user".to_string());
+                                        }
+                                    }
+                                    key_roles.insert(key_b64, roles);
                                 }
                                 Err(e) => error!("Failed to parse public key {:?}: {}", path, e),
                             }
@@ -46,7 +79,7 @@ impl AuthManager {
         } else {
             info!("Authorized keys directory {:?} does not exist or is not a directory.", keys_dir);
         }
-        Self { authorized_keys }
+        Self { authorized_keys, key_roles }
     }
 
     pub fn verify(&self, public_key_b64: &str, signature_b64: &str, challenge: &str) -> bool {
@@ -96,6 +129,24 @@ impl AuthManager {
                 false
             }
         }
+    }
+
+    pub fn get_roles(&self, public_key_b64: &str) -> Vec<String> {
+        let pub_key = match PublicKey::from_openssh(public_key_b64) {
+            Ok(k) => k,
+            Err(_) => {
+                match STANDARD.decode(public_key_b64) {
+                    Ok(bytes) => match PublicKey::from_bytes(&bytes) {
+                        Ok(k) => k,
+                        Err(_) => return Vec::new(),
+                    },
+                    Err(_) => return Vec::new(),
+                }
+            }
+        };
+
+        let key_b64 = STANDARD.encode(pub_key.to_bytes().unwrap_or_default());
+        self.key_roles.get(&key_b64).cloned().unwrap_or_default()
     }
 }
 

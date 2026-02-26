@@ -13,8 +13,8 @@
 
 use pharos_server::storage::{Storage, MemoryStorage, FileStorage, LdapStorage};
 use pharos_server::metrics::{CPU_USAGE, MEMORY_USAGE_BYTES, TOTAL_RECORDS, gather_metrics, check_health_thresholds};
-use pharos_server::auth::AuthManager;
-use pharos_server::middleware::{MiddlewareChain, LoggingMiddleware, ReadOnlyMiddleware};
+use pharos_server::auth::{AuthManager, SecurityTier};
+use pharos_server::middleware::{MiddlewareChain, LoggingMiddleware, ReadOnlyMiddleware, SecurityTierMiddleware};
 use pharos_server::handle_connection;
 use tokio::net::TcpListener;
 use tracing::{info, error};
@@ -59,6 +59,18 @@ async fn main() -> anyhow::Result<()> {
     // Initialize Middleware Chain
     let mut middleware_chain = MiddlewareChain::new();
     middleware_chain.add(Arc::new(LoggingMiddleware));
+
+    let security_tier = match env::var("PHAROS_SECURITY_TIER").unwrap_or_else(|_| "open".to_string()).to_lowercase().as_str() {
+        "protected" => SecurityTier::Protected,
+        "scoped" => SecurityTier::Scoped,
+        _ => SecurityTier::Open,
+    };
+    info!("Running with Security Tier: {:?}", security_tier);
+
+    middleware_chain.add(Arc::new(SecurityTierMiddleware {
+        default_tier: security_tier,
+    }));
+
     middleware_chain.add(Arc::new(ReadOnlyMiddleware {
         read_only_ids: vec!["guest".to_string()],
     }));
