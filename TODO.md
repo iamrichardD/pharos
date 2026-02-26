@@ -82,8 +82,8 @@ A task is considered complete and may be marked `[x]` only when:
 
 ## Phase 12: Advanced Visualization & Management (TUI)
 - [x] **Task 12.1 (Issue #44):** Planning: Design a real-time TUI dashboard for \`pharos-server\` using \`ratatui\`.
-- [ ] **Task 12.2 (Issue #TBD):** Engineering: Implement the core dashboard logic and event stream.
-- [ ] **Task 12.3 (Issue #TBD):** Engineering: Integrate live \`pharos-scan\` events into the dashboard view.
+- [x] **Task 12.2 (Issue #45):** Engineering: Implement the core dashboard logic and event stream.
+- [x] **Task 12.3 (Issue #46):** Engineering: Integrate live \`pharos-scan\` events into the dashboard view.
 
 ## Phase 13: Future Expansion
 

@@ -1,12 +1,13 @@
 # Pharos State & Progress
 
 ## Current Status
-**Phase:** 12 (Advanced Visualization & Management) - IN PROGRESS
-**Active Task:** Task 12.2 (Issue #TBD)
+**Phase:** 14 (Pulse & Multi-Tenant Architecture) - NOT STARTED
+**Active Task:** None
 **Backlog:** 
-- Task 12.3: Integrate discovery events into the dashboard.
 
 ## Recent Completions
+- [x] Task 12.3: Integrate live `pharos-scan` events into the dashboard view. (Issue #46)
+- [x] Task 12.2: Implement real-time TUI dashboard for pharos-server. (Issue #45)
 - [x] Task 12.1: Planning: Design a real-time TUI dashboard for `pharos-server` using `ratatui`. (Issue #44)
 - [x] Planning: Multi-Tenant Architecture, `pharos-pulse` agent, and `pharos-console` (Dynamic Dashboard/MCP) documented in artifacts. Note: Separated from static marketing site.
 - [x] Task 11.1: Advocacy: Update marketing site for v1.2.0 features (pharos-scan superpower). (Issue #43)
