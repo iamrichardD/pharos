@@ -1,0 +1,67 @@
+---
+title: "Pharos Console"
+description: "The dynamic management dashboard and WebMCP server for Pharos."
+order: 3
+---
+/* ========================================================================
+ * Project: pharos
+ * Component: Marketing Site
+ * File: console.mdx
+ * Author: Richard D. (https://github.com/iamrichardd)
+ * License: AGPL-3.0 (See LICENSE file for details)
+ * * Purpose (The "Why"):
+ * Documentation for the dynamic Pharos Console, WebMCP, and AI management.
+ * * Traceability:
+ * Related to GitHub Issue #53, implements Task 14.4.
+ * ======================================================================== */
+
+While this site (`iamrichardd.com/pharos/`) provides static documentation and architectural guidance, the **Pharos Console** is the live heartbeat of your infrastructure.
+
+## What is the Pharos Console?
+
+The Pharos Console is a dynamic web application co-hosted with your `pharos-server` (or deployed as a standalone LXC service). It provides a real-time view of your inventory, node telemetry, and security configuration.
+
+### Key Features
+- **Pulse Monitor**: Real-time visualization of `pharos-pulse` heartbeat data across your entire fleet.
+- **Key Management**: A centralized interface for enrolling and revoking SSH public keys for Write operations.
+- **Provisioning**: Generate short-lived tokens for one-click node enrollment.
+- **TUI/Web Hybrid**: Access the full server dashboard from any browser.
+
+## AI Orchestration with WebMCP
+
+Pharos is the first infrastructure tool built from the ground up for the AI-agent era. The Console implements the **Model Context Protocol (MCP)** and **WebMCP** to allow LLMs to safely manage your lab.
+
+### How WebMCP Works
+WebMCP acts as a secure bridge between your browser and an AI agent (like Gemini or Claude). Instead of the agent "scraping" the DOM, the Console exposes structured JavaScript tools.
+
+1.  **Tool Discovery**: When you ask an agent to "Add this node to my lab," the agent discovers the `add_ssh_key` or `create_provisioning_token` tools.
+2.  **Human-in-the-Loop (HitL)**: For destructive actions (like `revoke_ssh_key`), the Console will trigger a browser-level confirmation modal. **The agent cannot bypass your manual approval.**
+3.  **Scoped Access**: The agent only sees the tools and data you have explicitly granted access to via your current session.
+
+### Available Tools
+
+| Tool | Description | HitL Required |
+| :--- | :--- | :--- |
+| `add_ssh_key` | Enrolls a new public key for a team. | No |
+| `revoke_ssh_key` | Immediately cuts off write access for a key. | **Yes** |
+| `create_provisioning_token` | Generates a single-use enrollment token. | **Yes** |
+| `query_telemetry` | Retrieves the latest metrics for a node. | No |
+
+## Deployment & Separation
+
+To maintain high availability, we recommend keeping these two sites separate:
+
+1.  **Documentation (This Site)**: Hosted on GitHub Pages or a CDN. Always available, even if your lab is offline.
+2.  **Management (Pharos Console)**: Hosted inside your private network (e.g., in a Proxmox LXC). Provides the direct interface to your `pharos-server`.
+
+### Running the Console
+The console is included with the `pharos-server` binary or can be run via Node.js:
+
+```bash
+# Start the Pharos Server with the Console enabled
+export PHAROS_CONSOLE_ENABLE=true
+export PHAROS_CONSOLE_PORT=3000
+./pharos-server
+```
+
+Access the dashboard at `http://<your-server-ip>:3000`.

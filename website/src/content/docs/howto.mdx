@@ -20,6 +20,16 @@ import TieredTabs from '../../components/TieredTabs.astro';
 
 Welcome to Project Pharos. These guides will help you get started whether you are a Home Labber or an Enterprise Engineer.
 
+## Security Tiers: YOLO vs. Lockdown
+
+Pharos supports multiple security models to match your deployment environment.
+
+- **"The YOLO Lab" (Open / Read-Only)**: Perfect for single-user home labs. Anyone on the network can query the database without authentication. Writing still requires an authorized SSH key for basic safety.
+    - **Config**: `export PHAROS_SECURITY_MODE="open"`
+- **"Locking down the Lab" (Protected / Scoped)**: Recommended for shared labs or Enterprise environments. Read access is restricted via tokens or IP whitelists. In "Scoped" mode, users only see records belonging to their own team.
+    - **Config**: `export PHAROS_SECURITY_MODE="scoped"`
+    - **Dependency**: Requires an LDAP or OIDC backend to map identities to teams.
+
 <TieredTabs>
   <div slot="homelab">
 
@@ -68,6 +78,7 @@ Welcome to Project Pharos. These guides will help you get started whether you ar
     [Service]
     ExecStart=/usr/local/bin/pharos-server
     Environment=PHAROS_STORAGE_PATH=/var/lib/pharos/data.json
+    Environment=PHAROS_SECURITY_MODE=open
     Restart=always
     User=root
 
@@ -88,24 +99,26 @@ Welcome to Project Pharos. These guides will help you get started whether you ar
     # You should receive a response
     ```
 
-    ### 1. Configuration
-    Set the `PHAROS_STORAGE_PATH` environment variable to point to your data file.
+    ### 🩺 Heartbeat Monitoring with `pharos-pulse`
 
-    ```bash
-    export PHAROS_STORAGE_PATH="/var/lib/pharos/data.json"
-    ./pharos-server
-    ```
+    To monitor the health and configuration of your Home Lab nodes, deploy the `pharos-pulse` agent.
 
-    ### 2. Record Management
-    Add a new contact using the `ph` CLI:
+    1. **Install Pulse**:
+       ```bash
+       wget https://github.com/iamrichardd/pharos/releases/download/v1.2.1/pharos-pulse-linux-x86_musl
+       chmod +x pharos-pulse-linux-x86_musl
+       mv pharos-pulse-linux-x86_musl /usr/local/bin/pharos-pulse
+       ```
 
-    ```bash
-    # Add a person
-    ./ph add name="John Doe" email="john@home.lab" type="person"
+    2. **Automatic Enrollment**:
+       Generate a provisioning token from the Pharos Console and run the installer:
+       ```bash
+       # The token is short-lived and single-use
+       pharos-pulse install --token <YOUR_PROVISIONING_TOKEN> --server <PHAROS_SERVER_IP>
+       ```
 
-    # Add a machine (using mdb)
-    ./mdb add hostname="srv-01" ip="192.168.1.10" type="machine"
-    ```
+    3. **Verify in Dashboard**:
+       Open your Pharos Console. You should see the new node appearing in the "Pulse Monitor" view with real-time CPU/Memory telemetry.
 
   </div>
 
@@ -123,6 +136,7 @@ Welcome to Project Pharos. These guides will help you get started whether you ar
     export PHAROS_LDAP_BIND_DN="cn=pharos,ou=services,dc=enterprise,dc=com"
     export PHAROS_LDAP_BIND_PW="secret"
     export PHAROS_LDAP_BASE_DN="dc=enterprise,dc=com"
+    export PHAROS_SECURITY_MODE="scoped"
     ./pharos-server
     ```
 
@@ -130,7 +144,32 @@ Welcome to Project Pharos. These guides will help you get started whether you ar
     - **People:** `inetOrgPerson` (maps `name` -> `cn`, `email` -> `mail`)
     - **Machines:** `ipHost` (maps `hostname` -> `cn`, `ip` -> `ipHostNumber`)
 
-    ### 2. SSH Authentication
+    ### 2. Multi-Tenant Node Monitoring
+
+    In Enterprise environments, `pharos-pulse` uses the **Scoped** security model to ensure node telemetry is only visible to the appropriate teams.
+
+    1. **Fleet Deployment**:
+       Deploy `pharos-pulse` across your fleet using Ansible or Terraform. 
+
+    2. **Security & Identity**:
+       Pulse agents generate a unique SSH key pair locally. The public key is enrolled via the Pharos Console (or automated via WebMCP) and mapped to a `team_scope`.
+
+    3. **Telemetry Access**:
+       Only users belonging to the same `team_scope` in LDAP can query the telemetry for those specific nodes.
+
+    ```bash
+    # Example Ansible snippet for pharos-pulse deployment
+    - name: Install pharos-pulse
+      copy:
+        src: files/pharos-pulse-linux-x86_musl
+        dest: /usr/local/bin/pharos-pulse
+        mode: '0755'
+    
+    - name: Register Pulse Service
+      command: pharos-pulse install --server pharos.enterprise.com --team-scope engineering
+    ```
+
+    ### 3. SSH Authentication
     Secure your write operations by authorizing SSH keys.
 
     1.  **Server Setup:** Place authorized public keys in a directory.
@@ -146,7 +185,7 @@ Welcome to Project Pharos. These guides will help you get started whether you ar
         ./ph add name="New User" email="user@enterprise.com"
         ```
 
-    ### 3. DevSecOps Integration: Infrastructure as Code
+    ### 4. DevSecOps Integration: Infrastructure as Code
 
     Pharos is designed for high-velocity DevSecOps teams. You can automate your infrastructure records by integrating Pharos into your CI/CD pipelines.
 

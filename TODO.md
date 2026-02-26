@@ -90,5 +90,5 @@ A task is considered complete and may be marked `[x]` only when:
 ## Phase 14: Pulse & Multi-Tenant Architecture
 - [x] **Task 14.1 (Issue #47):** Engineering: Implement `pharos-pulse` heartbeat agent in Rust for cross-platform system manager integration (Systemd, SCM, launchd).
 - [x] **Task 14.2 (Issue #49):** Engineering: Extend `pharos-server` security model to support Triple-Tier Security (open, protected, scoped) and Provenance Metadata.
-- [ ] **Task 14.3 (Issue #51):** Engineering: Develop the `pharos-console` (Dynamic Dashboard & WebMCP/MCP Server) to allow AI-agent management of SSH keys and enrollment tokens. Note: This is separate from the marketing site.
-- [ ] **Task 14.4 (Issue #TBD):** Advocacy: Create multi-tenant documentation, "The YOLO Lab" vs "Locking down the Lab" guides, and `pharos-pulse` installation guides. Include docs on the separation of Marketing vs. Console sites.
+- [x] **Task 14.3 (Issue #51):** Engineering: Develop the `pharos-console` (Dynamic Dashboard & WebMCP/MCP Server) to allow AI-agent management of SSH keys and enrollment tokens. Note: This is separate from the marketing site.
+- [ ] **Task 14.4 (Issue #53):** Advocacy: Create multi-tenant documentation, "The YOLO Lab" vs "Locking down the Lab" guides, and `pharos-pulse` installation guides. Include docs on the separation of Marketing vs. Console sites.
