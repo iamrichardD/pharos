@@ -1,0 +1,24 @@
+# ========================================================================
+# Project: pharos
+# Component: pharos-pulse
+# File: crates/pharos-pulse/Cargo.toml
+# Author: Richard D. (https://github.com/iamrichardd)
+# License: AGPL-3.0 (See LICENSE file for details)
+# * Purpose (The "Why"):
+# This file configures the dependencies and package details for the
+# `pharos-pulse` heartbeat agent crate.
+# * Traceability:
+# Related to Task 14.1 (Issue #47)
+# ========================================================================
+
+[package]
+name = "pharos-pulse"
+version = "1.2.0"
+edition = "2021"
+authors = ["Richard D. <https://github.com/iamrichardd>"]
+
+[dependencies]
+pharos-client = { path = "../pharos-client" }
+tokio = { version = "1.37", features = ["full"] }
+sysinfo = "0.30"
+anyhow = "1.0"
