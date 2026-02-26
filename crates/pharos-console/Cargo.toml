@@ -1,0 +1,29 @@
+# ========================================================================
+# Project: pharos
+# Component: pharos-console
+# File: crates/pharos-console/Cargo.toml
+# Author: Richard D. (https://github.com/iamrichardd)
+# License: AGPL-3.0 (See LICENSE file for details)
+# * Purpose (The "Why"):
+# This file configures the dependencies for the `pharos-console` component,
+# an MCP server providing AI agents with administrative capabilities.
+# * Traceability:
+# Related to Task 14.3 (Issue #51)
+# ========================================================================
+
+[package]
+name = "pharos-console"
+version = "1.2.0"
+edition = "2021"
+authors = ["Richard D. <https://github.com/iamrichardd>"]
+
+[dependencies]
+tokio = { version = "1.37", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+anyhow = "1.0"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+ssh-key = { version = "0.6", features = ["ed25519", "rsa"] }
+rand = "0.8"
+base64 = "0.22"

@@ -18,5 +18,6 @@ members = [
     "crates/pharos-client",
     "pharos-scan",
     "crates/pharos-pulse",
+    "crates/pharos-console",
 ]
 resolver = "2"

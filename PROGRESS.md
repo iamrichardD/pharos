@@ -2,7 +2,7 @@
 
 ## Current Status
 **Phase:** 14 (Pulse & Multi-Tenant Architecture) - IN PROGRESS
-**Active Task:** None
+**Active Task:** Task 14.3 (Issue #51): Engineering: Develop `pharos-console` (MCP Server)
 **Backlog:** 
 
 ## Recent Completions
