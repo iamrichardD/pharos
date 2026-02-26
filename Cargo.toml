@@ -17,5 +17,6 @@ members = [
     "mdb",
     "crates/pharos-client",
     "pharos-scan",
+    "crates/pharos-pulse",
 ]
 resolver = "2"

@@ -1,8 +1,8 @@
 # Pharos State & Progress
 
 ## Current Status
-**Phase:** 14 (Pulse & Multi-Tenant Architecture) - NOT STARTED
-**Active Task:** None
+**Phase:** 14 (Pulse & Multi-Tenant Architecture) - IN PROGRESS
+**Active Task:** Task 14.1 (Issue #47): Engineering: Implement `pharos-pulse` heartbeat agent in Rust
 **Backlog:** 
 
 ## Recent Completions
