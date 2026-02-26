@@ -16,6 +16,7 @@ pub mod storage;
 pub mod metrics;
 pub mod auth;
 pub mod middleware;
+pub mod tui;
 
 use tokio::net::{TcpStream};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};

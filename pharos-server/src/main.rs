@@ -29,8 +29,13 @@ use std::path::Path;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    // Initialize tracing for observability
-    tracing_subscriber::fmt::init();
+    let args: Vec<String> = env::args().collect();
+    let use_tui = args.contains(&"--tui".to_string());
+
+    // Initialize tracing for observability only if TUI is not taking over stdout
+    if !use_tui {
+        tracing_subscriber::fmt::init();
+    }
 
     // Determine storage backend based on environment variables
     let storage: Arc<RwLock<dyn Storage>> = if let Ok(url) = env::var("PHAROS_LDAP_URL") {
@@ -107,15 +112,39 @@ async fn main() -> anyhow::Result<()> {
     let listener = TcpListener::bind(addr).await?;
     info!("Pharos Server listening on {}", addr);
 
-    loop {
-        let (socket, _) = listener.accept().await?;
-        let storage_ref: Arc<RwLock<dyn Storage>> = Arc::clone(&storage);
-        let auth_ref = Arc::clone(&auth_manager);
-        let middleware_ref = Arc::clone(&middleware_chain);
+    if use_tui {
         tokio::spawn(async move {
-            if let Err(e) = handle_connection(socket, storage_ref, auth_ref, middleware_ref).await {
-                error!("Error handling connection: {:?}", e);
+            loop {
+                if let Ok((socket, _)) = listener.accept().await {
+                    let storage_ref: Arc<RwLock<dyn Storage>> = Arc::clone(&storage);
+                    let auth_ref = Arc::clone(&auth_manager);
+                    let middleware_ref = Arc::clone(&middleware_chain);
+                    tokio::spawn(async move {
+                        if let Err(_e) = handle_connection(socket, storage_ref, auth_ref, middleware_ref).await {
+                            // Suppress error log since TUI uses stdout
+                        }
+                    });
+                }
             }
         });
+        
+        if let Err(e) = pharos_server::tui::run_tui().await {
+            // Restore terminal state is handled inside run_tui, just print error
+            eprintln!("TUI Error: {}", e);
+        }
+    } else {
+        loop {
+            let (socket, _) = listener.accept().await?;
+            let storage_ref: Arc<RwLock<dyn Storage>> = Arc::clone(&storage);
+            let auth_ref = Arc::clone(&auth_manager);
+            let middleware_ref = Arc::clone(&middleware_chain);
+            tokio::spawn(async move {
+                if let Err(e) = handle_connection(socket, storage_ref, auth_ref, middleware_ref).await {
+                    error!("Error handling connection: {:?}", e);
+                }
+            });
+        }
     }
+
+    Ok(())
 }
