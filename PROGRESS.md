@@ -2,10 +2,11 @@
 
 ## Current Status
 **Phase:** 14 (Pulse & Multi-Tenant Architecture) - IN PROGRESS
-**Active Task:** Task 14.1 (Issue #47): Engineering: Implement `pharos-pulse` heartbeat agent in Rust
+**Active Task:** None
 **Backlog:** 
 
 ## Recent Completions
+- [x] Task 14.1: Engineering: Implement `pharos-pulse` heartbeat agent in Rust. (Issue #47)
 - [x] Task 12.3: Integrate live `pharos-scan` events into the dashboard view. (Issue #46)
 - [x] Task 12.2: Implement real-time TUI dashboard for pharos-server. (Issue #45)
 - [x] Task 12.1: Planning: Design a real-time TUI dashboard for `pharos-server` using `ratatui`. (Issue #44)
