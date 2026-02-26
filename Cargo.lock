@@ -1566,6 +1566,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "pharos-console"
+version = "1.2.0"
+dependencies = [
+ "anyhow",
+ "base64 0.22.1",
+ "rand",
+ "serde",
+ "serde_json",
+ "ssh-key",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "pharos-pulse"
 version = "1.2.0"
 dependencies = [
