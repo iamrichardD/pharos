@@ -13,15 +13,30 @@
  * ======================================================================== */
 
 use crate::protocol::{Command, ProtocolError};
+use crate::auth::SecurityTier;
 use std::sync::Arc;
 use tracing::info;
 
 /// Contextual information about the current client session.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct ClientContext {
     pub id: Option<String>,
     pub authenticated: bool,
     pub peer_addr: String,
+    pub roles: Vec<String>,
+    pub tier: SecurityTier,
+}
+
+impl Default for ClientContext {
+    fn default() -> Self {
+        Self {
+            id: None,
+            authenticated: false,
+            peer_addr: String::new(),
+            roles: Vec::new(),
+            tier: SecurityTier::Open,
+        }
+    }
 }
 
 /// The action to take after a middleware's pre-processing.
@@ -117,6 +132,55 @@ impl Middleware for ReadOnlyMiddleware {
     }
 }
 
+/// Middleware that enforces Triple-Tier Security based on the server's configured tier.
+pub struct SecurityTierMiddleware {
+    pub default_tier: SecurityTier,
+}
+
+impl Middleware for SecurityTierMiddleware {
+    fn pre_process(&self, command: &mut Command, context: &mut ClientContext) -> Result<MiddlewareAction, ProtocolError> {
+        context.tier = self.default_tier; // Set the tier in the context for other middlewares
+
+        match self.default_tier {
+            SecurityTier::Open => {
+                // Open tier: Read-only access is open, writes require auth (handled in lib.rs)
+                Ok(MiddlewareAction::Continue)
+            }
+            SecurityTier::Protected => {
+                // Protected tier: ALL commands (except auth/status/id/quit) require authentication
+                let is_auth_bypassed = matches!(command,
+                    Command::Status | Command::Id(_) | Command::Auth { .. } | Command::Quit
+                );
+                
+                if !is_auth_bypassed && !context.authenticated {
+                    return Ok(MiddlewareAction::ShortCircuit("401:Authentication required for Protected tier\n".to_string()));
+                }
+                Ok(MiddlewareAction::Continue)
+            }
+            SecurityTier::Scoped => {
+                // Scoped tier: Same as protected, but also enforces roles
+                let is_auth_bypassed = matches!(command,
+                    Command::Status | Command::Id(_) | Command::Auth { .. } | Command::Quit
+                );
+                
+                if !is_auth_bypassed && !context.authenticated {
+                    return Ok(MiddlewareAction::ShortCircuit("401:Authentication required for Scoped tier\n".to_string()));
+                }
+
+                let is_write_command = matches!(command, 
+                    Command::Add(_) | Command::Delete(_) | Command::Change { .. }
+                );
+
+                if is_write_command && !context.roles.contains(&"admin".to_string()) {
+                    return Ok(MiddlewareAction::ShortCircuit("403:Forbidden: Admin role required for write operations\n".to_string()));
+                }
+
+                Ok(MiddlewareAction::Continue)
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -132,6 +196,7 @@ mod tests {
             id: Some("test".to_string()),
             authenticated: false,
             peer_addr: "127.0.0.1:1234".to_string(),
+            ..Default::default()
         };
 
         let result = chain.pre_process(&mut command, &mut context).unwrap();
@@ -153,6 +218,7 @@ mod tests {
             id: Some("guest".to_string()),
             authenticated: true,
             peer_addr: "127.0.0.1:1234".to_string(),
+            ..Default::default()
         };
 
         let result = chain.pre_process(&mut command, &mut context).unwrap();
@@ -176,6 +242,7 @@ mod tests {
             id: Some("guest".to_string()),
             authenticated: true,
             peer_addr: "127.0.0.1:1234".to_string(),
+            ..Default::default()
         };
 
         let result = chain.pre_process(&mut command, &mut context).unwrap();

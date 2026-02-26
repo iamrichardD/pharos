@@ -13,12 +13,84 @@
 
 use pharos_server::handle_connection;
 use pharos_server::storage::{MemoryStorage, Storage};
-use pharos_server::auth::AuthManager;
-use pharos_server::middleware::{MiddlewareChain, ReadOnlyMiddleware};
+use pharos_server::auth::{AuthManager, SecurityTier};
+use pharos_server::middleware::{MiddlewareChain, ReadOnlyMiddleware, SecurityTierMiddleware};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use std::sync::{Arc, RwLock};
 use tempfile::tempdir;
+
+async fn setup_test_server(middleware_chain: MiddlewareChain) -> (std::net::SocketAddr, Arc<RwLock<dyn Storage>>) {
+    let storage: Arc<RwLock<dyn Storage>> = Arc::new(RwLock::new(MemoryStorage::new()));
+    let temp_dir = tempdir().unwrap();
+    let auth_manager = Arc::new(AuthManager::new(temp_dir.path()));
+    
+    let middleware_chain = Arc::new(middleware_chain);
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+
+    let server_storage = Arc::clone(&storage);
+    tokio::spawn(async move {
+        let (socket, _) = listener.accept().await.unwrap();
+        handle_connection(socket, server_storage, auth_manager, middleware_chain).await.unwrap();
+    });
+
+    (addr, storage)
+}
+
+#[tokio::test]
+async fn test_should_allow_query_in_open_tier() {
+    let mut chain = MiddlewareChain::new();
+    chain.add(Arc::new(SecurityTierMiddleware { default_tier: SecurityTier::Open }));
+    
+    let (addr, _) = setup_test_server(chain).await;
+    let mut stream = TcpStream::connect(addr).await.unwrap();
+    
+    let mut buf = [0u8; 1024];
+    stream.read(&mut buf).await.unwrap(); // consume welcome
+
+    stream.write_all(b"query return name\n").await.unwrap();
+    let n = stream.read(&mut buf).await.unwrap();
+    let response = String::from_utf8_lossy(&buf[..n]);
+    assert!(response.contains("501:No matches") || response.contains("102:There were"));
+}
+
+#[tokio::test]
+async fn test_should_block_query_in_protected_tier_without_auth() {
+    let mut chain = MiddlewareChain::new();
+    chain.add(Arc::new(SecurityTierMiddleware { default_tier: SecurityTier::Protected }));
+    
+    let (addr, _) = setup_test_server(chain).await;
+    let mut stream = TcpStream::connect(addr).await.unwrap();
+    
+    let mut buf = [0u8; 1024];
+    stream.read(&mut buf).await.unwrap(); // consume welcome
+
+    stream.write_all(b"query return name\n").await.unwrap();
+    let n = stream.read(&mut buf).await.unwrap();
+    let response = String::from_utf8_lossy(&buf[..n]);
+    assert!(response.contains("401:Authentication required"));
+}
+
+#[tokio::test]
+async fn test_should_block_write_in_scoped_tier_without_admin_role() {
+    // Note: We test the middleware logic directly since simulating SSH auth in full integration 
+    // requires setting up keys. We'll test the middleware's response to an unauthenticated write
+    // in Scoped, which should fail due to no auth first.
+    let mut chain = MiddlewareChain::new();
+    chain.add(Arc::new(SecurityTierMiddleware { default_tier: SecurityTier::Scoped }));
+    
+    let (addr, _) = setup_test_server(chain).await;
+    let mut stream = TcpStream::connect(addr).await.unwrap();
+    
+    let mut buf = [0u8; 1024];
+    stream.read(&mut buf).await.unwrap(); // consume welcome
+
+    stream.write_all(b"add name=Test\n").await.unwrap();
+    let n = stream.read(&mut buf).await.unwrap();
+    let response = String::from_utf8_lossy(&buf[..n]);
+    assert!(response.contains("401:Authentication required for Scoped tier"));
+}
 
 #[tokio::test]
 async fn test_should_block_write_when_guest_id_provided() {

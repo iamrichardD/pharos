@@ -40,6 +40,8 @@ pub async fn handle_connection(mut socket: TcpStream, storage: Arc<RwLock<dyn St
         id: None,
         authenticated: false,
         peer_addr: peer_addr.clone(),
+        roles: Vec::new(),
+        tier: crate::auth::SecurityTier::Open,
     };
     let mut challenge = vec![0u8; 16];
     OsRng.fill_bytes(&mut challenge);
@@ -97,6 +99,7 @@ pub async fn handle_connection(mut socket: TcpStream, storage: Arc<RwLock<dyn St
                     Command::Auth { public_key, signature } => {
                         if auth_manager.verify(public_key, signature, &challenge_hex) {
                             context.authenticated = true;
+                            context.roles = auth_manager.get_roles(public_key);
                             writer.write_all(b"200:Ok
 ").await?;
                         } else {
