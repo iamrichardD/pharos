@@ -1,11 +1,12 @@
 # Pharos State & Progress
 
 ## Current Status
-**Phase:** 14 (Pulse & Multi-Tenant Architecture) - COMPLETED
-**Active Task:** None
+**Phase:** 16 (Pharos Sandbox & WebMCP Integration) - PLANNING
+**Active Task:** Task 16.1: Engineering: Design `deploy/compose.yml` with `tmpfs` and network isolation.
 **Backlog:** 
 
 ## Recent Completions
+- [x] Planning: Pharos Sandbox & WebMCP Integration documented in `artifacts/pharos-sandbox-plan.md`. Defines the "One-Click" ephemeral test environment strategy using `podman-compose` and `tmpfs`.
 - [x] Task 15.4: Engineering: Sync marketing site theme with browser settings (`prefers-color-scheme`). Implemented 'System First' logic in `BaseLayout.astro` and enhanced `DarkModeToggle.astro` with an intelligent toggle that returns control to the browser when user intent matches the system preference. (Issue #62)
 - [x] Planning: Sync marketing site theme with browser settings (`prefers-color-scheme`) documented in `artifacts/system-theme-sync-plan.md`. (Issue #62)
 - [x] Task 14.7: Advocacy: Rearrange documentation information architecture to be tool-centric (Clients -> Console -> Automation -> Server Setup -> Scan). (Issue #57)

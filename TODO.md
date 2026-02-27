@@ -101,3 +101,10 @@ A task is considered complete and may be marked `[x]` only when:
 - [ ] **Task 15.2 (Issue #60):** Engineering: Implement Webhook Notification Engine for real-time Slack, Discord, and Custom API alerts on record modifications.
 - [ ] **Task 15.3 (Issue #61):** Engineering: Implement Advanced Pulse Alerting with configurable "Dead Man's Switch" logic for node failures.
 - [x] **Task 15.4 (Issue #62):** Engineering: Sync marketing site theme with browser settings (`prefers-color-scheme`).
+
+## Phase 16: Pharos Sandbox & WebMCP Integration
+- [ ] **Task 16.1 (#TBD):** Engineering: Design `deploy/compose.yml` with `tmpfs` and network isolation for "Zero-Host" test environments.
+- [ ] **Task 16.2 (#TBD):** Engineering: Create a `Makefile` with `make lab` for a standardized one-click sandbox stand-up.
+- [ ] **Task 16.3 (#TBD):** Advocacy: Update `pharos-web` to support "Sandbox Mode" with live interactive query components and MCP integration.
+- [ ] **Task 16.4 (#TBD):** Advocacy: Create the "Lab-in-a-Box" guide for developers, home labbers, and enterprise engineers.
+- [ ] **Task 16.5 (#TBD):** Release: Prepare v1.3.0 release including the integrated Pharos Sandbox.
