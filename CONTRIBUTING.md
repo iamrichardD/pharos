@@ -80,4 +80,5 @@ Pharos is maintained by **Richard D.** (Principal Systems Architect). All archit
 By contributing to Pharos, you agree that your contributions will be licensed under the **AGPL-3.0 License**.
 
 ---
-*Making Badass Developers* - Guided by the philosophy of Kathy Sierra.
+*   *Making Badass Developers* - The philosophy of Kathy Sierra (Guides our focus on user success and cognitive ease, though we avoid using the literal term "Badass" in user-facing content).
+*   *Purple Cow* - Seth Godin (Informs our approach to making Pharos remarkable through unique value).

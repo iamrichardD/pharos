@@ -78,7 +78,7 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Task 10.4 (Issue #42):** Release: Prepare v1.2.0 release including the new network scanner tool.
 
 ## Phase 11: Marketing & Advocacy (v1.2.0)
-- [x] **Task 11.1 (Issue #43):** Advocacy: Update marketing site with Kathy Sierra-inspired 'Making Badass' messaging and pharos-scan 'Purple Cow' feature.
+- [x] **Task 11.1 (Issue #43):** Advocacy: Update marketing site with user-centric success messaging and the pharos-scan automated discovery feature.
 
 ## Phase 12: Advanced Visualization & Management (TUI)
 - [x] **Task 12.1 (Issue #44):** Planning: Design a real-time TUI dashboard for \`pharos-server\` using \`ratatui\`.

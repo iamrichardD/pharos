@@ -1,0 +1,27 @@
+# ========================================================================
+# Project: pharos
+# Component: Documentation & Marketing
+# File: Containerfile.docs
+# Author: Richard D. (https://github.com/iamrichardd)
+# License: AGPL-3.0 (See LICENSE file for details)
+# * Purpose (The "Why"):
+# This file provides an isolated environment for building and testing the
+# Pharos marketing site and technical documentation (Astro/Node.js).
+# * Traceability:
+# Related to Task 14.5, Issue #55
+# ========================================================================
+
+FROM public.ecr.aws/docker/library/node:22-slim
+
+# Install core dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    git \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set up working directory
+WORKDIR /workspace
+
+# Default command
+CMD ["npm", "run", "build"]

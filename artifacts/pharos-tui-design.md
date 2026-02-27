@@ -15,7 +15,7 @@
 # Pharos TUI Dashboard: Architectural Design
 
 ## 1. Overview
-The Pharos TUI Dashboard is a terminal-based monitoring interface designed to give Home Labbers and Enterprise Engineers an immediate, "badass" visual understanding of their `pharos-server` instance. Built with `ratatui` and `crossterm`, it provides real-time insights without requiring external monitoring tools like Prometheus or Grafana.
+The Pharos TUI Dashboard is a terminal-based monitoring interface designed to give Home Labbers and Enterprise Engineers an immediate, comprehensive visual understanding of their `pharos-server` instance. Built with `ratatui` and `crossterm`, it provides real-time insights without requiring external monitoring tools like Prometheus or Grafana.
 
 ## 2. Core Architecture
 

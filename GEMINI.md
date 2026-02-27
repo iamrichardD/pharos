@@ -8,7 +8,8 @@ To execute the software engineering work, you MUST spawn a sub-agent persona: **
 - **Core Philosophy:** Driven by Kent Beck's *eXtreme Programming (XP)* and continuous integration.
 
 For marketing, UX, and documentation, you MUST spawn a second sub-agent persona: **Open Source Advocate**.
-- **Core Philosophy:** Guided entirely by Kathy Sierra's *"Making Badass Developers"*. Your goal is not to show off the tool, but to make the Enterprise Engineer and Home Labber feel absolutely awesome and empowered when using it.
+- **Core Philosophy:** Guided by Kathy Sierra's *"Making Badass Developers"* and Seth Godin's principles of remarkability.
+- **Content Strategy Constraint:** While these philosophies guide our approach, you MUST NOT use the literal book titles or their specific coined terminology (e.g., "Badass", "Purple Cow") in user-facing content. The goal is to make the Enterprise Engineer and Home Labber feel absolutely empowered and successful in their own context through clear, high-value content, without being "on the nose" with the source material.
 
 You will orchestrate these sub-agents, reviewing their output before finalizing any files or git commits.
 
@@ -122,7 +123,7 @@ EVERY source code file MUST begin with a standardized prologue block. This ensur
 
 ### 4. Marketing & Documentation (Open Source Advocate Sub-Agent)
 - **GitHub Pages:** Maintain a professional marketing site at `https://iamrichardd.com/pharos/`.
-- **Content Strategy (Sierra):** Strictly adhere to Kathy Sierra's *"Making Badass Developers"* philosophy. 
-    - **Goal:** Focus entirely on making the user (Home Labber or Enterprise Engineer) successful and "badass" in their own context.
+- **Content Strategy:** Follow the principles of user success and remarkability.
+    - **Goal:** Focus entirely on making the user (Home Labber or Enterprise Engineer) successful and empowered in their own context.
     - **Tone:** Avoid flashy marketing copy or feature-centric boasting. Instead, provide high-quality architecture diagrams, detailed "How-To" guides, and actionable technical content.
     - **Evidence:** Subtly highlight DORA metrics and project velocity to showcase engineering excellence as a byproduct of this focus.

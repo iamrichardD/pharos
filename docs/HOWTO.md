@@ -35,9 +35,8 @@ mkdir -p /var/lib/pharos
 export PHAROS_STORAGE_PATH="/var/lib/pharos/data.json"
 ```
 
-#### 4. Run as a Systemd Service
-To make your Home Lab truly badass, run Pharos as a service so it's always available.
-
+    #### 4. Run as a Systemd Service
+    For maximum reliability and uptime, run Pharos as a service so it's always available.
 ```bash
 cat <<EOF > /etc/systemd/system/pharos.service
 [Unit]
