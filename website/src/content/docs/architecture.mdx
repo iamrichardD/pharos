@@ -3,6 +3,8 @@ title: "Architecture"
 description: "High-level overview of the Pharos system design, storage tiering, and protocol."
 order: 1
 ---
+import TieredTabs from '../../components/TieredTabs.astro';
+
 /* ========================================================================
  * Project: pharos
  * Component: Marketing Site
@@ -13,6 +15,7 @@ order: 1
  * Detailed architectural overview of the Pharos ecosystem.
  * * Traceability:
  * Related to GitHub Issue #28, implements the documentation port to MDX.
+ * Related to GitHub Issue #55, implements tiered tab UX.
  * ======================================================================== */
 
 Project Pharos is a highly performant, read-optimized client-server ecosystem based on RFC 2378 (Phonebook Protocol).
@@ -61,25 +64,29 @@ graph TD
 
 ## Storage Tiering Logic
 
-Pharos uses a tiered storage approach to cater to different deployment environments, from volatile development instances to persistent enterprise-grade directory services.
+<TieredTabs>
+  <div slot="homelab">
+    ### 🏠 Home Lab: Persistent File Storage
+    Pharos uses a file-level, restart-survivable JSON storage engine optimized for LXC containers. This ensures high performance with minimal configuration.
 
-```mermaid
-graph LR
-    subgraph "Tier 1: Development"
-        Mem[MemoryStorage]
-        Mem -.->|Volatile| Data((In-Memory))
-    end
-
-    subgraph "Tier 2: Home Lab"
+    ```mermaid
+    graph LR
         File[FileStorage]
         File -.->|Persistent| JSON[(Local JSON File)]
-    end
+    ```
+  </div>
 
-    subgraph "Tier 3: Enterprise"
+  <div slot="enterprise">
+    ### 🏢 Enterprise: Centralized LDAP Storage
+    For Enterprise environments, Pharos acts as a high-speed cache and query layer for your central LDAP directory, supporting standard schemas and high-concurrency reads.
+
+    ```mermaid
+    graph LR
         LDAP[LdapStorage]
         LDAP -.->|Centralized| Directory[(LDAP Server)]
-    end
-```
+    ```
+  </div>
+</TieredTabs>
 
 ## Core Protocol: RFC 2378 (Modified)
 
@@ -136,19 +143,26 @@ The backend engine handling connection lifecycle, protocol parsing, and storage 
 
 Pharos implements a flexible security model designed to scale from a single user's "YOLO Lab" to a multi-tenant Enterprise environment.
 
-### 1. Triple-Tier Security Model
-Security is enforced at the server level based on the `PHAROS_SECURITY_MODE` configuration.
+<TieredTabs>
+  <div slot="homelab">
+    ### 🏠 Home Lab: The "YOLO" Security Model
+    In Home Lab environments, Pharos prioritizes speed and accessibility.
 
-| Tier | Name | Read Access | Write Access | Use Case |
-| :--- | :--- | :--- | :--- | :--- |
-| **Tier 1** | **Open (YOLO)** | Anonymous (Unauthenticated) | SSH-Key Authorized | Default Home Lab setup. High speed, low friction. |
-| **Tier 2** | **Protected** | Token or IP-Based | SSH-Key Authorized | Shared Lab environments requiring basic privacy. |
-| **Tier 3** | **Scoped** | Identity-Based (LDAP/OIDC) | Identity-Based (Team Scoped) | Multi-tenant Enterprise environments with strict isolation. |
+    - **Open Access**: Read operations are anonymous and unauthenticated.
+    - **SSH Challenge**: Write operations still require a valid signature from an authorized SSH key for basic safety.
+    - **Use Case**: Single-user labs or trusted home networks.
+  </div>
 
-### 2. Multi-Tenant Isolation
-In **Scoped** mode, every record is associated with a `tenant_id` or `team_scope`.
-- **Filtering**: Queries automatically inject a `(team_scope=...)` filter based on the requester's authenticated identity.
-- **Provenance**: Every record contains metadata tracking the `created_by` identity and the `provisioned_at` timestamp.
+  <div slot="enterprise">
+    ### 🏢 Enterprise: Protected & Scoped Models
+    For larger environments, Pharos adds layers of isolation and authentication.
+
+    - **Protected Tier**: Read access is restricted via tokens or IP whitelists.
+    - **Scoped Tier**: Fully multi-tenant. Every record belongs to a `team_scope`.
+    - **Filtering**: Queries are automatically filtered to only show records the user's authenticated identity is allowed to see.
+    - **Provenance**: Records contain metadata tracking `created_by` identity and the `provisioned_at` timestamp.
+  </div>
+</TieredTabs>
 
 ## The Dual-Site Ecosystem
 
