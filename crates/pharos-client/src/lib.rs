@@ -139,7 +139,11 @@ impl PharosClient {
                     if let Some(record) = current_record.take() {
                         records.push(record);
                     }
-                    return Ok(PharosResponse::Ok(message.to_string()));
+                    if match_count > 0 || !records.is_empty() {
+                        return Ok(PharosResponse::Matches { count: match_count, records });
+                    } else {
+                        return Ok(PharosResponse::Ok(message.to_string()));
+                    }
                 }
                 102 => {
                     // Extract match count if possible
@@ -230,9 +234,18 @@ impl PharosClient {
         let priv_key = PrivateKey::from_openssh(&key_content)
             .map_err(|e| anyhow!("Failed to parse SSH private key: {}", e))?;
         
-        let sig = priv_key.sign("", ssh_key::HashAlg::Sha256, challenge_hex.as_bytes())
-            .map_err(|e| anyhow!("Failed to sign challenge: {}", e))?;
-        let sig_b64 = STANDARD.encode(sig.signature().as_bytes());
+        // Use raw key data signing to match the server's raw verification logic.
+        // The server expects a raw signature of the challenge bytes.
+        let sig_bytes = match priv_key.key_data() {
+            ssh_key::private::KeypairData::Ed25519(kp) => {
+                use ed25519_dalek::{Signer, SigningKey};
+                let signing_key = SigningKey::from_bytes(&kp.private.to_bytes());
+                signing_key.sign(challenge_hex.as_bytes()).to_vec()
+            }
+            _ => return Err(anyhow!("Unsupported key type for raw signing. Only Ed25519 is supported in this version.")),
+        };
+
+        let sig_b64 = STANDARD.encode(&sig_bytes);
         
         let pub_key_ssh = priv_key.public_key().to_openssh()
             .map_err(|e| anyhow!("Failed to export public key: {}", e))?;
