@@ -6,76 +6,66 @@
  * Author: Richard D. (https://github.com/iamrichardd)
  * License: AGPL-3.0 (See LICENSE file for details)
  * * Purpose (The "Why"):
- * Defines the technical specification for the pharos-pulse agent, its 
- * telemetry payload, and system manager integration lifecycle across
- * Linux, macOS, and Windows platforms.
+ * Defines the technical specification for the pharos-pulse presence agent.
+ * Its primary role is identity assertion and lifecycle tracking (Online/Offline)
+ * for nodes across Linux, macOS, and Windows platforms.
  * * Traceability:
- * Related to "Pulse Agent" Architecture definition.
+ * Related to "Pulse Agent" Architecture definition. Replaces metric-heavy 
+ * heartbeat with presence-focused telemetry.
  * ======================================================================== */
 -->
 
 # Pharos Pulse (`pharos-pulse`) Technical Specification
 
 ## 1. Overview
-The `pharos-pulse` agent is a lightweight, zero-dependency, statically linked Rust binary deployed on nodes managed by the Pharos server. It acts as a "heartbeat" service, providing constant telemetry, state synchronization, and identity assertion to enable autonomous infrastructure management.
+The `pharos-pulse` agent is a lightweight, zero-dependency, statically linked Rust binary. Its primary goal is to ensure a node's presence and identity are known to the Pharos server. It acts as a "Presence Heartbeat," reporting when a device is powered on (Online), providing a low-impact hourly heartbeat (Presence), and gracefully signaling when it is shutting down (Offline).
+
+**Note:** High-frequency performance metrics (Prometheus/OpenTelemetry) are handled centrally by the `pharos-server` or dedicated collectors; `pharos-pulse` focuses strictly on identity, metadata, and availability.
 
 ## 2. Core Constraints
 - **Language**: Rust
 - **Linking**: Fully static (musl for Linux).
-- **Execution Context**: Runs as a background service/daemon with the lowest privileges necessary to gather metrics.
-- **Resource Footprint**: Must consume less than 15MB RAM and minimal CPU.
+- **Execution Context**: Runs as a background service/daemon (Systemd, launchd, SCM).
+- **Resource Footprint**: Must consume less than 10MB RAM and negligible CPU.
 
-## 3. Platform Integrations (System Managers)
-A unified `pharos-pulse install` command must handle native service registration.
+## 3. Platform Integrations (Presence Lifecycle)
+The agent integrates with the host's system manager to capture power events and maintain a persistent presence.
 
-### 3.1 Ubuntu / Linux (Systemd)
-- **Path**: `/etc/systemd/system/pharos-pulse.service`
-- **Type**: `notify` (using `sd-notify`) for precise lifecycle tracking.
-- **Security**: Bound by `ProtectSystem=full`, `PrivateTmp=true`, `CapabilityBoundingSet=`.
+### 3.1 Online Signal (Startup)
+On service start, `pharos-pulse` immediately performs:
+1.  **Identity Resolution**: Loads/Generates the local SSH identity key.
+2.  **Metadata Collection**: Gathers hardware UUID, OS version, and network interfaces.
+3.  **Presence Assertion**: Sends an `ONLINE` event to the Pharos server.
 
-### 3.2 macOS (launchd)
-- **Path**: `/Library/LaunchDaemons/com.pharos.pulse.plist`
-- **Lifecycle**: Managed by `launchctl load/unload`.
-- **Behavior**: Persistent across reboots, automatic restart on crash (`KeepAlive`).
+### 3.2 Periodic Heartbeat (Hourly)
+To ensure the server's record remains "Fresh" and to detect ungraceful failures (e.g., power loss without shutdown), the agent sends a low-impact `HEARTBEAT` event every **60 minutes**.
 
-### 3.3 Windows (Service Control Manager)
-- **Tooling**: Uses the `windows-service` Rust crate.
-- **Context**: Runs under `LocalService` account to restrict access to user data while allowing system metrics access.
+### 3.3 Offline Signal (Shutdown)
+The agent must catch `SIGTERM` (Linux/macOS) or the `Service Stop` control code (Windows) to send a final `OFFLINE` message before the process exits.
 
-## 4. Telemetry Payload Schema
-Sent via JSON to the Pharos server's "Telemetry Write" endpoint on start/restart, and every 24 hours.
+## 4. Presence Payload Schema
+Sent via JSON over a secure channel to the Pharos server.
 
 ```json
 {
+  "event": "ONLINE | HEARTBEAT | OFFLINE",
   "identity": {
     "hw_uuid": "string",
     "hostname": "string",
     "ssh_pubkey_fingerprint": "string"
   },
-  "environment": {
-    "platform": "string (e.g., proxmox-lxc, aws-ec2, bare-metal)",
+  "metadata": {
     "os_family": "string",
+    "os_version": "string",
     "kernel_version": "string",
-    "last_update_timestamp": "string (ISO8601)"
+    "platform": "string (e.g., proxmox-lxc, bare-metal)",
+    "local_ips": ["string"]
   },
-  "resources": {
-    "mem_total_mb": "integer",
-    "mem_used_mb": "integer",
-    "cpu_model": "string",
-    "cpu_load_avg": "float",
-    "disk_utilization_pct": "integer"
-  },
-  "capabilities": {
-    "installed_tools": ["docker", "python3", "zfs", "..."]
-  },
-  "health": {
-    "uptime_seconds": "integer",
-    "thermal_status": "string (optional)"
-  }
+  "timestamp": "string (ISO8601)"
 }
 ```
 
-## 5. Security & Authentication
-- **Local Key Pair**: `pharos-pulse` generates or utilizes an existing SSH key pair (typically `/etc/pharos/pulse_id`).
-- **Signature**: The telemetry payload is signed with the private key. The Pharos server validates this against the agent's mapped team/identity.
-- **Enrollment**: Manual (via placing the public key in authorized keys) or Automatic (via short-lived Provisioning Token sent to the server for initial bootstrapping).
+## 5. Security & Enrollment
+- **Local Key Pair**: Uses `/etc/pharos/pulse_id` (Linux/macOS) or Protected Storage (Windows).
+- **Authentication**: Payloads are signed using the agent's private key.
+- **Provisioning**: Can be pre-provisioned via `mdb` or auto-enrolled using a short-lived token generated by the Pharos Web Console.

@@ -1,12 +1,18 @@
 # Pharos State & Progress
 
 ## Current Status
-**Phase:** 16 (Pharos Sandbox & WebMCP Integration) - PLANNING
-**Active Task:** Task 16.1: Engineering: Design `deploy/compose.yml` with `tmpfs` and network isolation.
+**Phase:** 19 (Protocol Standardization) - PLANNING
+**Active Task:** Task 19.1: Advocacy: Draft the "Pharos Protocol Extensions (PhP)" in IETF xml2rfc format.
 **Backlog:** 
 
 ## Recent Completions
-- [x] Planning: Pharos Sandbox & WebMCP Integration documented in `artifacts/pharos-sandbox-plan.md`. Defines the "One-Click" ephemeral test environment strategy using `podman-compose` and `tmpfs`.
+- [x] Planning: Pharos Protocol Extensions (PhP) documented in `artifacts/pharos-rfc-extension-proposal.md`. Formally extends RFC 2378 for modern DevSecOps.
+- [x] Planning: Pharos Web Console (Human/AI Interface) documented in `artifacts/pharos-web-console-plan.md`.
+- [x] Planning: Tri-State Presence & Fencing Model documented in `artifacts/pharos-presence-fencing-spec.md`.
+- [x] Planning: Field Alternation & Coalescing Plan (Phase 18) documented in `artifacts/pharos-alias-mapping-plan.md`.
+- [x] Refinement: Realigned `pharos-pulse-spec.md` to focus on identity and presence (ONLINE/OFFLINE/HEARTBEAT) rather than performance metrics.
+- [x] Refinement: Updated `mcp-pharos-spec.md` to reflect the Web Console's role as a Human/AI interface for `mdb`.
+- [x] Planning: Pharos Sandbox & WebMCP Integration documented in `artifacts/pharos-sandbox-plan.md`.
 - [x] Task 15.4: Engineering: Sync marketing site theme with browser settings (`prefers-color-scheme`). Implemented 'System First' logic in `BaseLayout.astro` and enhanced `DarkModeToggle.astro` with an intelligent toggle that returns control to the browser when user intent matches the system preference. (Issue #62)
 - [x] Planning: Sync marketing site theme with browser settings (`prefers-color-scheme`) documented in `artifacts/system-theme-sync-plan.md`. (Issue #62)
 - [x] Task 14.7: Advocacy: Rearrange documentation information architecture to be tool-centric (Clients -> Console -> Automation -> Server Setup -> Scan). (Issue #57)

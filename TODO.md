@@ -87,14 +87,16 @@ A task is considered complete and may be marked `[x]` only when:
 
 ## Phase 13: Future Expansion
 
-## Phase 14: Pulse & Multi-Tenant Architecture
-- [x] **Task 14.1 (Issue #47):** Engineering: Implement `pharos-pulse` heartbeat agent in Rust for cross-platform system manager integration (Systemd, SCM, launchd).
+## Phase 14: Pulse (Presence) & Multi-Tenant Architecture
+- [x] **Task 14.1 (Issue #47):** Engineering: Implement `pharos-pulse` presence agent in Rust for cross-platform system manager integration (Systemd, SCM, launchd). Focused on Online/Offline status reporting.
+- [ ] **Task 14.8 (#TBD):** Engineering: Implement "Presence Monitor" background sweep in `pharos-server` to infer `UNREACHABLE` state (70m timeout).
+- [ ] **Task 14.9 (#TBD):** Engineering: Implement "Presence Fencing" logic in storage layer to prevent destructive automation on `UNREACHABLE` nodes.
 - [x] **Task 14.2 (Issue #49):** Engineering: Extend `pharos-server` security model to support Triple-Tier Security (open, protected, scoped) and Provenance Metadata.
-- [x] **Task 14.3 (Issue #51):** Engineering: Develop the `pharos-console` (Dynamic Dashboard & WebMCP/MCP Server) to allow AI-agent management of SSH keys and enrollment tokens. Note: This is separate from the marketing site.
-- [x] **Task 14.4 (Issue #53):** Advocacy: Create multi-tenant documentation, "The YOLO Lab" vs "Locking down the Lab" guides, and `pharos-pulse` installation guides. Include docs on the separation of Marketing vs. Console sites.
-- [x] **Task 14.5 (Issue #55):** Advocacy: Apply tiered tab UX (Home Lab vs. Enterprise) to `integrations.mdx`, `architecture.mdx`, and `showcase.mdx` to reduce cognitive load across the documentation suite.
-- [x] **Task 14.6 (Issue #56):** Advocacy: Perform Cognitive UX Audit, generate high-quality CLI animations, and implement dynamic "Vision vs Quick Start" landing page.
-- [x] **Task 14.7 (Issue #57):** Advocacy: Rearrange documentation information architecture to be tool-centric (Clients -> Console -> Automation -> Server Setup -> Scan).
+- [x] **Task 14.3 (Issue #51):** Engineering: Develop the `pharos-console` backend (MCP Server) for AI-agent management.
+- [x] **Task 14.4 (Issue #53):** Advocacy: Create multi-tenant documentation and `pharos-pulse` installation guides.
+- [x] **Task 14.5 (Issue #55):** Advocacy: Apply tiered tab UX (Home Lab vs. Enterprise) to `integrations.mdx`, `architecture.mdx`, and `showcase.mdx`.
+- [x] **Task 14.6 (Issue #56):** Advocacy: Perform Cognitive UX Audit and high-quality CLI animations.
+- [x] **Task 14.7 (Issue #57):** Advocacy: Rearrange documentation information architecture to be tool-centric.
 
 ## Phase 15: Global Resilience & Advanced Connectivity
 - [ ] **Task 15.1 (Issue #59):** Engineering: Implement Multi-Server Synchronization for high-availability (HA) clusters using background replication.
@@ -102,9 +104,26 @@ A task is considered complete and may be marked `[x]` only when:
 - [ ] **Task 15.3 (Issue #61):** Engineering: Implement Advanced Pulse Alerting with configurable "Dead Man's Switch" logic for node failures.
 - [x] **Task 15.4 (Issue #62):** Engineering: Sync marketing site theme with browser settings (`prefers-color-scheme`).
 
-## Phase 16: Pharos Sandbox & WebMCP Integration
-- [ ] **Task 16.1 (#TBD):** Engineering: Design `deploy/compose.yml` with `tmpfs` and network isolation for "Zero-Host" test environments.
-- [ ] **Task 16.2 (#TBD):** Engineering: Create a `Makefile` with `make lab` for a standardized one-click sandbox stand-up.
-- [ ] **Task 16.3 (#TBD):** Advocacy: Update `pharos-web` to support "Sandbox Mode" with live interactive query components and MCP integration.
-- [ ] **Task 16.4 (#TBD):** Advocacy: Create the "Lab-in-a-Box" guide for developers, home labbers, and enterprise engineers.
-- [ ] **Task 16.5 (#TBD):** Release: Prepare v1.3.0 release including the integrated Pharos Sandbox.
+## Phase 16: Pharos Web Console (Human/AI Interface) - HIGH PRIORITY
+- [ ] **Task 16.1 (#TBD):** Engineering: Scaffold the "Pharos Web Console" using Next.js, explicitly separate from the static documentation site.
+- [ ] **Task 16.2 (#TBD):** Engineering: Implement the "Web MDB" searchable interface for machine/infrastructure records, serving non-technical staff and one-off searches.
+- [ ] **Task 16.3 (#TBD):** Engineering: Implement "One-off Addition" forms for device/person records with Human-in-the-Loop (HitL) confirmation via WebMCP.
+- [ ] **Task 16.4 (#TBD):** Engineering: Integrate "Presence Monitoring" UI to visualize ONLINE/OFFLINE status from `pharos-pulse` events.
+- [ ] **Task 16.5 (#TBD):** Advocacy: Document the Human/AI Web Console as the primary interface for non-technical users and AI Agents.
+
+## Phase 17: Pharos Sandbox & WebMCP Integration
+- [ ] **Task 17.1 (#TBD):** Engineering: Design `deploy/compose.yml` with `tmpfs` and network isolation for "Zero-Host" test environments.
+- [ ] **Task 17.2 (#TBD):** Engineering: Create a `Makefile` with `make lab` for a standardized one-click sandbox stand-up.
+- [ ] **Task 17.3 (#TBD):** Advocacy: Update `pharos-web` to support "Sandbox Mode" with live interactive query components and MCP integration.
+- [ ] **Task 17.4 (#TBD):** Advocacy: Create the "Lab-in-a-Box" guide for developers, home labbers, and enterprise engineers.
+- [ ] **Task 17.5 (#TBD):** Release: Prepare v1.3.0 release including the integrated Pharos Sandbox.
+
+## Phase 18: Enterprise Workflows (Alternation & Coalescing) - PROPOSED
+- [ ] **Task 18.1 (#TBD):** Engineering: Implement Choice-Based Selection `[f1|f2]=val` (OR search) in `protocol.rs`.
+- [ ] **Task 18.2 (#TBD):** Engineering: Implement Return Coalescing `return [f1|f2]` (First-match) in `pharos-server`.
+- [ ] **Task 18.3 (#TBD):** Engineering: Implement `mapping.yaml` global alias support.
+
+## Phase 19: Protocol Standardization (IETF Draft) - PROPOSED
+- [ ] **Task 19.1 (#TBD):** Advocacy: Draft the "Pharos Protocol Extensions (PhP)" in IETF xml2rfc format.
+- [ ] **Task 19.2 (#TBD):** Advocacy: Publish the PEPh (Pharos-Enhanced Ph) specification on the marketing site.
+- [ ] **Task 19.3 (#TBD):** Release: Submit the Internet-Draft for Informational RFC consideration.
