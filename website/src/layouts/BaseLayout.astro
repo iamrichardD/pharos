@@ -41,21 +41,22 @@ const { title, description } = Astro.props;
     
     <!-- In-lined theme script to prevent flash of light mode -->
     <script is:inline>
-      const theme = (() => {
+      const getThemePreference = () => {
         if (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) {
           return localStorage.getItem('theme');
         }
-        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-          return 'dark';
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      };
+
+      const isDark = getThemePreference() === 'dark';
+      document.documentElement.classList[isDark ? 'add' : 'remove']('dark');
+
+      // Sync with system changes ONLY if no user override exists
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', ({ matches: isDark }) => {
+        if (!localStorage.getItem('theme')) {
+          document.documentElement.classList[isDark ? 'add' : 'remove']('dark');
         }
-        return 'light';
-      })();
-    
-      if (theme === 'dark') {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
+      });
     </script>
   </head>
   

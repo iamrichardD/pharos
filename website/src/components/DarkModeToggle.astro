@@ -1,4 +1,17 @@
 ---
+/* ========================================================================
+ * Project: pharos
+ * Component: Marketing Site - UI Components
+ * File: DarkModeToggle.astro
+ * Author: Richard D. (https://github.com/iamrichardd)
+ * License: AGPL-3.0 (See LICENSE file for details)
+ * * Purpose (The "Why"):
+ * Interactive theme toggle component that synchronizes the site's color 
+ * scheme with the user's browser/OS preferences while allowing manual overrides.
+ * * Traceability:
+ * Related to GitHub Issue #62, implements browser-synced theme management.
+ * ======================================================================== */
+
 // DarkModeToggle.astro - Dark/Light mode toggle component
 ---
 
@@ -57,6 +70,14 @@
       
       // Add click event listener
       this.button.addEventListener('click', () => this.toggleTheme());
+
+      // Sync with system changes ONLY if no user override exists
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+        if (!localStorage.getItem('theme')) {
+          document.documentElement.classList[e.matches ? 'add' : 'remove']('dark');
+          this.updateUI();
+        }
+      });
       
       // Update UI to match current theme
       this.updateUI();
@@ -75,13 +96,16 @@
 
     private toggleTheme(): void {
       const isDark = document.documentElement.classList.contains('dark');
+      const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const nextIsDark = !isDark;
       
-      if (isDark) {
-        document.documentElement.classList.remove('dark');
-        localStorage.setItem('theme', 'light');
+      document.documentElement.classList[nextIsDark ? 'add' : 'remove']('dark');
+      
+      // If the new state matches system preference, clear the override
+      if (nextIsDark === systemPrefersDark) {
+        localStorage.removeItem('theme');
       } else {
-        document.documentElement.classList.add('dark');
-        localStorage.setItem('theme', 'dark');
+        localStorage.setItem('theme', nextIsDark ? 'dark' : 'light');
       }
       
       this.updateUI();
