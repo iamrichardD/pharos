@@ -3,6 +3,8 @@ title: "Integrations"
 description: "How to integrate Project Pharos into your existing Home Lab or Enterprise infrastructure."
 order: 4
 ---
+import TieredTabs from '../../components/TieredTabs.astro';
+
 /* ========================================================================
  * Project: pharos
  * Component: Marketing Site
@@ -13,71 +15,74 @@ order: 4
  * Deep-dive guides for integrating Pharos with external systems.
  * * Traceability:
  * Related to GitHub Issue #34, expands the documentation.
+ * Related to GitHub Issue #55, implements tiered tab UX.
  * ======================================================================== */
 
 Project Pharos is designed to be the backbone of your infrastructure data. This guide will walk you through building deep integrations using the middleware system and CLI clients.
 
----
+<TieredTabs>
+  <div slot="homelab">
+    ## 🏗️ Proxmox Hooks (Home Lab)
 
-## 🏗️ Proxmox Hooks (Home Lab)
+    Making your Home Lab "badass" means zero manual data entry. You can automate the registration of your LXC containers and VMs directly into Pharos using Proxmox hook scripts.
 
-Making your Home Lab "badass" means zero manual data entry. You can automate the registration of your LXC containers and VMs directly into Pharos using Proxmox hook scripts.
+    ### 1. Create the Hook Script
+    Create a shell script on your Proxmox host (`/usr/local/bin/pharos-hook.sh`).
 
-### 1. Create the Hook Script
-Create a shell script on your Proxmox host (`/usr/local/bin/pharos-hook.sh`).
+    ```bash
+    #!/bin/bash
 
-```bash
-#!/bin/bash
+    # Proxmox hook script to register new containers in Pharos
+    # Usage: ./pharos-hook.sh <vmid> <phase>
 
-# Proxmox hook script to register new containers in Pharos
-# Usage: ./pharos-hook.sh <vmid> <phase>
+    VMID=$1
+    PHASE=$2
 
-VMID=$1
-PHASE=$2
+    if [ "$PHASE" == "post-start" ]; then
+        # Get the hostname and IP of the container
+        HOSTNAME=$(pct exec $VMID -- hostname)
+        IP=$(pct exec $VMID -- hostname -I | awk '{print $1}')
+        
+        # Register with Pharos mdb
+        mdb add hostname="$HOSTNAME" ip="$IP" type="machine" vmid="$VMID" status="up"
+    fi
 
-if [ "$PHASE" == "post-start" ]; then
-    # Get the hostname and IP of the container
-    HOSTNAME=$(pct exec $VMID -- hostname)
-    IP=$(pct exec $VMID -- hostname -I | awk '{print $1}')
-    
-    # Register with Pharos mdb
-    mdb add hostname="$HOSTNAME" ip="$IP" type="machine" vmid="$VMID" status="up"
-fi
+    if [ "$PHASE" == "pre-stop" ]; then
+        # Update status to down
+        HOSTNAME=$(pct exec $VMID -- hostname)
+        mdb update hostname="$HOSTNAME" status="down"
+    fi
+    ```
 
-if [ "$PHASE" == "pre-stop" ]; then
-    # Update status to down
-    HOSTNAME=$(pct exec $VMID -- hostname)
-    mdb update hostname="$HOSTNAME" status="down"
-fi
-```
+    ### 2. Configure the Hook in Proxmox
+    Edit the container configuration (`/etc/pve/lxc/<vmid>.conf`) to use the hook script.
 
-### 2. Configure the Hook in Proxmox
-Edit the container configuration (`/etc/pve/lxc/<vmid>.conf`) to use the hook script.
+    ```text
+    hookscript: local:snippets/pharos-hook.sh
+    ```
+  </div>
 
-```text
-hookscript: local:snippets/pharos-hook.sh
-```
+  <div slot="enterprise">
+    ## 🏛️ Enterprise LDAP Sync
 
----
+    Pharos isn't just a standalone directory; it's a high-speed cache and query layer for your Enterprise LDAP.
 
-## 🏛️ Enterprise LDAP Sync
+    ### 1. Field Mapping
+    Pharos allows you to map internal fields to standard LDAP object classes.
 
-Pharos isn't just a standalone directory; it's a high-speed cache and query layer for your Enterprise LDAP.
+    | Pharos Field | LDAP Attribute | Object Class |
+    | :--- | :--- | :--- |
+    | `name` | `cn` | `inetOrgPerson` |
+    | `email` | `mail` | `inetOrgPerson` |
+    | `hostname` | `cn` | `ipHost` |
+    | `ip` | `ipHostNumber` | `ipHost` |
 
-### 1. Field Mapping
-Pharos allows you to map internal fields to standard LDAP object classes.
+    ### 2. Performance Tuning
+    When using the LDAP backend, Pharos automatically implements a TTL-based cache.
 
-| Pharos Field | LDAP Attribute | Object Class |
-| :--- | :--- | :--- |
-| `name` | `cn` | `inetOrgPerson` |
-| `email` | `mail` | `inetOrgPerson` |
-| `hostname` | `cn` | `ipHost` |
-| `ip` | `ipHostNumber` | `ipHost` |
-
-### 2. Performance Tuning
-When using the LDAP backend, Pharos automatically implements a TTL-based cache.
-
-- **`PHAROS_LDAP_CACHE_TTL`**: Default 300s. Adjust this based on your network reliability and read requirements.
+    - **`PHAROS_LDAP_CACHE_TTL`**: Default 300s. Adjust this based on your network reliability and read requirements.
+  </div>
+</TieredTabs>
 
 ---
 

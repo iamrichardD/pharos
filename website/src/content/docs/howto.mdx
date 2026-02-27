@@ -18,17 +18,30 @@ import TieredTabs from '../../components/TieredTabs.astro';
  * Related to GitHub Issue #38, implements the tiered tabbed interface.
  * ======================================================================== */
 
-Welcome to Project Pharos. These guides will help you get started whether you are a Home Labber or an Enterprise Engineer.
+Welcome to Project Pharos. These guides will help you transform your infrastructure from a static spreadsheet into a live, queryable source of truth.
 
-## Security Tiers: YOLO vs. Lockdown
+## ⚡️ 3-Minute Quick Start: Your First Registry
 
-Pharos supports multiple security models to match your deployment environment.
+Reach a success state in under 180 seconds. No installation required if you have Podman/Docker.
 
-- **"The YOLO Lab" (Open / Read-Only)**: Perfect for single-user home labs. Anyone on the network can query the database without authentication. Writing still requires an authorized SSH key for basic safety.
-    - **Config**: `export PHAROS_SECURITY_MODE="open"`
-- **"Locking down the Lab" (Protected / Scoped)**: Recommended for shared labs or Enterprise environments. Read access is restricted via tokens or IP whitelists. In "Scoped" mode, users only see records belonging to their own team.
-    - **Config**: `export PHAROS_SECURITY_MODE="scoped"`
-    - **Dependency**: Requires an LDAP or OIDC backend to map identities to teams.
+### 1. Launch the Pharos Ecosystem
+Run the server and CLI tools in a single step using our demo environment.
+
+```bash
+# Start the Pharos Server in the background
+podman run -d --name pharos-demo -p 1050:1050 -p 9090:9090 ghcr.io/iamrichardd/pharos:latest
+```
+
+### 2. See it in Action
+Watch how easy it is to add and query your first infrastructure records:
+
+![Pharos Quick Start Animation](/pharos/assets/quickstart.svg)
+
+**Pro-Tip:** Use `mdb` for your machines and `ph` for your people. Pharos handles the protocol logic automatically.
+
+---
+
+## 🛡️ Security Tiers: Match Your Environment
 
 <TieredTabs>
   <div slot="homelab">
