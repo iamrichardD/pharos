@@ -100,3 +100,4 @@ A task is considered complete and may be marked `[x]` only when:
 - [ ] **Task 15.1 (Issue #59):** Engineering: Implement Multi-Server Synchronization for high-availability (HA) clusters using background replication.
 - [ ] **Task 15.2 (Issue #60):** Engineering: Implement Webhook Notification Engine for real-time Slack, Discord, and Custom API alerts on record modifications.
 - [ ] **Task 15.3 (Issue #61):** Engineering: Implement Advanced Pulse Alerting with configurable "Dead Man's Switch" logic for node failures.
+- [ ] **Task 15.4 (Issue #62):** Engineering: Sync marketing site theme with browser settings (`prefers-color-scheme`).

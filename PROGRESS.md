@@ -6,6 +6,7 @@
 **Backlog:** 
 
 ## Recent Completions
+- [x] Planning: Sync marketing site theme with browser settings (`prefers-color-scheme`) documented in `artifacts/system-theme-sync-plan.md`. (Issue #62)
 - [x] Task 14.7: Advocacy: Rearrange documentation information architecture to be tool-centric (Clients -> Console -> Automation -> Server Setup -> Scan). (Issue #57)
 - [x] Task 14.6: Advocacy: Perform Cognitive UX Audit, generate CLI animations, and implement dynamic landing page state. (Issue #56)
 - [x] Task 14.5: Advocacy: Apply tiered tab UX (Home Lab vs. Enterprise) to `integrations.mdx`, `architecture.mdx`, and `showcase.mdx`. (Issue #55)
