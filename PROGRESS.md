@@ -6,6 +6,7 @@
 **Backlog:** 
 
 ## Recent Completions
+- [x] Task 15.4: Engineering: Sync marketing site theme with browser settings (`prefers-color-scheme`). Implemented 'System First' logic in `BaseLayout.astro` and enhanced `DarkModeToggle.astro` with an intelligent toggle that returns control to the browser when user intent matches the system preference. (Issue #62)
 - [x] Planning: Sync marketing site theme with browser settings (`prefers-color-scheme`) documented in `artifacts/system-theme-sync-plan.md`. (Issue #62)
 - [x] Task 14.7: Advocacy: Rearrange documentation information architecture to be tool-centric (Clients -> Console -> Automation -> Server Setup -> Scan). (Issue #57)
 - [x] Task 14.6: Advocacy: Perform Cognitive UX Audit, generate CLI animations, and implement dynamic landing page state. (Issue #56)
