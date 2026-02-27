@@ -93,4 +93,4 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Task 14.3 (Issue #51):** Engineering: Develop the `pharos-console` (Dynamic Dashboard & WebMCP/MCP Server) to allow AI-agent management of SSH keys and enrollment tokens. Note: This is separate from the marketing site.
 - [x] **Task 14.4 (Issue #53):** Advocacy: Create multi-tenant documentation, "The YOLO Lab" vs "Locking down the Lab" guides, and `pharos-pulse` installation guides. Include docs on the separation of Marketing vs. Console sites.
 - [x] **Task 14.5 (Issue #55):** Advocacy: Apply tiered tab UX (Home Lab vs. Enterprise) to `integrations.mdx`, `architecture.mdx`, and `showcase.mdx` to reduce cognitive load across the documentation suite.
-- [ ] **Task 14.6 (Issue #56):** Advocacy: Perform Cognitive UX Audit, generate high-quality CLI animations, and implement dynamic "Vision vs Quick Start" landing page. (BLOCKED by Bug #57)
+- [x] **Task 14.6 (Issue #56):** Advocacy: Perform Cognitive UX Audit, generate high-quality CLI animations, and implement dynamic "Vision vs Quick Start" landing page.

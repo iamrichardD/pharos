@@ -6,7 +6,7 @@
 **Backlog:** 
 
 ## Recent Completions
-- [ ] Task 14.6: Advocacy: Perform Cognitive UX Audit, generate CLI animations, and implement dynamic landing page state. (Issue #56) -> BLOCKED by Bug #57
+- [x] Task 14.6: Advocacy: Perform Cognitive UX Audit, generate CLI animations, and implement dynamic landing page state. (Issue #56)
 - [x] Task 14.5: Advocacy: Apply tiered tab UX (Home Lab vs. Enterprise) to `integrations.mdx`, `architecture.mdx`, and `showcase.mdx`. (Issue #55)
 - [x] Task 14.4: Advocacy: Create multi-tenant documentation and pharos-pulse guides. (Issue #53)
 - [x] Task 14.3: Engineering: Develop `pharos-console` (MCP Server). (Issue #51)
