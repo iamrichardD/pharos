@@ -1,0 +1,73 @@
+---
+title: "Network Scan"
+description: "Automate your infrastructure inventory with zero manual data entry."
+order: 5
+---
+
+/* ========================================================================
+ * Project: pharos
+ * Component: Marketing Site
+ * File: network-scan.mdx
+ * Author: Richard D. (https://github.com/iamrichardd)
+ * License: AGPL-3.0 (See LICENSE file for details)
+ * * Purpose (The "Why"):
+ * Documentation for the automated discovery and provisioning tool.
+ * * Traceability:
+ * Related to Task 10.1-10.4 (Issue #39-42), implements pharos-scan.
+ * ======================================================================== */
+
+Stop manually typing IP addresses. `pharos-scan` is the high-performance network discovery tool built for the Pharos ecosystem. It uses mDNS, ARP, and intelligent port fingerprinting to identify every node in your lab and provision them into your registry with a single keystroke.
+
+## How it Works
+
+`pharos-scan` isn't just a network ping. It implements a multi-stage discovery engine:
+
+1.  **mDNS Discovery**: Instantly finds services like SSH, Proxmox, Home Assistant, and Plex.
+2.  **Port Fingerprinting**: Probes common ports (22, 80, 443, 8006, 32400) to identify the role of unknown devices.
+3.  **Inventory Cross-Check**: Queries your Pharos server to see if the device already exists, highlighting new or changed assets.
+
+---
+
+## Interactive TUI Discovery
+
+The best way to use the scanner is via its interactive Terminal User Interface (TUI).
+
+```bash
+# Start the discovery engine
+./pharos-scan
+```
+
+### The Workflow
+
+1.  **Scan**: The tool lists all discovered nodes with their IP, hostname (if available), and detected services.
+2.  **Select**: Use the arrow keys and `Space` to select the nodes you want to add to your Pharos registry.
+3.  **Provision**: Press `Enter` to start the provisioning process.
+4.  **Metadata**: The tool will prompt you for an alias and owner for each node.
+5.  **Commit**: `pharos-scan` automatically calls the `mdb` client with your authorized SSH key to register the new assets.
+
+---
+
+## Advanced Usage
+
+For automated environments, `pharos-scan` can be run in a non-interactive mode.
+
+### Scripted Discovery
+Output all discovered nodes as a JSON stream for further processing.
+
+```bash
+# Get a list of all SSH-capable nodes not in inventory
+./pharos-scan --json --filter "service=ssh,in_inventory=false"
+```
+
+### Targeted Scans
+Limit the scan to specific network interfaces or CIDR blocks.
+
+```bash
+# Scan only the management VLAN
+./pharos-scan --interface eth1 --cidr 10.10.10.0/24
+```
+
+---
+
+## Next Steps
+Monitor your newly discovered nodes in real-time using the [Pharos Console](./console).

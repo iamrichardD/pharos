@@ -31,8 +31,12 @@ The latest documentation, architecture diagrams, and how-to guides are available
 👉 **[iamrichardd.github.io/pharos/](https://iamrichardd.github.io/pharos/)**
 
 Detailed guides include:
-- **[Architecture Overview](https://iamrichardd.github.io/pharos/docs/architecture/)** - Deep dive into the system design.
-- **[How-To Guides](https://iamrichardd.github.io/pharos/docs/howto/)** - Deployment and usage instructions for Home Lab and Enterprise.
+- **[CLI Clients](https://iamrichardd.github.io/pharos/docs/cli-clients/)** - Master the `ph` and `mdb` tools.
+- **[Management Console](https://iamrichardd.github.io/pharos/docs/console/)** - Real-time dashboard and WebMCP.
+- **[Automation Workflows](https://iamrichardd.github.io/pharos/docs/automation/)** - Proxmox and CI/CD integration.
+- **[Server Setup](https://iamrichardd.github.io/pharos/docs/server-setup/)** - Technical backend configuration.
+- **[Network Scan](https://iamrichardd.github.io/pharos/docs/network-scan/)** - Automated discovery and provisioning.
+- **[Architecture Overview](https://iamrichardd.github.io/pharos/docs/architecture/)** - Deep dive into system design.
 - **[Contributing Guide](CONTRIBUTING.md)** - How to contribute to the Pharos ecosystem.
 
 Local Markdown versions are also maintained in the [`docs/`](docs/) directory.

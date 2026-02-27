@@ -94,3 +94,9 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Task 14.4 (Issue #53):** Advocacy: Create multi-tenant documentation, "The YOLO Lab" vs "Locking down the Lab" guides, and `pharos-pulse` installation guides. Include docs on the separation of Marketing vs. Console sites.
 - [x] **Task 14.5 (Issue #55):** Advocacy: Apply tiered tab UX (Home Lab vs. Enterprise) to `integrations.mdx`, `architecture.mdx`, and `showcase.mdx` to reduce cognitive load across the documentation suite.
 - [x] **Task 14.6 (Issue #56):** Advocacy: Perform Cognitive UX Audit, generate high-quality CLI animations, and implement dynamic "Vision vs Quick Start" landing page.
+- [x] **Task 14.7 (Issue #57):** Advocacy: Rearrange documentation information architecture to be tool-centric (Clients -> Console -> Automation -> Server Setup -> Scan).
+
+## Phase 15: Global Resilience & Advanced Connectivity
+- [ ] **Task 15.1 (Issue #59):** Engineering: Implement Multi-Server Synchronization for high-availability (HA) clusters using background replication.
+- [ ] **Task 15.2 (Issue #60):** Engineering: Implement Webhook Notification Engine for real-time Slack, Discord, and Custom API alerts on record modifications.
+- [ ] **Task 15.3 (Issue #61):** Engineering: Implement Advanced Pulse Alerting with configurable "Dead Man's Switch" logic for node failures.

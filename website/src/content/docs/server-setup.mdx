@@ -1,0 +1,132 @@
+---
+title: "Server Setup"
+description: "Deploy and configure the Pharos server for Home Lab or Enterprise environments."
+order: 4
+---
+import TieredTabs from '../../components/TieredTabs.astro';
+
+/* ========================================================================
+ * Project: pharos
+ * Component: Marketing Site
+ * File: server-setup.mdx
+ * Author: Richard D. (https://github.com/iamrichardd)
+ * License: AGPL-3.0 (See LICENSE file for details)
+ * * Purpose (The "Why"):
+ * Detailed technical setup for the Pharos server backend.
+ * * Traceability:
+ * Related to Task 4.1, 4.2, and 4.3.
+ * ======================================================================== */
+
+The `pharos-server` is a high-performance daemon optimized for Linux (Ubuntu LTS). It acts as the central registry for the entire ecosystem.
+
+---
+
+## 🚀 3-Minute Quick Start: The "YOLO" Lab
+
+Reach a success state in under 180 seconds. No installation required if you have Podman/Docker.
+
+```bash
+# Start the Pharos Server in the background
+podman run -d --name pharos-demo -p 1050:1050 -p 9090:9090 ghcr.io/iamrichardd/pharos:latest
+```
+
+---
+
+## 🛡️ Production Deployment
+
+For production use, we recommend a native installation in a Proxmox LXC container or a dedicated Ubuntu VM.
+
+<TieredTabs>
+  <div slot="homelab">
+
+    ### 🏠 Home Lab: Persistent JSON Storage
+    Perfect for Proxmox LXC containers. Pharos uses a simple, restart-survivable JSON file for your data.
+
+    #### 1. Prepare the LXC Container
+    Ubuntu 24.04 with 512MB RAM and 2GB Disk is recommended.
+
+    #### 2. Install the Pharos Server
+    ```bash
+    wget https://github.com/iamrichardd/pharos/releases/download/v1.0.0/pharos-server-linux-x86_64
+    chmod +x pharos-server-linux-x86_64
+    mv pharos-server-linux-x86_64 /usr/local/bin/pharos-server
+    ```
+
+    #### 3. Configure as a Systemd Service
+    ```bash
+    cat <<EOF > /etc/systemd/system/pharos.service
+    [Unit]
+    Description=Pharos Infrastructure Server
+    After=network.target
+
+    [Service]
+    ExecStart=/usr/local/bin/pharos-server
+    Environment=PHAROS_STORAGE_PATH=/var/lib/pharos/data.json
+    Environment=PHAROS_SECURITY_MODE=open
+    Restart=always
+    User=root
+
+    [Install]
+    WantedBy=multi-user.target
+    EOF
+
+    systemctl daemon-reload
+    systemctl enable --now pharos
+    ```
+
+  </div>
+
+  <div slot="enterprise">
+
+    ### 🏢 Enterprise: LDAP Integration
+    Pharos integrates seamlessly with your Enterprise infrastructure by acting as a high-speed cache for your central LDAP directory.
+
+    #### 1. Configure LDAP details:
+    ```bash
+    export PHAROS_LDAP_URL="ldap://ldap.enterprise.com:389"
+    export PHAROS_LDAP_BIND_DN="cn=pharos,ou=services,dc=enterprise,dc=com"
+    export PHAROS_LDAP_BIND_PW="secret"
+    export PHAROS_LDAP_BASE_DN="dc=enterprise,dc=com"
+    export PHAROS_SECURITY_MODE="scoped"
+    ./pharos-server
+    ```
+
+    #### 2. Field Mapping:
+    Pharos maps fields to standard object classes automatically:
+    - **People:** `inetOrgPerson` (maps `name` -> `cn`, `email` -> `mail`)
+    - **Machines:** `ipHost` (maps `hostname` -> `cn`, `ip` -> `ipHostNumber`)
+
+  </div>
+</TieredTabs>
+
+---
+
+## 🔐 Security Configuration
+
+Pharos implements a tiered security model to balance accessibility and safety.
+
+| Mode | Description | Write Security |
+| :--- | :--- | :--- |
+| `open` | For local-only Home Labs. | Anyone can add/edit. |
+| `protected` | Default for remote access. | Requires authorized SSH key. |
+| `scoped` | For multi-tenant Enterprise teams. | Requires SSH key + LDAP group matching. |
+
+### Enrolling SSH Keys
+To authorize a user for write access, place their public key in the keys directory:
+```bash
+mkdir -p /etc/pharos/keys
+cp ~/.ssh/id_ed25519.pub /etc/pharos/keys/admin.pub
+export PHAROS_KEYS_DIR="/etc/pharos/keys"
+```
+
+---
+
+## 📊 Monitoring & Observability
+
+Pharos exposes Prometheus metrics on port `9090` to track performance and inventory health.
+
+- **Endpoint:** `http://localhost:9090/metrics`
+- **Key Metrics:**
+    - `pharos_cpu_usage_percentage`
+    - `pharos_memory_usage_bytes`
+    - `pharos_total_records`

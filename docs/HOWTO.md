@@ -1,165 +1,108 @@
 # Pharos How-To Guides
 
-Welcome to Project Pharos. These guides will help you get started whether you are a Home Labber or an Enterprise Engineer.
+Welcome to Project Pharos. This documentation is organized to help you first understand the **client tools** and how they automate your workflows, followed by the technical details of setting up the **Pharos server**.
 
-## 🏠 Home Lab Tier: Restart-Survivable Storage
+---
 
-For Home Lab environments (e.g., Proxmox LXC), Pharos provides a file-based storage engine that survives server restarts.
+## 1. CLI Clients (`ph` & `mdb`)
 
-### Proxmox / LXC: 5-Minute Deployment
+The primary way to interact with your Pharos registry is through our specialized CLI clients. These are lightweight, dependency-free binaries built for speed and scriptability.
 
-This guide will help you set up Pharos as your infrastructure source of truth within a Proxmox LXC container.
-
-#### 1. Prepare the LXC Container
-Create an Ubuntu 24.04 LXC container. We recommend at least 512MB RAM and 2GB Disk.
+### Basic Usage
+Pharos uses a simple key-value query syntax.
 
 ```bash
-# Inside the LXC container
-apt-get update && apt-get install -y ca-certificates
+# Query for a person (ph client)
+./ph name="John Doe"
+
+# Query for a machine (mdb client)
+./mdb hostname="srv-web-01"
 ```
 
-#### 2. Install the Pharos Server
-Download the latest `pharos-server` binary for `x86_64-unknown-linux-gnu`.
-
-```bash
-wget https://github.com/iamrichardd/pharos/releases/download/v1.0.0/pharos-server-linux-x86_64
-chmod +x pharos-server-linux-x86_64
-mv pharos-server-linux-x86_64 /usr/local/bin/pharos-server
-```
-
-#### 3. Configure Persistent Storage
-Create a directory for your data and set the environment variable.
-
-```bash
-mkdir -p /var/lib/pharos
-export PHAROS_STORAGE_PATH="/var/lib/pharos/data.json"
-```
-
-    #### 4. Run as a Systemd Service
-    For maximum reliability and uptime, run Pharos as a service so it's always available.
-```bash
-cat <<EOF > /etc/systemd/system/pharos.service
-[Unit]
-Description=Pharos Infrastructure Server
-After=network.target
-
-[Service]
-ExecStart=/usr/local/bin/pharos-server
-Environment=PHAROS_STORAGE_PATH=/var/lib/pharos/data.json
-Restart=always
-User=root
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-systemctl daemon-reload
-systemctl enable --now pharos
-```
-
-#### 5. Verification
-Verify your server is responding to queries:
-
-```bash
-telnet localhost 1050
-# Type: query name=test
-# You should receive a response
-```
-
-### 1. Configuration
-Set the `PHAROS_STORAGE_PATH` environment variable to point to your data file.
-
-```bash
-export PHAROS_STORAGE_PATH="/var/lib/pharos/data.json"
-./pharos-server
-```
-
-### 2. Record Management
-Add a new contact using the `ph` CLI:
+### Adding Records
+Write operations require an authorized SSH key (using `~/.ssh/id_ed25519` by default).
 
 ```bash
 # Add a person
-./ph add name="John Doe" email="john@home.lab" type="person"
+./ph add name="Jane Smith" email="jane@lab.local" type="person"
 
-# Add a machine (using mdb)
-./mdb add hostname="srv-01" ip="192.168.1.10" type="machine"
+# Add a machine
+./mdb add hostname="db-01" ip="10.0.0.5" type="machine" status="up"
 ```
 
-## 🏢 Enterprise Tier: LDAP & SSH Authentication
+---
 
-Pharos integrates seamlessly with Enterprise infrastructure via LDAP backends and SSH-key authorization.
+## 2. Management Console & WebMCP
 
-### 1. LDAP Integration
-Configure LDAP connection details:
+The **Pharos Console** is the dynamic interface for your infrastructure.
 
+*   **Pulse Monitor**: Real-time visualization of node health (CPU/Memory).
+*   **Key Management**: Enroll and revoke SSH keys for write access.
+*   **WebMCP**: Securely grant AI agents (like Gemini or Claude) access to manage your lab with human-in-the-loop safety.
+
+To enable the console on your server:
 ```bash
-export PHAROS_LDAP_URL="ldap://ldap.enterprise.com:389"
-export PHAROS_LDAP_BIND_DN="cn=pharos,ou=services,dc=enterprise,dc=com"
-export PHAROS_LDAP_BIND_PW="secret"
-export PHAROS_LDAP_BASE_DN="dc=enterprise,dc=com"
+export PHAROS_CONSOLE_ENABLE=true
 ./pharos-server
 ```
 
-Pharos maps fields to standard object classes:
-- **People:** `inetOrgPerson` (maps `name` -> `cn`, `email` -> `mail`)
-- **Machines:** `ipHost` (maps `hostname` -> `cn`, `ip` -> `ipHostNumber`)
+---
 
-### 2. SSH Authentication
-Secure your write operations by authorizing SSH keys.
+## 3. Automation Workflows
 
-1.  **Server Setup:** Place authorized public keys in a directory.
-    ```bash
-    mkdir -p /etc/pharos/keys
-    cp ~/.ssh/id_ed25519.pub /etc/pharos/keys/admin.pub
-    export PHAROS_KEYS_DIR="/etc/pharos/keys"
-    ```
+Pharos is built to be the automated backbone of your DevOps pipeline.
 
-2.  **Client Setup:** The CLI clients will look for `~/.ssh/id_ed25519` by default.
-    ```bash
-    # Command will trigger challenge-response automatically
-    ./ph add name="New User" email="user@enterprise.com"
-    ```
-
-### 3. DevSecOps Integration: Infrastructure as Code
-
-Pharos is designed for high-velocity DevSecOps teams. You can automate your infrastructure records by integrating Pharos into your CI/CD pipelines.
-
-#### 1. Configure the GitHub Actions / CI Server
-Securely store the SSH private key used for infrastructure updates.
-
-- **GitHub Secret:** `PHAROS_SSH_KEY`
-
-#### 2. Workflow Example: Automatic Infrastructure Updates
-Add a new machine record automatically after a successful build.
-
-```yaml
-jobs:
-  update-inventory:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Deploy Pharos CLI
-        run: |
-          wget -q https://github.com/iamrichardd/pharos/releases/download/v1.0.0/mdb-linux-x86_64
-          chmod +x mdb-linux-x86_64
-          mv mdb-linux-x86_64 /usr/local/bin/mdb
-      - name: Update Machine Record
-        env:
-          SSH_KEY: ${{ secrets.PHAROS_SSH_KEY }}
-          PHAROS_SERVER: pharos.enterprise.com
-        run: |
-          mkdir -p ~/.ssh
-          echo "$SSH_KEY" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          mdb add hostname="web-app-v2" ip="${{ steps.deploy.outputs.ip }}" type="machine"
+### Proxmox Hooks
+Automate inventory registration whenever an LXC container starts:
+```bash
+# In your Proxmox hook script
+mdb add hostname="$HOSTNAME" ip="$IP" type="machine" vmid="$VMID" status="up"
 ```
 
-## 📊 Monitoring
+### CI/CD Integration
+Update your machine records automatically after a successful build in GitHub Actions:
+```yaml
+run: |
+  mdb add hostname="web-app-v2" ip="${{ steps.deploy.outputs.ip }}" type="machine"
+```
 
-Pharos exposes Prometheus metrics on port `9090`.
+---
 
-- **Endpoint:** `http://localhost:9090/metrics`
-- **Key Metrics:**
-    - `pharos_cpu_usage_percentage`
-    - `pharos_memory_usage_bytes`
-    - `pharos_total_records`
+## 4. Server Setup (Technical Details)
+
+The `pharos-server` acts as the central registry.
+
+### Home Lab Tier (LXC)
+Uses persistent JSON storage for a simple, restart-survivable setup.
+```bash
+export PHAROS_STORAGE_PATH="/var/lib/pharos/data.json"
+./pharos-server
+```
+
+### Enterprise Tier (LDAP)
+Acts as a high-speed cache for your corporate directory.
+```bash
+export PHAROS_LDAP_URL="ldap://ldap.enterprise.com:389"
+./pharos-server
+```
+
+### Security Configuration
+Authorize SSH keys for write access:
+```bash
+mkdir -p /etc/pharos/keys
+cp ~/.ssh/id_ed25519.pub /etc/pharos/keys/admin.pub
+export PHAROS_KEYS_DIR="/etc/pharos/keys"
+```
+
+---
+
+## 5. Automated Discovery (`pharos-scan`)
+
+Scanning the network is a great next step after your server is successfully installed. `pharos-scan` uses mDNS and port fingerprinting to find every node in your lab and provision them into your registry with a single keystroke.
+
+1.  **Run the Scanner:**
+    ```bash
+    ./pharos-scan
+    ```
+
+2.  **Interactive TUI:** Use the arrow keys to select discovered nodes and `Enter` to provision them directly into your `mdb` registry using your SSH key.

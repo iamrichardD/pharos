@@ -1,0 +1,111 @@
+---
+title: "Automation Workflows"
+description: "Integrate Pharos into your Proxmox, CI/CD, and DevOps pipelines."
+order: 3
+---
+import TieredTabs from '../../components/TieredTabs.astro';
+
+/* ========================================================================
+ * Project: pharos
+ * Component: Marketing Site
+ * File: automation.mdx
+ * Author: Richard D. (https://github.com/iamrichardd)
+ * License: AGPL-3.0 (See LICENSE file for details)
+ * * Purpose (The "Why"):
+ * Practical examples of how to automate infrastructure workflows.
+ * * Traceability:
+ * Related to Task 8.2, 8.3, and 14.5.
+ * ======================================================================== */
+
+The true value of Pharos is realized when it becomes the automated backbone of your infrastructure. This guide provides production-ready workflows for Home Lab and Enterprise environments.
+
+## 🛠️ Proxmox Automation
+
+Achieve zero-touch inventory by registering your LXC containers and VMs automatically during the provisioning process.
+
+### The Hook Script
+Create a shell script on your Proxmox host (`/usr/local/bin/pharos-hook.sh`). This script uses the `mdb` client to notify the Pharos server whenever a container starts or stops.
+
+```bash
+#!/bin/bash
+# Usage: ./pharos-hook.sh <vmid> <phase>
+VMID=$1
+PHASE=$2
+
+if [ "$PHASE" == "post-start" ]; then
+    HOSTNAME=$(pct exec $VMID -- hostname)
+    IP=$(pct exec $VMID -- hostname -I | awk '{print $1}')
+    # Register with Pharos mdb
+    mdb add hostname="$HOSTNAME" ip="$IP" type="machine" vmid="$VMID" status="up"
+fi
+
+if [ "$PHASE" == "pre-stop" ]; then
+    HOSTNAME=$(pct exec $VMID -- hostname)
+    mdb change hostname="$HOSTNAME" status="down"
+fi
+```
+
+### Enable the Hook
+Apply the script to your container or VM configuration:
+```bash
+pct set 100 --hookscript local:snippets/pharos-hook.sh
+```
+
+---
+
+## 🚀 CI/CD Integration
+
+Pharos is designed for high-velocity DevSecOps teams. You can automate your infrastructure records by integrating Pharos into your CI/CD pipelines.
+
+<TieredTabs>
+  <div slot="homelab">
+
+    ### Gitea / Local CI
+    Keep your local registry in sync with your source code.
+
+    ```bash
+    # Example snippet for a local CI runner
+    mdb add hostname="web-app-v2" ip="$RUNNER_IP" type="machine"
+    ```
+
+  </div>
+
+  <div slot="enterprise">
+
+    ### GitHub Actions Workflow
+    Securely update your inventory after a successful deployment.
+
+    ```yaml
+    jobs:
+      update-inventory:
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@v4
+          - name: Deploy Pharos CLI
+            run: |
+              wget -q https://github.com/iamrichardd/pharos/releases/download/v1.0.0/mdb-linux-x86_64
+              chmod +x mdb-linux-x86_64
+              mv mdb-linux-x86_64 /usr/local/bin/mdb
+          - name: Update Machine Record
+            env:
+              SSH_KEY: ${{ secrets.PHAROS_SSH_KEY }}
+              PHAROS_SERVER: pharos.enterprise.com
+            run: |
+              mkdir -p ~/.ssh
+              echo "$SSH_KEY" > ~/.ssh/id_ed25519
+              chmod 600 ~/.ssh/id_ed25519
+              mdb add hostname="web-app-v2" ip="${{ steps.deploy.outputs.ip }}" type="machine"
+    ```
+
+  </div>
+</TieredTabs>
+
+---
+
+## 🩺 Real-Time Monitoring with Pulse
+
+Pharos doesn't just store static data; it monitors your fleet in real-time using `pharos-pulse`.
+
+1.  **Autonomous Heartbeats**: Every node running the `pharos-pulse` agent sends periodic telemetry (CPU, Memory, Disk) to the server.
+2.  **Health Dashboard**: Use the [Pharos Console](./console) to visualize the health of your entire network at a glance.
+3.  **Automated Cleanup**: Pharos can be configured to automatically mark nodes as `unavailable` if their pulse is missed for more than 5 minutes.
