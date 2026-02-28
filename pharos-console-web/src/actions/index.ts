@@ -5,14 +5,14 @@
  * Author: Richard D. (https://github.com/iamrichardd)
  * License: AGPL-3.0 (See LICENSE file for details)
  * * Purpose (The "Why"):
- * Defines Astro Actions for server-side operations, particularly the HitL
- * (Human-in-the-Loop) additions for MDB records.
+ * Defines Astro Actions for server-side operations. Uses feature-specific
+ * logic from the Vertical Slices.
  * * Traceability:
- * Related to Task 16.3 (Issue #65).
+ * Related to Task 16.6 (Issue #69).
  * ======================================================================== */
 import { defineAction } from 'astro:actions';
 import { z } from 'astro:schema';
-import { executePharosQuery } from '../lib/pharos';
+import { commitMdbRecord } from '../features/mdb/add/add-logic';
 
 export const server = {
     addMachine: defineAction({
@@ -29,13 +29,8 @@ export const server = {
             if (input.actionType === 'stage') {
                 return { staged: true, data: input };
             } else if (input.actionType === 'commit') {
-                let queryStr = `add type="machine" hostname="${input.hostname}" ip="${input.ip}"`;
-                if (input.mac) queryStr += ` mac="${input.mac}"`;
-                if (input.os) queryStr += ` os="${input.os}"`;
-                if (input.alias) queryStr += ` alias="${input.alias}"`;
-
                 try {
-                    const res = await executePharosQuery('web-console', queryStr);
+                    const res = await commitMdbRecord(input);
                     if (res.type === 'error') {
                         throw new Error(res.message || 'Failed to add record');
                     }

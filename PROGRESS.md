@@ -2,10 +2,11 @@
 
 ## Current Status
 **Phase:** 16 (Pharos Web Console) - IN PROGRESS
-**Active Task:** Task 16.6 (Issue #69): Engineering: Align `pharos-console-web` with TDD, VSA, and SOLID mandates.
-**Backlog:** 16.4, 16.5, 17.1, 17.2, 18.1, 18.2, 19.1
+**Active Task:** Task 16.4 (Issue #66): Engineering: Integrate "Presence Monitoring" UI and Desktop-to-Mobile QR Auth Handshake.
+**Backlog:** 16.5, 17.1, 17.2, 18.1, 18.2, 19.1
 
 ## Recent Completions
+- [x] Task 16.6: Engineering: Align `pharos-console-web` with TDD, VSA, and SOLID mandates. Initialized Vitest, refactored to Vertical Slice Architecture, and implemented security reviews with input escaping. (Issue #69)
 - [x] Refinement: Updated `GEMINI.md` to include mandates for **Test-Driven Development (TDD)**, **Vertical Slice Architecture (VSA)**, and mandatory **Security Reviews**.
 - [x] Task 16.3: Engineering: Implement "One-off Addition" forms using Astro Actions with HitL confirmation. (Issue #65)
 - [x] Task 16.2: Engineering: Implement the "Web MDB" searchable interface for machine/infrastructure records (Mobile-First). (Issue #68)

@@ -1,0 +1,44 @@
+---
+/* ========================================================================
+ * Project: pharos
+ * Component: Web Console
+ * File: src/features/mdb/search/MdbSearchForm.astro
+ * Author: Richard D. (https://github.com/iamrichardd)
+ * License: AGPL-3.0 (See LICENSE file for details)
+ * * Purpose (The "Why"):
+ * UI component for the MDB search form. Mobile-first design with
+ * consistent styling and clear visual cues.
+ * * Traceability:
+ * Related to Task 16.6 (Issue #69).
+ * ======================================================================== */
+interface Props {
+    query: string;
+}
+
+const { query } = Astro.props;
+---
+
+<form method="get" action="/mdb" class="flex flex-col sm:flex-row gap-3">
+    <div class="relative flex-grow">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg class="h-5 w-5 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+            </svg>
+        </div>
+        <input
+            type="text"
+            name="q"
+            id="search"
+            class="block w-full pl-10 pr-3 py-3 border border-slate-300 rounded-xl focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm text-lg"
+            placeholder="e.g., return all"
+            value={query}
+            autofocus
+        />
+    </div>
+    <button
+        type="submit"
+        class="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-xl shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+    >
+        Search
+    </button>
+</form>
