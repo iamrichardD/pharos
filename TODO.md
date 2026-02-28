@@ -106,7 +106,7 @@ A task is considered complete and may be marked `[x]` only when:
 
 ## Phase 16: Pharos Web Console (Human/AI/Mobile) - HIGH PRIORITY
 - [x] **Task 16.1 (Issue #63):** Engineering: Scaffold the "Pharos Web Console" using Astro (SSR), explicitly separate from the static documentation site.
-- [ ] **Task 16.2 (Issue #64):** Engineering: Implement the "Web MDB" searchable interface for machine/infrastructure records (Mobile-First).
+- [x] **Task 16.2 (Issue #64):** Engineering: Implement the "Web MDB" searchable interface for machine/infrastructure records (Mobile-First).
 - [ ] **Task 16.3 (Issue #65):** Engineering: Implement "One-off Addition" forms using Astro Actions with HitL confirmation.
 - [ ] **Task 16.4 (Issue #66):** Engineering: Integrate "Presence Monitoring" UI and Desktop-to-Mobile QR Auth Handshake.
 - [ ] **Task 16.5 (Issue #67):** Advocacy: Document the Human/AI/Mobile Web Console as the primary interface for non-technical users and mobile Home Labbers.

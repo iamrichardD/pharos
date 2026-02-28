@@ -2,10 +2,11 @@
 
 ## Current Status
 **Phase:** 16 (Pharos Web Console) - IN PROGRESS
-**Active Task:** Task 16.2 (Issue #64): Engineering: Implement the "Web MDB" searchable interface (Mobile-First).
-**Backlog:** 16.3, 16.4, 16.5, 17.1, 17.2, 18.1, 18.2, 19.1
+**Active Task:** Task 16.3 (Issue #65): Engineering: Implement "One-off Addition" forms using Astro Actions with HitL confirmation.
+**Backlog:** 16.4, 16.5, 17.1, 17.2, 18.1, 18.2, 19.1
 
 ## Recent Completions
+- [x] Task 16.2: Engineering: Implement the "Web MDB" searchable interface for machine/infrastructure records (Mobile-First). (Issue #64)
 - [x] Task 16.1: Engineering: Scaffold the "Pharos Web Console" using Astro (SSR) with Node.js adapter, TypeScript, and Tailwind CSS. Implemented a mobile-first responsive landing page and a production-ready `Containerfile`. (Issue #63)
 - [x] Planning: Pharos Protocol Extensions (PhP) documented in `artifacts/pharos-rfc-extension-proposal.md`. Formally extends RFC 2378 for modern DevSecOps.
 - [x] Planning: Pharos Web Console (Human/AI Interface) documented in `artifacts/pharos-web-console-plan.md`.
