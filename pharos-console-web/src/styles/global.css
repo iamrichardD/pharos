@@ -1,0 +1,12 @@
+/* ========================================================================
+ * Project: pharos
+ * Component: Web Console
+ * File: src/styles/global.css
+ * Author: Richard D. (https://github.com/iamrichardd)
+ * License: AGPL-3.0 (See LICENSE file for details)
+ * * Purpose (The "Why"):
+ * Global CSS styles for the Pharos Web Console, utilizing Tailwind CSS 4.0.
+ * * Traceability:
+ * Related to Task 16.1 in Phase 16.
+ * ======================================================================== */
+@import "tailwindcss";

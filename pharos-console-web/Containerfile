@@ -1,0 +1,32 @@
+# ========================================================================
+# Project: pharos
+# Component: Web Console
+# File: pharos-console-web/Containerfile
+# Author: Richard D. (https://github.com/iamrichardd)
+# License: AGPL-3.0 (See LICENSE file for details)
+# * Purpose (The "Why"):
+# Production build and runtime for the Pharos Web Console (Astro SSR).
+# Provides a lightweight, self-contained environment for Home Lab/Enterprise.
+# * Traceability:
+# Related to Task 16.1 in Phase 16.
+# ========================================================================
+
+FROM public.ecr.aws/docker/library/node:22-slim AS build
+
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
+
+FROM public.ecr.aws/docker/library/node:22-slim AS runtime
+WORKDIR /app
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/package.json ./package.json
+
+ENV HOST=0.0.0.0
+ENV PORT=3000
+EXPOSE 3000
+
+CMD ["node", "./dist/server/entry.mjs"]

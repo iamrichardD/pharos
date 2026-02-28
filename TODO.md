@@ -104,12 +104,12 @@ A task is considered complete and may be marked `[x]` only when:
 - [ ] **Task 15.3 (Issue #61):** Engineering: Implement Advanced Pulse Alerting with configurable "Dead Man's Switch" logic for node failures.
 - [x] **Task 15.4 (Issue #62):** Engineering: Sync marketing site theme with browser settings (`prefers-color-scheme`).
 
-## Phase 16: Pharos Web Console (Human/AI Interface) - HIGH PRIORITY
-- [ ] **Task 16.1 (#TBD):** Engineering: Scaffold the "Pharos Web Console" using Next.js, explicitly separate from the static documentation site.
-- [ ] **Task 16.2 (#TBD):** Engineering: Implement the "Web MDB" searchable interface for machine/infrastructure records, serving non-technical staff and one-off searches.
-- [ ] **Task 16.3 (#TBD):** Engineering: Implement "One-off Addition" forms for device/person records with Human-in-the-Loop (HitL) confirmation via WebMCP.
-- [ ] **Task 16.4 (#TBD):** Engineering: Integrate "Presence Monitoring" UI to visualize ONLINE/OFFLINE status from `pharos-pulse` events.
-- [ ] **Task 16.5 (#TBD):** Advocacy: Document the Human/AI Web Console as the primary interface for non-technical users and AI Agents.
+## Phase 16: Pharos Web Console (Human/AI/Mobile) - HIGH PRIORITY
+- [x] **Task 16.1 (Issue #63):** Engineering: Scaffold the "Pharos Web Console" using Astro (SSR), explicitly separate from the static documentation site.
+- [ ] **Task 16.2 (Issue #64):** Engineering: Implement the "Web MDB" searchable interface for machine/infrastructure records (Mobile-First).
+- [ ] **Task 16.3 (Issue #65):** Engineering: Implement "One-off Addition" forms using Astro Actions with HitL confirmation.
+- [ ] **Task 16.4 (Issue #66):** Engineering: Integrate "Presence Monitoring" UI and Desktop-to-Mobile QR Auth Handshake.
+- [ ] **Task 16.5 (Issue #67):** Advocacy: Document the Human/AI/Mobile Web Console as the primary interface for non-technical users and mobile Home Labbers.
 
 ## Phase 17: Pharos Sandbox & WebMCP Integration
 - [ ] **Task 17.1 (#TBD):** Engineering: Design `deploy/compose.yml` with `tmpfs` and network isolation for "Zero-Host" test environments.

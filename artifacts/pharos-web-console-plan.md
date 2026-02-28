@@ -8,60 +8,59 @@
  * * Purpose (The "Why"):
  * Resolves the conflation between the static marketing site and the dynamic 
  * Web Console. Defines the Roadmap for the Human/AI Web-enabled version of 
- * the mdb CLI, serving non-technical users and AI agents.
+ * the mdb CLI, serving non-technical users, mobile home-labbers, and AI agents.
  * * Traceability:
  * Related to Phase 14 (Pulse & Multi-Tenant Architecture) and Phase 16.
  * ======================================================================== */
 -->
 
-# Pharos Web Console: Human/AI Interface Plan
+# Pharos Web Console: Human/AI/Mobile Interface Plan
 
 ## 1. Problem Statement
-The current Pharos ecosystem lacks a unified, dynamic web interface for human users (non-technical staff) and AI Agents to interact with the system. Previous efforts conflated the **Static Marketing/Documentation Site** (iamrichardd.com/pharos) with the **Dynamic Console**. 
+The Pharos ecosystem requires a unified, dynamic web interface for:
+- **Home Labbers**: Mobile/Tablet access within the home network (IP search, IoT management).
+- **Enterprise Staff**: Non-technical users performing one-off searches/additions.
+- **AI Agents**: Native WebMCP capabilities for automated management.
 
-The missing component is a Web-based version of the `mdb` CLI that allows for:
-- One-off device searches (for Home Labbers/Enterprise staff).
-- One-off device additions/modifications.
-- SSH Key management.
-- Native WebMCP capabilities for AI Agents.
+The Web Console must be **Self-Hosted** (deployed alongside `pharos-server`) and strictly separate from the **Static Marketing Site**.
 
-## 2. Strategic Remediation
-The project will formally bifurcate web efforts into two distinct products:
+## 2. Technical Stack: Astro (SSR)
+Astro (SSR Mode with Node.js adapter) is selected over Next.js for:
+- **Security**: Explicit boundaries between server and client; prevents "accidental hydration" of sensitive data.
+- **Performance**: "Islands Architecture" ensures mobile devices only load JS for interactive components (Search/Dashboards).
+- **Consistency**: Shares component logic, Tailwind configs, and design tokens with the existing documentation site.
+- **Portability**: Lightweight Node.js container ideal for Proxmox/LXC environments.
 
-### A. Pharos Documentation & Marketing (Static)
-- **URL**: `https://iamrichardd.com/pharos/`
-- **Tech Stack**: Astro (Static Site Generation).
-- **Goal**: High-value technical documentation, architecture diagrams, and DORA metrics.
+## 3. Dual-Posture Security Model
 
-### B. Pharos Web Console (Dynamic)
-- **Host**: Deployed alongside `pharos-server` (e.g., `https://pharos.internal/` or `localhost:3000`).
-- **Tech Stack**: Next.js / React with Tailwind CSS.
-- **Goal**: Functional parity with `mdb` and `ph` CLIs, plus WebMCP integration.
+### A. Home Lab Posture (Mobile-First)
+- **Auth Handshake**: 
+    - **Desktop**: "CLI-to-Web" Handshake. User signs a challenge in the terminal (`ph auth sign`) to authorize the browser.
+    - **Mobile/Tablet**: "QR Code Handshake". Desktop console generates a secure QR code; mobile device scans it to establish a session.
+    - **WebAuthn**: Native Passkey (FaceID/TouchID) support for frictionless mobile access.
+- **Trust Model**: Optimized for speed and responsiveness on low-power mobile hardware.
 
-## 3. Product Roadmap (Prioritized)
+### B. Enterprise Intranet Posture (Hardened)
+- **Identity**: OIDC / LDAP integration via Astro Middleware.
+- **Hardening**: Mandatory TLS, CSRF protection (Astro Actions), and strict HSTS headers.
+- **Auditability**: Every write operation (MDB/PH) includes `Original-Signer-Identity` provenance metadata.
+
+## 4. Product Roadmap (Prioritized)
 
 ### Phase 1: Interactive MDB (Highest Priority)
-- **Feature**: Search interface for machine/infrastructure records.
-- **Feature**: CRUD forms for adding/editing devices (one-off additions).
-- **Target Persona**: The "Office Manager" or "Home Labber" who needs to quickly find an IP or add a new IoT device without touching a terminal.
-- **AI Enablement**: Expose `search_mdb` and `update_record` as WebMCP tools.
+- **Feature**: Mobile-responsive search interface for machine records.
+- **Feature**: "One-off Addition" forms using **Astro Actions** (Type-safe, POST-only).
+- **Target**: The "Home Labber" on a tablet in the server closet or the "Office Manager" adding a laptop.
 
 ### Phase 2: Pulse Monitoring & Identity
-- **Feature**: Visual dashboard showing "ONLINE/OFFLINE" status of all nodes (via `pharos-pulse`).
-- **Feature**: SSH Public Key management and provisioning token generation.
-- **AI Enablement**: Expose `generate_provisioning_token` as a WebMCP tool.
+- **Feature**: Real-time "ONLINE/OFFLINE" dashboard for all nodes.
+- **Feature**: Handshake UI for Desktop-to-Mobile session transfer.
 
-### Phase 3: Network Discovery Integration
-- **Feature**: Trigger `pharos-scan` jobs from the UI.
-- **Feature**: Bulk-provision discovered devices into `mdb`.
+### Phase 3: Network Discovery & Automation
+- **Feature**: Trigger `pharos-scan` jobs and bulk-provision discovered devices.
+- **AI Enablement**: Native WebMCP tool definitions (Search/Update/Provision).
 
-## 4. Architectural Principles
-- **Clean Architecture**: The Web Console is a *client* of the `pharos-server` API. No direct database access.
-- **Security**: Must leverage the existing Triple-Tier Security model. All write operations from the Web Console require an authenticated session (mapped to an SSH key or LDAP credential).
-- **AI Agent Native**: Tools defined in `artifacts/mcp-pharos-spec.md` must be natively available in the browser via WebMCP.
-
-## 5. Implementation Schedule
-- **Week 1**: Scaffold Next.js "Pharos Console" inside the `crates/pharos-console` or a new `web/console` workspace.
-- **Week 2**: Implement read-only `mdb` view (Search/Filter).
-- **Week 3**: Implement write forms for device management (Human-in-the-Loop required).
-- **Week 4**: Finalize WebMCP bridge for AI Agent interaction.
+## 5. Architectural Principles
+- **Clean Architecture**: The Console is a *client* of the `pharos-server` API.
+- **Mobile-First UI**: Tailwind-based responsive design optimized for touch targets and high-latency mobile networks.
+- **Zero-Trust Ready**: Middleware-driven auth logic that scales from LAN-only to Zero-Trust Intranets.

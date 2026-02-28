@@ -1,0 +1,98 @@
+---
+/* ========================================================================
+ * Project: pharos
+ * Component: Web Console
+ * File: src/pages/index.astro
+ * Author: Richard D. (https://github.com/iamrichardd)
+ * License: AGPL-3.0 (See LICENSE file for details)
+ * * Purpose (The "Why"):
+ * The primary landing page for the Pharos Web Console. Provides entry 
+ * points for MDB search, Pulse monitoring, and authentication.
+ * * Traceability:
+ * Related to Task 16.1 (Scaffolding) and Task 16.2 (Mobile-First MDB).
+ * ======================================================================== */
+import '../styles/global.css';
+---
+
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="generator" content={Astro.generator} />
+		<title>Pharos Web Console</title>
+	</head>
+	<body class="bg-slate-50 text-slate-900 font-sans antialiased min-h-screen">
+		<header class="bg-white border-b border-slate-200 sticky top-0 z-10">
+			<div class="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
+				<div class="flex items-center space-x-2">
+					<span class="text-2xl font-bold tracking-tight text-slate-950">Pharos<span class="text-blue-600">Console</span></span>
+				</div>
+				<nav>
+					<div class="h-8 w-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center">
+						<span class="text-xs font-medium text-slate-500">?</span>
+					</div>
+				</nav>
+			</div>
+		</header>
+
+		<main class="max-w-4xl mx-auto px-4 py-8 space-y-8">
+			<section class="space-y-4">
+				<h1 class="text-3xl font-extrabold text-slate-950 sm:text-4xl">
+					Manage your Home Lab & Enterprise Infrastructure
+				</h1>
+				<p class="text-lg text-slate-600 max-w-2xl">
+					A Human/AI/Mobile interface for the Pharos Protocol. Search machine records, monitor node presence, and manage infrastructure on the go.
+				</p>
+			</section>
+
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+				<!-- MDB Search Card -->
+				<a href="/mdb" class="group p-6 bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition-all hover:border-blue-400">
+					<div class="h-12 w-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-4 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+						<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+						</svg>
+					</div>
+					<h2 class="text-xl font-bold text-slate-950 mb-1">Search MDB</h2>
+					<p class="text-slate-600 text-sm">Find IP addresses, MACs, and device metadata across your network.</p>
+				</a>
+
+				<!-- Pulse Monitor Card -->
+				<a href="/pulse" class="group p-6 bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition-all hover:border-green-400">
+					<div class="h-12 w-12 bg-green-50 text-green-600 rounded-xl flex items-center justify-center mb-4 group-hover:bg-green-600 group-hover:text-white transition-colors">
+						<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+						</svg>
+					</div>
+					<h2 class="text-xl font-bold text-slate-950 mb-1">Pulse Monitor</h2>
+					<p class="text-slate-600 text-sm">Real-time presence status (ONLINE/OFFLINE) for all configured nodes.</p>
+				</a>
+			</div>
+
+			<section class="bg-slate-900 text-white rounded-3xl p-8 overflow-hidden relative">
+				<div class="relative z-10 space-y-4">
+					<h2 class="text-2xl font-bold">Secure Auth Handshake</h2>
+					<p class="text-slate-400 max-w-md">
+						Authorize this browser using your CLI SSH keys or scan a QR code from your desktop console to establish a secure mobile session.
+					</p>
+					<div class="pt-4 flex flex-col sm:flex-row gap-3">
+						<button class="px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-semibold transition-colors">
+							Connect CLI
+						</button>
+						<button class="px-6 py-3 bg-white/10 hover:bg-white/20 rounded-xl font-semibold transition-colors">
+							Scan QR Code
+						</button>
+					</div>
+				</div>
+				<div class="absolute -right-20 -bottom-20 h-64 w-64 bg-blue-500/10 rounded-full blur-3xl"></div>
+			</section>
+		</main>
+
+		<footer class="max-w-4xl mx-auto px-4 py-8 border-t border-slate-200">
+			<p class="text-center text-slate-500 text-sm italic">
+				Powered by the Pharos Protocol. Optimized for Home Lab & Enterprise DevSecOps.
+			</p>
+		</footer>
+	</body>
+</html>
