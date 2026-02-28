@@ -2,10 +2,11 @@
 
 ## Current Status
 **Phase:** 16 (Pharos Web Console) - IN PROGRESS
-**Active Task:** Task 16.4 (Issue #66): Engineering: Integrate "Presence Monitoring" UI and Desktop-to-Mobile QR Auth Handshake.
-**Backlog:** 16.5, 17.1, 17.2, 18.1, 18.2, 19.1
+**Active Task:** Task 16.6 (Issue #69): Engineering: Align `pharos-console-web` with TDD, VSA, and SOLID mandates.
+**Backlog:** 16.4, 16.5, 17.1, 17.2, 18.1, 18.2, 19.1
 
 ## Recent Completions
+- [x] Refinement: Updated `GEMINI.md` to include mandates for **Test-Driven Development (TDD)**, **Vertical Slice Architecture (VSA)**, and mandatory **Security Reviews**.
 - [x] Task 16.3: Engineering: Implement "One-off Addition" forms using Astro Actions with HitL confirmation. (Issue #65)
 - [x] Task 16.2: Engineering: Implement the "Web MDB" searchable interface for machine/infrastructure records (Mobile-First). (Issue #68)
 - [x] Task 16.1: Engineering: Scaffold the "Pharos Web Console" using Astro (SSR) with Node.js adapter, TypeScript, and Tailwind CSS. Implemented a mobile-first responsive landing page and a production-ready `Containerfile`. (Issue #63)
@@ -68,9 +69,13 @@
 - [x] Phase 1: Zero-Host & DevSecOps Foundation (Issue #1, #2, #3, #4, #5).
 
 ## AI Agent Instructions for Next Session
-1. Read `GEMINI.md` to internalize strict Zero-Host constraints, Clean Code philosophies, and the **AI Handover** protocol.
+1. Read `GEMINI.md` to internalize strict Zero-Host constraints, Clean Code philosophies, **TDD-first workflow**, and **Vertical Slice Architecture** mandates.
 2. Read `TODO.md` to understand the roadmap and the **Definition of Done (DoD)**.
-3. If the Active Task does not have a GitHub Issue (marked `#TBD`), use the `gh` CLI to create one using the **Structured Issue Schema** (Specifics, Proposed Fix, Verification Strategy).
+3. **Execute Task 16.6 (Issue #69):** 
+    - Initialize Vitest and testing-library for `pharos-console-web`.
+    - Refactor existing components and logic into **Vertical Slices**.
+    - Perform and document a **Security Review** of the web console query logic.
+    - Update `Containerfile.test` to include Node.js for running web tests.
 4. Begin execution on the Active Task, utilizing Podman commands exclusively for execution.
 5. **Validation:** Verify changes locally via `Containerfile.test` and remotely via GitHub Actions using `gh run watch`.
 6. **Production Verification:** BEFORE closing any task, use `web_fetch` to verify that the changes are live and rendering correctly on `https://iamrichardd.com/pharos/`.
