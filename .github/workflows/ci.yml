@@ -48,7 +48,13 @@ jobs:
         targets: ${{ matrix.target }}
     - name: Build
       run: cargo build --verbose --target ${{ matrix.target }}
-    - name: Run tests
+    - name: Run tests (Rust)
       # Only run tests on the native host runner for now
       if: matrix.os == 'ubuntu-latest'
       run: cargo test --verbose --all-targets
+    - name: Run tests (Web Console)
+      if: matrix.os == 'ubuntu-latest'
+      working-directory: pharos-console-web
+      run: |
+        npm install
+        npm test
