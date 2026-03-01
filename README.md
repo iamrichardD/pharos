@@ -73,3 +73,8 @@ podman-compose --podman-pull-args="--dns 8.8.8.8" -f sandbox.yml up -d
 If you receive a `403 Forbidden` error, the packages may still be marked as "Private" (the default for new GHCR images).
 
 **Fix:** Navigate to your GitHub profile -> **Packages**, select the `pharos-*` images, and change their visibility to **Public** in the "Package Settings" at the bottom of the page.
+
+### Sandbox: "syscall bdflush: permission denied"
+If you see an error related to `seccomp` and `bdflush` (common on Ubuntu 24.04 with older container runtimes), the sandbox configuration now includes a bypass (`seccomp: unconfined`) to ensure a smooth evaluation.
+
+**Note:** This bypass is only for the ephemeral sandbox and should not be used in production environments where a custom seccomp profile or an updated runtime (`crun`) is preferred.
