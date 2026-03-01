@@ -33,7 +33,7 @@ COPY . .
 RUN cargo build --release --bin pharos-pulse
 
 # --- Runtime Stage ---
-FROM public.ecr.aws/docker/library/debian:bookworm-slim AS runtime
+FROM public.ecr.aws/docker/library/debian:trixie-slim AS runtime
 
 WORKDIR /app
 
