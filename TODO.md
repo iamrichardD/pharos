@@ -115,10 +115,10 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Task 16.5 (Issue #67):** Advocacy: Document the Human/AI/Mobile Web Console as the primary interface for non-technical users and mobile Home Labbers.
 
 ## Phase 17: Pharos Sandbox & WebMCP Integration
-- [ ] **Task 17.1 (#TBD):** Engineering: Design `deploy/compose.yml` with `tmpfs` and network isolation for "Zero-Host" test environments.
-- [ ] **Task 17.2 (#TBD):** Engineering: Create a `Makefile` with `make lab` for a standardized one-click sandbox stand-up.
-- [ ] **Task 17.3 (#TBD):** Advocacy: Update `pharos-web` to support "Sandbox Mode" with live interactive query components and MCP integration.
-- [ ] **Task 17.4 (#TBD):** Advocacy: Create the "Lab-in-a-Box" guide for developers, home labbers, and enterprise engineers.
+- [x] **Task 17.1 (Issue #71):** Engineering: Automate Container Image Publishing to GHCR. Created production `Containerfile`s and updated `ci.yml`.
+- [x] **Task 17.2 (Issue #73):** Engineering: Design `deploy/sandbox.yml` with `tmpfs` and network isolation for "Zero-Host" test environments.
+- [x] **Task 17.3 (Issue #72):** Advocacy: Create the "60-Second Success" Guide (The "One-Liner" Deployment).
+- [ ] **Task 17.4 (Issue #74):** Advocacy: Update `pharos-web` to support "Sandbox Mode" with live interactive query components and MCP integration.
 - [ ] **Task 17.5 (#TBD):** Release: Prepare v1.3.0 release including the integrated Pharos Sandbox.
 
 ## Phase 18: Enterprise Workflows (Alternation & Coalescing) - PROPOSED

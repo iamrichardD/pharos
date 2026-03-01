@@ -1,11 +1,14 @@
 # Pharos State & Progress
 
 ## Current Status
-**Phase:** 17 (Pharos Sandbox & WebMCP Integration) - NEXT
-**Active Task:** Task 17.1 (Issue #TBD): Engineering: Design `deploy/compose.yml` with `tmpfs` and network isolation for "Zero-Host" test environments.
-**Backlog:** 16.7, 17.2, 18.1, 18.2, 19.1
+**Phase:** 17 (Pharos Sandbox & WebMCP Integration) - ACTIVE
+**Active Task:** Task 17.4 (Issue #74): Advocacy: Update `pharos-web` to support "Sandbox Mode" with live interactive query components and MCP integration.
+**Backlog:** 16.7, 17.5, 18.1, 18.2, 19.1
 
 ## Recent Completions
+- [x] Task 17.3: Advocacy: Create the "60-Second Success" Guide (The "One-Liner" Deployment). (Issue #72)
+- [x] Task 17.1: Engineering: Automate Container Image Publishing to GHCR. Updated `ci.yml` and created production `Containerfile`s for all core components. (Issue #71)
+- [x] Task 17.2: Engineering: Design `deploy/sandbox.yml` with `tmpfs` and network isolation for "Zero-Host" test environments. (Issue #73)
 - [x] Task 16.8: (Issue #70) Advocacy: Refine marketing site for end-user focus (MDB & Automation). Move technical Zero-Host details to README.md.
 - [x] Task 16.5: Advocacy: Document the Human/AI/Mobile Web Console as the primary interface for non-technical users and mobile Home Labbers. (Issue #67)
 - [x] Task 16.4: Engineering: Implement "Presence Monitoring" UI and Secure Logon (JWT-based). (Issue #66)

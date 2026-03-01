@@ -1,0 +1,49 @@
+# ========================================================================
+# Project: pharos
+# Component: Network Scanner (pharos-scan)
+# File: pharos-scan/Containerfile
+# Author: Richard D. (https://github.com/iamrichardd)
+# License: AGPL-3.0 (See LICENSE file for details)
+# * Purpose (The "Why"):
+# Production-ready container image for the Pharos network scanner.
+# Automates asset discovery and facilitates bulk provisioning.
+# * Traceability:
+# Related to Phase 10 (Task 10.2) and Phase 17 (Sandbox).
+# ========================================================================
+
+# --- Builder Stage ---
+FROM public.ecr.aws/docker/library/rust:1.85-slim AS builder
+
+WORKDIR /app
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y 
+    pkg-config 
+    libssl-dev 
+    build-essential 
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy workspace configuration and locks
+COPY Cargo.toml Cargo.lock ./
+
+# Copy all crate structures (needed for workspace resolution)
+COPY . .
+
+# Build the pharos-scan binary in release mode
+RUN cargo build --release --bin pharos-scan
+
+# --- Runtime Stage ---
+FROM public.ecr.aws/docker/library/debian:bookworm-slim AS runtime
+
+WORKDIR /app
+
+# Install runtime dependencies (pnet/mdns-sd might need raw socket capabilities)
+RUN apt-get update && apt-get install -y 
+    ca-certificates 
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy the binary from the builder stage
+COPY --from=builder /app/target/release/pharos-scan /usr/local/bin/pharos-scan
+
+# Start the scanner
+ENTRYPOINT ["pharos-scan"]

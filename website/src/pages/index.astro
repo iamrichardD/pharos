@@ -14,6 +14,7 @@
 
 import BaseLayout from '../layouts/BaseLayout.astro';
 import DoraMetrics from '../components/DoraMetrics.astro';
+import SandboxSnippet from '../components/SandboxSnippet.astro';
 
 const pageTitle = "Pharos - High Performance Phonebook Protocol Ecosystem";
 const pageDescription = "Pharos is a highly performant, read-optimized client-server ecosystem based on RFC 2378 (Phonebook Protocol). Designed for Home Labbers and Enterprise Engineers.";
@@ -37,6 +38,18 @@ const pageDescription = "Pharos is a highly performant, read-optimized client-se
           <a href="/pharos/docs/cli-clients" class="btn btn-primary px-10 py-4 text-base rounded-full shadow-primary-500/20 shadow-xl transition-all hover:scale-105 active:scale-95">Get Started in 3 Minutes</a>
           <a href="#experience" class="btn btn-outline px-10 py-4 text-base rounded-full transition-all hover:scale-105 active:scale-95">Explore the Ecosystem</a>
         </div>
+      </div>
+
+      <!-- Sandbox Quick Entry -->
+      <div class="mt-16 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-300">
+        <div class="text-center mb-6">
+          <p class="text-xs font-bold text-primary-600 dark:text-primary-400 uppercase tracking-widest mb-2">Zero Friction Discovery</p>
+          <h2 class="text-2xl font-black text-secondary-900 dark:text-secondary-100 uppercase tracking-tight">Try the Sandbox</h2>
+        </div>
+        <SandboxSnippet />
+        <p class="mt-4 text-center text-xs text-secondary-500 dark:text-secondary-400">
+          Evaluated Pharos? <a href="/pharos/docs/server-setup" class="text-primary-600 dark:text-primary-400 font-bold hover:underline">Deploy to Production →</a>
+        </p>
       </div>
     </div>
   </section>

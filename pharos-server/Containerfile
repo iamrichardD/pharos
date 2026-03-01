@@ -1,0 +1,58 @@
+# ========================================================================
+# Project: pharos
+# Component: Server Core
+# File: pharos-server/Containerfile
+# Author: Richard D. (https://github.com/iamrichardd)
+# License: AGPL-3.0 (See LICENSE file for details)
+# * Purpose (The "Why"):
+# Production-ready container image for the Pharos core server (RFC 2378).
+# Optimized for high-performance reads and Zero-Host ephemeral execution.
+# * Traceability:
+# Related to Phase 17 (Sandbox & WebMCP Integration).
+# ========================================================================
+
+# --- Builder Stage ---
+FROM public.ecr.aws/docker/library/rust:1.85-slim AS builder
+
+WORKDIR /app
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y 
+    pkg-config 
+    libssl-dev 
+    build-essential 
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy workspace configuration and locks
+COPY Cargo.toml Cargo.lock ./
+
+# Copy all crate structures (needed for workspace resolution)
+# Note: We copy the entire workspace to ensure Cargo can resolve dependencies correctly.
+COPY . .
+
+# Build the pharos-server binary in release mode
+RUN cargo build --release --bin pharos-server
+
+# --- Runtime Stage ---
+FROM public.ecr.aws/docker/library/debian:bookworm-slim AS runtime
+
+WORKDIR /app
+
+# Install runtime dependencies (OpenSSL/CA-certs for LDAP/SSH logic)
+RUN apt-get update && apt-get install -y 
+    libssl3 
+    ca-certificates 
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy the binary from the builder stage
+COPY --from=builder /app/target/release/pharos-server /usr/local/bin/pharos-server
+
+# Create data directory (to be mounted as tmpfs in sandbox)
+RUN mkdir -p /var/lib/pharos
+
+# Environment & Ports
+ENV RUST_LOG=info
+EXPOSE 2378
+
+# Start the server
+ENTRYPOINT ["pharos-server"]

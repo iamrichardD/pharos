@@ -1,0 +1,59 @@
+# ========================================================================
+# Project: pharos
+# Component: Pharos Sandbox (Lab-in-a-Box)
+# File: deploy/sandbox.yml
+# Author: Richard D. (https://github.com/iamrichardd)
+# License: AGPL-3.0 (See LICENSE file for details)
+# * Purpose (The "Why"):
+# This is the "Zero-Friction" entry point for Home Labbers and Enterprise
+# Engineers to evaluate the Pharos ecosystem in a fenced, ephemeral environment.
+# It uses pre-built images from GHCR and ensures zero host pollution.
+# * Traceability:
+# Related to Phase 17 (Task 17.2).
+# ========================================================================
+
+services:
+  pharos-server:
+    image: ghcr.io/${OWNER:-iamrichardd}/pharos-server:${TAG:-latest}
+    container_name: pharos-server
+    environment:
+      - RUST_LOG=info
+    ports:
+      - "2378:2378"
+    tmpfs:
+      - /var/lib/pharos
+    networks:
+      - pharos-net
+    healthcheck:
+      test: ["CMD", "timeout", "1", "bash", "-c", "</dev/tcp/localhost/2378"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  pharos-pulse:
+    image: ghcr.io/${OWNER:-iamrichardd}/pharos-pulse:${TAG:-latest}
+    container_name: pharos-pulse
+    environment:
+      - PHAROS_SERVER=pharos-server:2378
+    depends_on:
+      pharos-server:
+        condition: service_healthy
+    networks:
+      - pharos-net
+
+  pharos-web:
+    image: ghcr.io/${OWNER:-iamrichardd}/pharos-console-web:${TAG:-latest}
+    container_name: pharos-web
+    ports:
+      - "3000:3000"
+    environment:
+      - PHAROS_SERVER_URL=http://pharos-server:2378
+    depends_on:
+      pharos-server:
+        condition: service_healthy
+    networks:
+      - pharos-net
+
+networks:
+  pharos-net:
+    driver: bridge

@@ -1,0 +1,59 @@
+---
+/* ========================================================================
+ * Project: pharos
+ * Component: Marketing Site - Sandbox Snippet
+ * File: SandboxSnippet.astro
+ * Author: Richard D. (https://github.com/iamrichardd)
+ * License: AGPL-3.0 (See LICENSE file for details)
+ * * Purpose (The "Why"):
+ * Provides a high-impact, copy-pasteable terminal snippet for the "One-Liner"
+ * sandbox deployment. Encourages Zero-Friction evaluation.
+ * * Traceability:
+ * Related to Phase 17 (Task 17.3, Issue #72).
+ * ======================================================================== */
+---
+
+<div class="sandbox-snippet bg-secondary-900 rounded-2xl p-1 shadow-2xl border border-secondary-800 overflow-hidden text-left max-w-2xl mx-auto">
+  <div class="flex items-center justify-between px-4 py-3 border-b border-secondary-800 bg-secondary-900/50">
+    <div class="flex gap-1.5">
+      <div class="w-3 h-3 rounded-full bg-red-500/50"></div>
+      <div class="w-3 h-3 rounded-full bg-yellow-500/50"></div>
+      <div class="w-3 h-3 rounded-full bg-green-500/50"></div>
+    </div>
+    <div class="text-[10px] text-secondary-500 font-bold uppercase tracking-widest">60-Second Lab-in-a-Box</div>
+  </div>
+  <div class="p-6 font-mono text-sm leading-relaxed relative group">
+    <div class="flex items-start gap-4">
+      <span class="text-secondary-600 select-none">$</span>
+      <code id="sandbox-command" class="text-secondary-100 break-all">
+        curl -sSL https://raw.githubusercontent.com/iamrichardD/pharos/main/deploy/sandbox.yml | podman-compose -f - up -d
+      </code>
+    </div>
+    <button 
+      id="copy-sandbox"
+      class="absolute right-4 bottom-4 p-2 bg-primary-600 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary-500 active:scale-95"
+      title="Copy to clipboard"
+    >
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+    </button>
+  </div>
+  <div class="px-6 py-3 bg-secondary-800/30 text-[10px] text-secondary-400 flex justify-between items-center italic">
+    <span>Ephemeral sandbox. Zero host pollution. Auto-wipes on teardown.</span>
+    <span class="text-primary-400 opacity-80 font-bold uppercase">Ready in 60s</span>
+  </div>
+</div>
+
+<script>
+  const copyBtn = document.getElementById('copy-sandbox');
+  const commandText = document.getElementById('sandbox-command')?.innerText;
+
+  copyBtn?.addEventListener('click', () => {
+    if (commandText) {
+      navigator.clipboard.writeText(commandText.trim());
+      copyBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+      setTimeout(() => {
+        copyBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>';
+      }, 2000);
+    }
+  });
+</script>
