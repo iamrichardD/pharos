@@ -1,19 +1,19 @@
 # Pharos State & Progress
 
 ## Current Status
-**Phase:** 16 (Pharos Web Console) - IN PROGRESS
-**Active Task:** Task 16.5 (Issue #67): Advocacy: Document the Human/AI/Mobile Web Console as the primary interface for non-technical users and mobile Home Labbers.
-**Backlog:** 16.7, 17.1, 17.2, 18.1, 18.2, 19.1
+**Phase:** 17 (Pharos Sandbox & WebMCP Integration) - NEXT
+**Active Task:** Task 17.1 (Issue #TBD): Engineering: Design `deploy/compose.yml` with `tmpfs` and network isolation for "Zero-Host" test environments.
+**Backlog:** 16.7, 17.2, 18.1, 18.2, 19.1
 
 ## Recent Completions
+- [x] Task 16.8: (Issue #70) Advocacy: Refine marketing site for end-user focus (MDB & Automation). Move technical Zero-Host details to README.md.
+- [x] Task 16.5: Advocacy: Document the Human/AI/Mobile Web Console as the primary interface for non-technical users and mobile Home Labbers. (Issue #67)
 - [x] Task 16.4: Engineering: Implement "Presence Monitoring" UI and Secure Logon (JWT-based). (Issue #66)
 - [x] Refinement: Updated `GEMINI.md` to include mandates for **Test-Driven Development (TDD)**, **Vertical Slice Architecture (VSA)**, and mandatory **Security Reviews**.
 - [x] Task 16.6: Engineering: Align `pharos-console-web` with TDD, VSA, and SOLID mandates. Initialized Vitest, refactored to Vertical Slice Architecture, and implemented security reviews with input escaping. (Issue #69)
 - [x] Task 16.3: Engineering: Implement "One-off Addition" forms using Astro Actions with HitL confirmation. (Issue #65)
 - [x] Task 16.2: Engineering: Implement the "Web MDB" searchable interface for machine/infrastructure records (Mobile-First). (Issue #68)
 - [x] Task 16.1: Engineering: Scaffold the "Pharos Web Console" using Astro (SSR) with Node.js adapter, TypeScript, and Tailwind CSS. Implemented a mobile-first responsive landing page and a production-ready `Containerfile`. (Issue #63)
-- [x] Task 16.8: (Issue #70) Advocacy: Refine marketing site for end-user focus (MDB & Automation). Move technical Zero-Host details to README.md.
-- [x] Task 16.5: Advocacy: Document the Human/AI/Mobile Web Console as the primary interface for non-technical users and mobile Home Labbers. (Issue #67)
 - [ ] Task 16.7: (Backlog) Engineering: Desktop-to-Mobile QR Auth Handshake.
 - [x] Planning: Pharos Protocol Extensions (PhP) documented in `artifacts/pharos-rfc-extension-proposal.md`. Formally extends RFC 2378 for modern DevSecOps.
 - [x] Planning: Pharos Web Console (Human/AI Interface) documented in `artifacts/pharos-web-console-plan.md`.
@@ -76,14 +76,10 @@
 ## AI Agent Instructions for Next Session
 1. Read `GEMINI.md` to internalize strict Zero-Host constraints, Clean Code philosophies, **TDD-first workflow**, and **Vertical Slice Architecture** mandates.
 2. Read `TODO.md` to understand the roadmap and the **Definition of Done (DoD)**.
-3. **Execute Task 16.6 (Issue #69):** 
-    - Initialize Vitest and testing-library for `pharos-console-web`.
-    - Refactor existing components and logic into **Vertical Slices**.
-    - Perform and document a **Security Review** of the web console query logic.
-    - Update `Containerfile.test` to include Node.js for running web tests.
+3. **Execute Task 17.1 (Issue #TBD):**
+    - Create the issue for "Engineering: Design `deploy/compose.yml` with `tmpfs` and network isolation for Zero-Host test environments."
+    - Design a Docker Compose file that provides an isolated network for pharos-server and its storage backends.
+    - Utilize `tmpfs` for high-speed, volatile testing of the file-level storage engine.
 4. Begin execution on the Active Task, utilizing Podman commands exclusively for execution.
-5. **Validation:** Verify changes locally via `Containerfile.test` and remotely via GitHub Actions using `gh run watch`.
-6. **Production Verification:** BEFORE closing any task, use `web_fetch` to verify that the changes are live and rendering correctly on `https://iamrichardd.com/pharos/`.
-7. **AI-Handover:** Before concluding, push commits and close the GitHub issue with a **Fix Summary**, an **AI-Ready Verification Prompt**, and a **Production Verification** confirmation.
-8. Update this `PROGRESS.md` and `@TODO.md` only after all DoD criteria are met.
-
+5. **Validation:** Verify the sandbox environment locally via Podman Compose.
+6. **AI-Handover:** Before concluding, push commits and close the GitHub issue with a **Fix Summary** and an **AI-Ready Verification Prompt**.
