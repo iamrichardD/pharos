@@ -74,14 +74,15 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Lowercase Owner Name
+        id: prep
         run: |
-          echo "OWNER_LC=${GITHUB_REPOSITORY_OWNER,,}" >> ${GITHUB_ENV}
+          echo "owner_lc=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_OUTPUT
 
       - name: Extract metadata (tags, labels)
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.OWNER_LC }}/${{ matrix.component.name }}
+          images: ${{ env.REGISTRY }}/${{ steps.prep.outputs.owner_lc }}/${{ matrix.component.name }}
           tags: |
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
             type=semver,pattern={{version}}
@@ -96,5 +97,5 @@ jobs:
           context: ${{ matrix.component.context }}
           file: ${{ matrix.component.file }}
           push: true
-          tags: ${{ id.meta.outputs.tags }}
-          labels: ${{ id.meta.outputs.labels }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
