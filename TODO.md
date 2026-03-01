@@ -111,7 +111,7 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Task 16.6 (Issue #69):** Engineering: Align `pharos-console-web` with TDD, VSA, and SOLID mandates. Initialized Vitest, refactored to Vertical Slice Architecture, and implemented security reviews.
 - [x] **Task 16.4 (Issue #66):** Engineering: Implement "Presence Monitoring" UI and Secure Logon (JWT-based).
 - [ ] **Task 16.7 (#TBD):** (Backlog) Engineering: Desktop-to-Mobile QR Auth Handshake.
-- [ ] **Task 16.5 (Issue #67):** Advocacy: Document the Human/AI/Mobile Web Console as the primary interface for non-technical users and mobile Home Labbers.
+- [x] **Task 16.5 (Issue #67):** Advocacy: Document the Human/AI/Mobile Web Console as the primary interface for non-technical users and mobile Home Labbers.
 
 ## Phase 17: Pharos Sandbox & WebMCP Integration
 - [ ] **Task 17.1 (#TBD):** Engineering: Design `deploy/compose.yml` with `tmpfs` and network isolation for "Zero-Host" test environments.
