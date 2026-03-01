@@ -1,0 +1,12 @@
+target/
+.git/
+.idea/
+.github/
+.vscode/
+node_modules/
+dist/
+pharos-console-web/node_modules/
+pharos-console-web/dist/
+website/node_modules/
+website/dist/
+*.log

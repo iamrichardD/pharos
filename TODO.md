@@ -49,6 +49,7 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Task 6.2 (Issue #21):** Build: `pharos-server` compilation failure due to dependencies and type inference.
 - [x] **Task 6.6 (Issue #32):** Deploy: GitHub Actions website deployment fails due to environment branch policy.
 - [x] **Task 6.7 (Issue #36):** Bug: Mermaid diagrams not rendering on Architecture documentation page.
+- [x] **Task 6.8 (Issue #77):** Bug: Container Image Publishing to GHCR fails with 'unknown blob' for `pharos-scan`.
 
 ## Phase 6: Marketing & Open Source Advocacy
 - [x] **Task 6.3 (Issue #24):** Advocacy: Scaffold GitHub Pages site with Sierra-inspired UX (iamrichardd.com/pharos).
