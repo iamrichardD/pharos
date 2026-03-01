@@ -68,3 +68,8 @@ If the "One-Liner" fails with a `connection refused` error while pulling from `g
 ```bash
 podman-compose --podman-pull-args="--dns 8.8.8.8" -f sandbox.yml up -d
 ```
+
+### Sandbox: "403 Forbidden" from GHCR.io
+If you receive a `403 Forbidden` error, the packages may still be marked as "Private" (the default for new GHCR images).
+
+**Fix:** Navigate to your GitHub profile -> **Packages**, select the `pharos-*` images, and change their visibility to **Public** in the "Package Settings" at the bottom of the page.
