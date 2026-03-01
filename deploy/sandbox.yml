@@ -25,7 +25,7 @@ services:
     networks:
       - pharos-net
     healthcheck:
-      test: "timeout 1 bash -c '</dev/tcp/localhost/2378' || exit 1"
+      test: ["CMD-SHELL", "timeout 1 bash -c '</dev/tcp/localhost/2378' || exit 1"]
       interval: 5s
       timeout: 5s
       retries: 5

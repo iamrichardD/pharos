@@ -58,3 +58,13 @@ This project is built using strict **Zero-Host Execution** practices. All execut
 This project is licensed under the **AGPL-3.0 License**.
 
 We believe Home Labbers should have absolute, unfettered freedom to experiment, modify, and master their environments. At the same time, we require that Enterprise/SMB entities utilizing Pharos as a networked service contribute their modifications back to the community and maintain clear attribution. See the `LICENSE` file for full details.
+
+## Troubleshooting
+
+### Sandbox: "Connection Refused" to GHCR.io
+If the "One-Liner" fails with a `connection refused` error while pulling from `ghcr.io`, your DNS (e.g., Pi-hole, AdGuard, or corporate firewall) may be blocking the GitHub Container Registry.
+
+**Fix:** Ensure `ghcr.io` is whitelisted in your DNS, or try forcing a public DNS for the pull:
+```bash
+podman-compose --podman-pull-args="--dns 8.8.8.8" -f sandbox.yml up -d
+```
