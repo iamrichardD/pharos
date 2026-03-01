@@ -26,7 +26,7 @@
     <div class="flex items-start gap-4">
       <span class="text-secondary-600 select-none">$</span>
       <code id="sandbox-command" class="text-secondary-100 break-all">
-        curl -sSL https://raw.githubusercontent.com/iamrichardD/pharos/main/deploy/sandbox.yml | podman-compose -f - up -d
+        curl -sSL https://raw.githubusercontent.com/iamrichardD/pharos/main/deploy/sandbox.yml | podman-compose -f /dev/stdin up -d
       </code>
     </div>
     <button 

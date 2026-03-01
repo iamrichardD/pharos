@@ -7,6 +7,7 @@
 
 ## Recent Completions
 - [x] Task 17.5: Release: Prepare v1.3.0 release including the integrated Pharos Sandbox. (Issue #75)
+- [x] Task 17.6: Bug: Fix "One-Liner" deployment failing on podman-compose 1.0.6 (Issue #76)
 - [x] Task 17.4: Advocacy: Update `pharos-web` to support "Sandbox Mode" with live interactive query components and MCP integration. (Issue #74)
 - [x] Task 17.3: Advocacy: Create the "60-Second Success" Guide (The "One-Liner" Deployment). (Issue #72)
 - [x] Task 17.1: Engineering: Automate Container Image Publishing to GHCR. Updated `ci.yml` and created production `Containerfile`s for all core components. (Issue #71)
