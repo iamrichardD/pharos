@@ -1,0 +1,85 @@
+---
+/* ========================================================================
+ * Project: pharos
+ * Component: Web Console
+ * File: src/features/pulse/monitor/PulseMonitor.astro
+ * Author: Richard D. (https://github.com/iamrichardd)
+ * License: AGPL-3.0 (See LICENSE file for details)
+ * * Purpose (The "Why"):
+ * A real-time dashboard component that displays the status of all nodes
+ * being monitored by pharos-pulse. Provides visual health indicators.
+ * * Traceability:
+ * Related to Task 16.4 (Issue #66).
+ * ======================================================================== */
+import { getPulseStatus } from './pulse-logic';
+
+const machines = await getPulseStatus();
+---
+
+<div class="space-y-6">
+    <div class="flex items-center justify-between">
+        <h2 class="text-2xl font-bold text-slate-950">Active Nodes</h2>
+        <div class="flex items-center space-x-2">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                {machines.filter(m => m.status === 'ONLINE').length} Online
+            </span>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                {machines.filter(m => m.status === 'UNREACHABLE').length} Unreachable
+            </span>
+        </div>
+    </div>
+
+    {machines.length === 0 ? (
+        <div class="p-12 text-center bg-white border border-slate-200 rounded-3xl">
+            <div class="mx-auto w-16 h-16 bg-slate-50 text-slate-300 rounded-full flex items-center justify-center mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+            </div>
+            <p class="text-slate-600 font-medium">No pulse signals detected yet.</p>
+            <p class="text-slate-400 text-sm mt-1">Start the `pharos-pulse` agent on your machines to see them here.</p>
+        </div>
+    ) : (
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {machines.map(machine => (
+                <div class="p-5 bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="space-y-0.5">
+                            <h3 class="font-bold text-slate-900 truncate max-w-[150px]" title={machine.name}>{machine.name}</h3>
+                            <p class="text-xs text-slate-500 italic">Last seen: Just now</p>
+                        </div>
+                        <span class={`h-2.5 w-2.5 rounded-full ring-4 ring-offset-2 ${machine.status === 'ONLINE' ? 'bg-green-500 ring-green-100' : 'bg-red-500 ring-red-100'}`}></span>
+                    </div>
+
+                    <div class="space-y-3">
+                        {machine.cpu && (
+                            <div class="space-y-1">
+                                <div class="flex justify-between text-xs">
+                                    <span class="text-slate-500">CPU Usage</span>
+                                    <span class="font-semibold text-slate-700">{machine.cpu}%</span>
+                                </div>
+                                <div class="w-full bg-slate-100 h-1 rounded-full overflow-hidden">
+                                    <div class="bg-blue-600 h-full transition-all" style={`width: ${Math.min(parseFloat(machine.cpu), 100)}%`}></div>
+                                </div>
+                            </div>
+                        )}
+
+                        {machine.memUsed && machine.memTotal && (
+                            <div class="flex justify-between text-xs pt-1 border-t border-slate-50">
+                                <span class="text-slate-500">Memory</span>
+                                <span class="text-slate-700">{(parseInt(machine.memUsed) / 1024 / 1024).toFixed(1)}GB / {(parseInt(machine.memTotal) / 1024 / 1024).toFixed(1)}GB</span>
+                            </div>
+                        )}
+
+                        {machine.uptime && (
+                            <div class="flex justify-between text-xs pt-1 border-t border-slate-50">
+                                <span class="text-slate-500">Uptime</span>
+                                <span class="text-slate-700">{(parseInt(machine.uptime) / 3600).toFixed(1)} hrs</span>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            ))}
+        </div>
+    )}
+</div>

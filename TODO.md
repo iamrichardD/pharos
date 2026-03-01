@@ -109,7 +109,8 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Task 16.2 (Issue #68):** Engineering: Implement the "Web MDB" searchable interface for machine/infrastructure records (Mobile-First).
 - [x] **Task 16.3 (Issue #65):** Engineering: Implement "One-off Addition" forms using Astro Actions with HitL confirmation.
 - [x] **Task 16.6 (Issue #69):** Engineering: Align `pharos-console-web` with TDD, VSA, and SOLID mandates. Initialized Vitest, refactored to Vertical Slice Architecture, and implemented security reviews.
-- [ ] **Task 16.4 (Issue #66):** Engineering: Integrate "Presence Monitoring" UI and Desktop-to-Mobile QR Auth Handshake.
+- [x] **Task 16.4 (Issue #66):** Engineering: Implement "Presence Monitoring" UI and Secure Logon (JWT-based).
+- [ ] **Task 16.7 (#TBD):** (Backlog) Engineering: Desktop-to-Mobile QR Auth Handshake.
 - [ ] **Task 16.5 (Issue #67):** Advocacy: Document the Human/AI/Mobile Web Console as the primary interface for non-technical users and mobile Home Labbers.
 
 ## Phase 17: Pharos Sandbox & WebMCP Integration

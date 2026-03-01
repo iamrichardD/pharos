@@ -12,12 +12,15 @@
  * Related to Task 16.2 (Mobile-First MDB).
  * ======================================================================== */
 import '../styles/global.css';
+import { getSession } from '../features/auth/session-logic';
+import { AUTH_COOKIE_NAME } from '../features/auth/auth-config';
 
 interface Props {
 	title: string;
 }
 
 const { title } = Astro.props;
+const session = await getSession(Astro.cookies.get(AUTH_COOKIE_NAME)?.value);
 ---
 
 <html lang="en">
@@ -37,12 +40,35 @@ const { title } = Astro.props;
 				<nav class="flex items-center space-x-4">
                     <a href="/mdb" class="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors hidden sm:block">Search MDB</a>
                     <a href="/pulse" class="text-sm font-medium text-slate-600 hover:text-green-600 transition-colors hidden sm:block">Pulse Monitor</a>
+					
+                    {session ? (
+                        <div class="flex items-center space-x-3 pl-2 border-l border-slate-200">
+                            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">{session.userId}</span>
+                            <button id="logoutBtn" class="text-xs font-medium text-red-600 hover:text-red-500 transition-colors">Logout</button>
+                        </div>
+                    ) : (
+                        <a href="/login" class="px-4 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-lg hover:bg-slate-800 transition-colors">Sign In</a>
+                    )}
+
 					<div class="h-8 w-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center cursor-help" title="Help">
 						<span class="text-xs font-medium text-slate-500">?</span>
 					</div>
 				</nav>
 			</div>
 		</header>
+
+        <script>
+            import { actions } from 'astro:actions';
+            import { navigate } from 'astro:transitions/client';
+
+            const logoutBtn = document.querySelector('#logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', async () => {
+                    await actions.logout();
+                    navigate('/login');
+                });
+            }
+        </script>
 
 		<main class="flex-grow w-full max-w-4xl mx-auto px-4 py-6 sm:py-8 space-y-6 sm:space-y-8">
             <slot />

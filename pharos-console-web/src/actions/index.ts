@@ -13,8 +13,41 @@
 import { defineAction } from 'astro:actions';
 import { z } from 'astro:schema';
 import { commitMdbRecord } from '../features/mdb/add/add-logic';
+import { createSessionToken } from '../features/auth/session-logic';
+import { AUTH_COOKIE_NAME } from '../features/auth/auth-config';
 
 export const server = {
+    login: defineAction({
+        accept: 'form',
+        input: z.object({
+            username: z.string().min(1, 'Username is required'),
+            password: z.string().min(1, 'Password is required'),
+        }),
+        handler: async (input, context) => {
+            // Home Lab Mode (MVP): Simple credential check
+            // Enterprise Mode: Will extend this to LDAP/OIDC in Task 16.4 (Part B)
+            const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin';
+            
+            if (input.username === 'admin' && input.password === ADMIN_PASSWORD) {
+                const token = await createSessionToken(input.username, ['admin']);
+                context.cookies.set(AUTH_COOKIE_NAME, token, {
+                    httpOnly: true,
+                    secure: process.env.NODE_ENV === 'production',
+                    sameSite: 'strict',
+                    path: '/',
+                    maxAge: 60 * 60 * 24 // 24 hours
+                });
+                return { success: true };
+            }
+            throw new Error('Invalid credentials');
+        }
+    }),
+    logout: defineAction({
+        handler: async (_, context) => {
+            context.cookies.delete(AUTH_COOKIE_NAME, { path: '/' });
+            return { success: true };
+        }
+    }),
     addMachine: defineAction({
         accept: 'form',
         input: z.object({

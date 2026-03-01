@@ -1,0 +1,81 @@
+---
+/* ========================================================================
+ * Project: pharos
+ * Component: Web Console
+ * File: src/features/auth/LoginForm.astro
+ * Author: Richard D. (https://github.com/iamrichardd)
+ * License: AGPL-3.0 (See LICENSE file for details)
+ * * Purpose (The "Why"):
+ * A standalone, accessible login form component that utilizes Astro 
+ * Actions for secure session management.
+ * * Traceability:
+ * Related to Task 16.4 (Issue #66).
+ * ======================================================================== */
+---
+
+<div class="max-w-md w-full mx-auto p-8 bg-white border border-slate-200 rounded-3xl shadow-sm space-y-8">
+    <div class="text-center">
+        <h1 class="text-2xl font-extrabold text-slate-950">Welcome back</h1>
+        <p class="text-slate-600">Please enter your credentials to manage your lab</p>
+    </div>
+
+    <form method="POST" action="/api/actions/login" class="space-y-6" id="loginForm">
+        <div class="space-y-2">
+            <label for="username" class="text-sm font-semibold text-slate-700">Username</label>
+            <input 
+                type="text" 
+                id="username" 
+                name="username" 
+                required 
+                class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-hidden"
+                placeholder="e.g. admin"
+            />
+        </div>
+
+        <div class="space-y-2">
+            <label for="password" class="text-sm font-semibold text-slate-700">Password</label>
+            <input 
+                type="password" 
+                id="password" 
+                name="password" 
+                required 
+                class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-hidden"
+                placeholder="••••••••"
+            />
+        </div>
+
+        <button 
+            type="submit" 
+            class="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5"
+        >
+            Sign in
+        </button>
+
+        <p id="errorMessage" class="hidden text-center text-sm font-medium text-red-600 bg-red-50 p-3 rounded-lg border border-red-100"></p>
+    </form>
+</div>
+
+<script>
+    import { actions } from 'astro:actions';
+    import { navigate } from 'astro:transitions/client';
+
+    const form = document.querySelector('#loginForm') as HTMLFormElement;
+    const errorMsg = document.querySelector('#errorMessage') as HTMLParagraphElement;
+
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            errorMsg.classList.add('hidden');
+            
+            const formData = new FormData(form);
+            const { error } = await actions.login(formData);
+
+            if (error) {
+                errorMsg.textContent = error.message || 'Authentication failed';
+                errorMsg.classList.remove('hidden');
+            } else {
+                navigate('/');
+            }
+        });
+    }
+</script>

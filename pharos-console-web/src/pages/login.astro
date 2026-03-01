@@ -1,0 +1,31 @@
+---
+/* ========================================================================
+ * Project: pharos
+ * Component: Web Console
+ * File: src/pages/login.astro
+ * Author: Richard D. (https://github.com/iamrichardd)
+ * License: AGPL-3.0 (See LICENSE file for details)
+ * * Purpose (The "Why"):
+ * The dedicated login route. Provides a focused authentication interface 
+ * that redirects to the home page upon successful session creation.
+ * * Traceability:
+ * Related to Task 16.4 (Issue #66).
+ * ======================================================================== */
+import ConsoleLayout from '../layouts/ConsoleLayout.astro';
+import LoginForm from '../features/auth/LoginForm.astro';
+import { getSession } from '../features/auth/session-logic';
+import { AUTH_COOKIE_NAME } from '../features/auth/auth-config';
+
+const session = await getSession(Astro.cookies.get(AUTH_COOKIE_NAME)?.value);
+
+// Redirect to home if already logged in
+if (session) {
+    return Astro.redirect('/');
+}
+---
+
+<ConsoleLayout title="Sign In">
+    <div class="flex items-center justify-center min-h-[60vh]">
+        <LoginForm />
+    </div>
+</ConsoleLayout>

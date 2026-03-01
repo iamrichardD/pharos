@@ -1,0 +1,27 @@
+---
+/* ========================================================================
+ * Project: pharos
+ * Component: Web Console
+ * File: src/pages/pulse/index.astro
+ * Author: Richard D. (https://github.com/iamrichardd)
+ * License: AGPL-3.0 (See LICENSE file for details)
+ * * Purpose (The "Why"):
+ * The main Presence Monitoring view. Provides a real-time (on load)
+ * dashboard of all active nodes reporting heartbeats to the server.
+ * * Traceability:
+ * Related to Task 16.4 (Issue #66).
+ * ======================================================================== */
+import ConsoleLayout from '../../layouts/ConsoleLayout.astro';
+import PulseMonitor from '../../features/pulse/monitor/PulseMonitor.astro';
+---
+
+<ConsoleLayout title="Pulse Monitor">
+    <header class="mb-8">
+        <h1 class="text-3xl font-extrabold text-slate-950 sm:text-4xl">Node Presence</h1>
+        <p class="text-lg text-slate-600 max-w-2xl mt-2">
+            Monitor the real-time status and health metrics of all machines in your Pharos network.
+        </p>
+    </header>
+
+    <PulseMonitor />
+</ConsoleLayout>
