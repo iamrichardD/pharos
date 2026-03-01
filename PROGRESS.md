@@ -12,6 +12,7 @@
 - [x] Task 16.3: Engineering: Implement "One-off Addition" forms using Astro Actions with HitL confirmation. (Issue #65)
 - [x] Task 16.2: Engineering: Implement the "Web MDB" searchable interface for machine/infrastructure records (Mobile-First). (Issue #68)
 - [x] Task 16.1: Engineering: Scaffold the "Pharos Web Console" using Astro (SSR) with Node.js adapter, TypeScript, and Tailwind CSS. Implemented a mobile-first responsive landing page and a production-ready `Containerfile`. (Issue #63)
+- [x] Task 16.8: (Issue #70) Advocacy: Refine marketing site for end-user focus (MDB & Automation). Move technical Zero-Host details to README.md.
 - [x] Task 16.5: Advocacy: Document the Human/AI/Mobile Web Console as the primary interface for non-technical users and mobile Home Labbers. (Issue #67)
 - [ ] Task 16.7: (Backlog) Engineering: Desktop-to-Mobile QR Auth Handshake.
 - [x] Planning: Pharos Protocol Extensions (PhP) documented in `artifacts/pharos-rfc-extension-proposal.md`. Formally extends RFC 2378 for modern DevSecOps.
