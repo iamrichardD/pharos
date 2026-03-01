@@ -2,10 +2,11 @@
 
 ## Current Status
 **Phase:** 17 (Pharos Sandbox & WebMCP Integration) - ACTIVE
-**Active Task:** Task 17.4 (Issue #74): Advocacy: Update `pharos-web` to support "Sandbox Mode" with live interactive query components and MCP integration.
-**Backlog:** 16.7, 17.5, 18.1, 18.2, 19.1
+**Active Task:** Task 17.5 (#TBD): Release: Prepare v1.3.0 release including the integrated Pharos Sandbox.
+**Backlog:** 16.7, 18.1, 18.2, 19.1
 
 ## Recent Completions
+- [x] Task 17.4: Advocacy: Update `pharos-web` to support "Sandbox Mode" with live interactive query components and MCP integration. (Issue #74)
 - [x] Task 17.3: Advocacy: Create the "60-Second Success" Guide (The "One-Liner" Deployment). (Issue #72)
 - [x] Task 17.1: Engineering: Automate Container Image Publishing to GHCR. Updated `ci.yml` and created production `Containerfile`s for all core components. (Issue #71)
 - [x] Task 17.2: Engineering: Design `deploy/sandbox.yml` with `tmpfs` and network isolation for "Zero-Host" test environments. (Issue #73)
@@ -79,10 +80,9 @@
 ## AI Agent Instructions for Next Session
 1. Read `GEMINI.md` to internalize strict Zero-Host constraints, Clean Code philosophies, **TDD-first workflow**, and **Vertical Slice Architecture** mandates.
 2. Read `TODO.md` to understand the roadmap and the **Definition of Done (DoD)**.
-3. **Execute Task 17.1 (Issue #TBD):**
-    - Create the issue for "Engineering: Design `deploy/compose.yml` with `tmpfs` and network isolation for Zero-Host test environments."
-    - Design a Docker Compose file that provides an isolated network for pharos-server and its storage backends.
-    - Utilize `tmpfs` for high-speed, volatile testing of the file-level storage engine.
+3. **Execute Task 17.5 (#TBD):**
+    - Create the issue for "Release: Prepare v1.3.0 release including the integrated Pharos Sandbox."
+    - Ensure all documentation is up to date, changelog is ready, and perform the Git tagging workflow per standard release process.
 4. Begin execution on the Active Task, utilizing Podman commands exclusively for execution.
 5. **Validation:** Verify the sandbox environment locally via Podman Compose.
 6. **AI-Handover:** Before concluding, push commits and close the GitHub issue with a **Fix Summary** and an **AI-Ready Verification Prompt**.

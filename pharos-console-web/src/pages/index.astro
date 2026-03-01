@@ -12,6 +12,9 @@
  * Related to Task 16.1 (Scaffolding) and Task 16.2 (Mobile-First MDB).
  * ======================================================================== */
 import ConsoleLayout from '../layouts/ConsoleLayout.astro';
+import SandboxTerminal from '../features/sandbox/SandboxTerminal.astro';
+
+const isSandbox = process.env.PHAROS_SANDBOX === 'true';
 ---
 
 <ConsoleLayout title="Home">
@@ -24,7 +27,11 @@ import ConsoleLayout from '../layouts/ConsoleLayout.astro';
         </p>
     </section>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    {isSandbox && (
+        <SandboxTerminal />
+    )}
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
         <!-- MDB Search Card -->
         <a href="/mdb" class="group p-6 bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition-all hover:border-blue-400">
             <div class="h-12 w-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-4 group-hover:bg-blue-600 group-hover:text-white transition-colors">

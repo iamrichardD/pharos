@@ -15,8 +15,26 @@ import { z } from 'astro:schema';
 import { commitMdbRecord } from '../features/mdb/add/add-logic';
 import { createSessionToken } from '../features/auth/session-logic';
 import { AUTH_COOKIE_NAME } from '../features/auth/auth-config';
+import { executePharosQuery } from '../lib/pharos';
 
 export const server = {
+    sandboxQuery: defineAction({
+        accept: 'form',
+        input: z.object({
+            query: z.string().min(1, 'Query is required')
+        }),
+        handler: async (input) => {
+            if (process.env.PHAROS_SANDBOX !== 'true') {
+                throw new Error('Sandbox mode is not enabled');
+            }
+            try {
+                const res = await executePharosQuery('sandbox-term', input.query);
+                return { success: true, result: res };
+            } catch (e: any) {
+                throw new Error(e.message || 'Sandbox query failed');
+            }
+        }
+    }),
     login: defineAction({
         accept: 'form',
         input: z.object({

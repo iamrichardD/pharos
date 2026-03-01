@@ -1,0 +1,115 @@
+---
+/* ========================================================================
+ * Project: pharos
+ * Component: Web Console
+ * File: src/features/sandbox/SandboxTerminal.astro
+ * Author: Richard D. (https://github.com/iamrichardd)
+ * License: AGPL-3.0 (See LICENSE file for details)
+ * * Purpose (The "Why"):
+ * Provides an interactive terminal UI for the Sandbox mode.
+ * * Traceability:
+ * Related to Phase 17 (Task 17.4, Issue #74).
+ * ======================================================================== */
+import { actions } from 'astro:actions';
+---
+
+<div class="sandbox-terminal bg-slate-900 rounded-2xl p-1 shadow-2xl border border-slate-800 overflow-hidden text-left mt-8">
+  <div class="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-900/50">
+    <div class="flex items-center gap-3">
+      <div class="flex gap-1.5">
+        <div class="w-3 h-3 rounded-full bg-red-500/50"></div>
+        <div class="w-3 h-3 rounded-full bg-yellow-500/50"></div>
+        <div class="w-3 h-3 rounded-full bg-green-500/50"></div>
+      </div>
+      <div class="text-[10px] text-slate-500 font-bold uppercase tracking-widest ml-2">Sandbox Terminal (Live)</div>
+    </div>
+    <div class="text-[10px] text-green-400 font-bold uppercase tracking-widest bg-green-400/10 px-2 py-1 rounded">WebMCP Active</div>
+  </div>
+  
+  <div class="p-4 font-mono text-sm leading-relaxed h-64 overflow-y-auto" id="terminal-output">
+    <div class="text-slate-400 mb-2">Connected to Pharos Sandbox Environment. Type your query below.</div>
+    <div class="text-slate-500 text-xs mb-4 border border-slate-700 p-2 rounded bg-slate-800/50">
+      <strong class="text-slate-300">WebMCP is Active:</strong> This sandbox supports live AI-agent tool-calling. 
+      Point your MCP-compatible agent to <code class="text-blue-400">http://localhost:3000/mcp</code> to manage this sandbox.
+    </div>
+  </div>
+  
+  <div class="p-2 bg-slate-950 border-t border-slate-800">
+    <form id="sandbox-form" class="flex gap-2 w-full" method="POST" action={actions.sandboxQuery}>
+      <span class="text-slate-500 pl-2 pt-2 select-none">&gt;</span>
+      <input 
+        type="text" 
+        name="query" 
+        id="query-input"
+        class="flex-1 bg-transparent text-slate-100 outline-none p-2 font-mono" 
+        placeholder="Try 'ph -h' or 'mdb status=up'" 
+        autocomplete="off" 
+        spellcheck="false"
+      />
+      <button type="submit" class="px-4 py-2 bg-slate-800 text-slate-300 hover:bg-slate-700 rounded transition-colors text-xs uppercase font-bold tracking-wider">
+        Execute
+      </button>
+    </form>
+  </div>
+</div>
+
+<script>
+  import { actions } from 'astro:actions';
+
+  const form = document.getElementById('sandbox-form') as HTMLFormElement;
+  const input = document.getElementById('query-input') as HTMLInputElement;
+  const output = document.getElementById('terminal-output');
+
+  if (form && input && output) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const query = input.value.trim();
+      if (!query) return;
+
+      // Append user input
+      const inputLine = document.createElement('div');
+      inputLine.className = 'flex gap-2 text-slate-300 mt-2';
+      inputLine.innerHTML = `<span class="text-slate-500">&gt;</span><span>${query}</span>`;
+      output.appendChild(inputLine);
+
+      input.value = '';
+      input.focus();
+
+      try {
+        const formData = new FormData();
+        formData.append('query', query);
+        
+        const { data, error } = await actions.sandboxQuery(formData);
+        
+        const responseLine = document.createElement('div');
+        responseLine.className = 'mt-1 mb-3 whitespace-pre-wrap';
+        
+        if (error) {
+          responseLine.className += ' text-red-400';
+          responseLine.textContent = `Error: ${error.message}`;
+        } else if (data?.success && data.result) {
+          responseLine.className += ' text-green-300';
+          if (data.result.type === 'error') {
+             responseLine.className = 'mt-1 mb-3 whitespace-pre-wrap text-red-400';
+             responseLine.textContent = data.result.message || 'Protocol Error';
+          } else {
+             // For simple display, just stringify the records
+             if (data.result.records && data.result.records.length > 0) {
+                 responseLine.textContent = data.result.records.map((r: any) => JSON.stringify(r)).join('\\n');
+             } else {
+                 responseLine.textContent = 'No records found (200 OK)';
+             }
+          }
+        }
+        
+        output.appendChild(responseLine);
+        output.scrollTop = output.scrollHeight;
+      } catch (err) {
+        const errLine = document.createElement('div');
+        errLine.className = 'text-red-400 mt-1 mb-3';
+        errLine.textContent = `Client Error: ${err}`;
+        output.appendChild(errLine);
+      }
+    });
+  }
+</script>
