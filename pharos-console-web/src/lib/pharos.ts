@@ -7,26 +7,26 @@
  * * Purpose (The "Why"):
  * A lightweight Node.js TCP client for the Pharos protocol. It connects 
  * directly to the backend server (typically port 1050) to execute queries
- * on behalf of the web interface (SSR).
+ * directly to the backend server (typically port 2378) to execute queries
  * * Traceability:
  * Related to Task 16.2 (Mobile-First MDB).
  * ======================================================================== */
-import * as net from 'node:net';
+ import * as net from 'node:net';
 
-export interface PharosRecord {
+ export interface PharosRecord {
     id: number;
     fields: { key: string; value: string }[];
-}
+ }
 
-export interface PharosResponse {
+ export interface PharosResponse {
     type: 'ok' | 'matches' | 'error';
     message?: string;
     records?: PharosRecord[];
     count?: number;
     code?: number;
-}
+ }
 
-export async function executePharosQuery(clientId: string, queryStr: string, host = '127.0.0.1', port = 1050): Promise<PharosResponse> {
+ export async function executePharosQuery(clientId: string, queryStr: string, host = '127.0.0.1', port = 2378): Promise<PharosResponse> {
     return new Promise((resolve, reject) => {
         const client = new net.Socket();
         

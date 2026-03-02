@@ -43,7 +43,7 @@ async fn main() -> Result<()> {
 
     // 2. Connect to Pharos to check for existing records
     let host = env::var("PHAROS_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
-    let port = env::var("PHAROS_PORT").unwrap_or_else(|_| "1050".to_string());
+    let port = env::var("PHAROS_PORT").unwrap_or_else(|_| "2378".to_string());
     let addr = format!("{}:{}", host, port);
 
     let mut client = match PharosClient::connect(&addr, "pharos-scan").await {

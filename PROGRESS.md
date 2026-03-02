@@ -8,6 +8,7 @@
 ## Recent Completions
 - [x] Task 17.6: Bug: Fixed Web Console logon (CSRF/Cookies) and automated full-stack verification with Playwright E2E. (Issue #80)
 - [x] Task 6.10: Bug: Fixed server port mismatch (1050 vs 2378) for sandbox health checks. (Issue #79)
+- [x] Bug #81: Port Inconsistency: Standardized ecosystem on port 2378 and created `.env.example`.
 - [x] Task 6.9: Bug: Fixed GLIBC version mismatch by updating runtime images to `debian:trixie-slim`. (Issue #78)
 - [x] Task 6.8: Bug: Fixed "unknown blob" error during GHCR image publishing by adding `docker/setup-buildx-action` and GHA caching. (Issue #77)
 - [x] Task 17.5: Release: Prepare v1.3.0 release including the integrated Pharos Sandbox. (Issue #75)
