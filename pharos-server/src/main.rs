@@ -120,8 +120,8 @@ async fn main() -> anyhow::Result<()> {
         }
     });
 
-    let addr = "0.0.0.0:1050"; // Using 1050 for dev to avoid privileged port 105
-    let listener = TcpListener::bind(addr).await?;
+    let addr = env::var("PHAROS_ADDR").unwrap_or_else(|_| "0.0.0.0:2378".to_string());
+    let listener = TcpListener::bind(&addr).await?;
     info!("Pharos Server listening on {}", addr);
 
     if use_tui {
