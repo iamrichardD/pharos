@@ -25,7 +25,9 @@ export default defineConfig({
   }),
 
   security: {
-    checkOrigin: process.env.PHAROS_SANDBOX !== 'true',
+    // Disable checkOrigin to support various Home Lab/Sandbox deployment scenarios 
+    // where the site URL is not pre-defined at build time.
+    checkOrigin: false,
   },
 
   vite: {
