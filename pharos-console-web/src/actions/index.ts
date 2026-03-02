@@ -48,9 +48,12 @@ export const server = {
             
             if (input.username === 'admin' && input.password === ADMIN_PASSWORD) {
                 const token = await createSessionToken(input.username, ['admin']);
+                const isSandbox = process.env.PHAROS_SANDBOX === 'true';
                 context.cookies.set(AUTH_COOKIE_NAME, token, {
                     httpOnly: true,
-                    secure: process.env.NODE_ENV === 'production',
+                    // Only use secure cookies if in production and NOT in sandbox mode,
+                    // as sandbox mode is typically accessed via http://localhost.
+                    secure: process.env.NODE_ENV === 'production' && !isSandbox,
                     sameSite: 'strict',
                     path: '/',
                     maxAge: 60 * 60 * 24 // 24 hours
