@@ -51,6 +51,8 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Task 6.7 (Issue #36):** Bug: Mermaid diagrams not rendering on Architecture documentation page.
 - [x] **Task 6.8 (Issue #77):** Bug: Container Image Publishing to GHCR fails with 'unknown blob' for `pharos-scan`.
 - [x] **Task 6.9 (Issue #78):** Bug: `pharos-server` fails with 'GLIBC_2.39' not found in sandbox environment.
+- [x] **Task 6.10 (Issue #79):** Bug: `pharos-server` default port (1050) mismatch with sandbox (2378).
+- [x] **Task 6.11 (Issue #80):** Bug: `pharos-web` login fails due to CSRF origin check and secure cookie mismatch on http://localhost.
 
 ## Phase 6: Marketing & Open Source Advocacy
 - [x] **Task 6.3 (Issue #24):** Advocacy: Scaffold GitHub Pages site with Sierra-inspired UX (iamrichardd.com/pharos).
