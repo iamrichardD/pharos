@@ -18,7 +18,8 @@ export const onRequest = defineMiddleware(async (context, next) => {
     const { url, cookies, redirect } = context;
 
     // Public routes that don't require authentication
-    const publicRoutes = ['/login', '/api/actions/login'];
+    // Note: /_actions must be allowed so that the login action can be called
+    const publicRoutes = ['/login', '/_actions'];
     const isPublicRoute = publicRoutes.some(route => url.pathname.startsWith(route));
 
     if (isPublicRoute) {
