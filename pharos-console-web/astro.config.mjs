@@ -24,6 +24,10 @@ export default defineConfig({
     mode: 'standalone'
   }),
 
+  security: {
+    checkOrigin: process.env.PHAROS_SANDBOX !== 'true',
+  },
+
   vite: {
     plugins: [tailwindcss()]
   }
