@@ -96,6 +96,28 @@ export PHAROS_KEYS_DIR="/etc/pharos/keys"
 
 ---
 
+## 5. Troubleshooting & Support
+
+We want your experience with Pharos to be frictionless. If you encounter issues, check these common areas.
+
+### Port Conflicts (Bug #81 Remediation)
+If you see "Connection Refused", ensure your client and server are using the standard port:
+- **Default Port:** `2378`
+- **Web Console Port:** `3000`
+
+If your environment requires a custom port, set the environment variable:
+```bash
+export PHAROS_PORT=2378
+```
+
+### Authentication Failures
+If `403 Forbidden` or `401 Authentication Required` occurs:
+1.  Verify your public key is in the server's authorized directory (`PHAROS_KEYS_DIR`).
+2.  Ensure your SSH agent has the corresponding private key loaded: `ssh-add -l`.
+3.  Check the server's **Security Tier**. If it's set to `Protected` or `Scoped`, even read operations require a login.
+
+---
+
 ## 6. Sandbox Evaluation (Zero-Host)
 
 The Pharos Sandbox is an ephemeral environment that allows you to evaluate the entire ecosystem (Server, Pulse, Web Console) without host pollution.

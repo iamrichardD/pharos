@@ -45,6 +45,13 @@ A task is considered complete and may be marked `[x]` only when:
 - **Issue Creation:** Include `**Failure Specifics**`, `**Proposed Fix**`, and `**Verification Strategy**`.
 - **Issue Closure:** Include an **AI-Ready Verification Prompt** (Podman command) and a human-readable **Fix Summary**.
 
+- [ ] **Bug #81:** **Port Inconsistency**. `pharos-server` (2378) vs `pharos-console-web` (1050). (Remediation: Centralize in .env.example).
+- [ ] **Bug #82:** **E2E Backend Failure**. `pre-flight.sh` fails to verify the TCP backend during Playwright runs. (Remediation: Spawn ephemeral backend in script).
+- [ ] **Debt #01:** **Auth Bridge Gap**. Web Console lacks SSH-signing logic for backend write operations. (Remediation: Implement Trusted Proxy or backend-side Web Key).
+- [ ] **Debt #02:** **Logic Duplication**. Move all authorization logic from `lib.rs` into `SecurityTierMiddleware`.
+- [ ] **Debt #03:** **Hardcoded Paths**. Transition `/home/rdelgado/.ssh/keys` to relative `PHAROS_KEYS_DIR` in container.
+- [ ] **Task 17.6:** Engineering: Implement `/health` API on Warp metrics server.
+- [ ] **Task 17.7:** Advocacy: Document end-user decision paths in `docs/DECISIONS.md`.
 - [x] **Task 6.1 (Issue #20):** CI: Verify standardized headers fails on Windows runner (bash syntax in pwsh).
 - [x] **Task 6.2 (Issue #21):** Build: `pharos-server` compilation failure due to dependencies and type inference.
 - [x] **Task 6.6 (Issue #32):** Deploy: GitHub Actions website deployment fails due to environment branch policy.

@@ -1,46 +1,71 @@
 # Pharos Architecture
 
-Project Pharos is a highly performant, read-optimized client-server ecosystem based on RFC 2378 (Phonebook Protocol).
+Project Pharos is a highly performant, read-optimized client-server ecosystem based on RFC 2378 (Phonebook Protocol). It is designed to empower Home Labbers and Enterprise Engineers by providing a "source of truth" for infrastructure that is as fast as it is reliable.
 
-## System Overview
+## Platform Architecture (Macro-View)
+Helping you visualize how the various components—from the CLI to the Web Console—interact across the "Trust Boundary."
 
 ```mermaid
 graph TD
-    subgraph Clients
-        PH[ph CLI - People]
-        MDB[mdb CLI - Machines]
+    subgraph "Client Layer"
+        Human[Human Actor]
+        CLI_PH[ph CLI]
+        CLI_MDB[mdb CLI]
     end
 
-    subgraph "Pharos Server"
-        TCP[TCP Listener :1050]
-        Parser[RFC 2378 Parser]
-        Auth[Auth Manager - SSH Keys]
-        Metrics[Metrics Engine - Prometheus]
-        StorageTrait[Storage Trait]
+    subgraph "Web Layer (Astro v5)"
+        Human -->|HTTPS| WebConsole[Pharos Web Console]
+        WebConsole -->|JWT Auth| SessionManager[Session Manager]
+        WebConsole -->|TCP/Ph Protocol| ClientLib[pharos.ts Client Lib]
+    end
+
+    subgraph "Backend Layer (Rust)"
+        CLI_PH -->|TCP/Ph| ProtoListener[TCP Ph Listener]
+        CLI_MDB -->|TCP/Ph| ProtoListener
+        ClientLib -->|TCP/Ph| ProtoListener
         
-        subgraph "Storage Backends"
-            Mem[MemoryStorage - Dev]
-            File[FileStorage - Home Lab]
-            LDAP[LdapStorage - Enterprise]
-        end
+        ProtoListener --> Middleware[Middleware Chain]
+        Middleware --> CommandHandler[Command Handler]
+        CommandHandler --> StorageTrait[Storage Trait]
+        
+        StorageTrait --> MemStore[Memory Storage]
+        StorageTrait --> FileStore[File Storage]
+        StorageTrait --> LDAPStore[LDAP Storage]
+        
+        Warp[Warp HTTP Server] -->|Pull| Metrics[Prometheus Metrics]
     end
 
-    PH -->|RFC 2378| TCP
-    MDB -->|RFC 2378| TCP
-    TCP --> Parser
-    Parser --> Auth
-    Auth --> StorageTrait
-    StorageTrait --> Mem
-    StorageTrait --> File
-    StorageTrait --> LDAP
-    
-    Metrics -.->|Observe| StorageTrait
-    Metrics -.->|Observe| TCP
+    subgraph "Execution Layer (Podman)"
+        CI[GitHub Actions] -->|Containerfile.test| Sandbox[Isolated Sandbox]
+    end
+```
+
+## Application Architecture (Micro-View)
+Detailing the internal async flow and the Vertical Slice Architecture (VSA) that keeps features decoupled and maintainable.
+
+```mermaid
+graph LR
+    subgraph "Request Lifecycle"
+        Parse[protocol.rs: Parser] --> Mid[middleware.rs: Chain]
+        Mid --> Logic[lib.rs: Command Handler]
+        Logic --> Store[storage.rs: Storage Trait]
+    end
+
+    subgraph "Storage Implementation"
+        Store --> Mem[Memory]
+        Store --> File[File]
+        Store --> LDAP[LDAP]
+    end
+
+    subgraph "Security Middlewares"
+        Mid --- Log[Logging]
+        Mid --- Auth[SecurityTier]
+        Mid --- RO[ReadOnly]
+    end
 ```
 
 ## Storage Tiering Logic
-
-Pharos uses a tiered storage approach to cater to different deployment environments.
+Pharos adapts to your environment, ensuring that your data is exactly as persistent as you need it to be.
 
 ```mermaid
 graph LR
