@@ -2,10 +2,11 @@
 
 ## Current Status
 **Phase:** 18 (Enterprise Workflows & Pre-Flight Fixes)
-**Active Task:** Bug #82 (Issue #82): E2E Backend Failure in pre-flight.sh
+**Active Task:** None
 **Backlog:** 18.1, 18.2, 19.1
 
 ## Recent Completions
+- [x] Bug #82: Fixed E2E backend connection failure in `pre-flight.sh`. Standardized backend spawning in Playwright. (Issue #82)
 - [x] Task 17.6: Bug: Fixed Web Console logon (CSRF/Cookies) and automated full-stack verification with Playwright E2E. (Issue #80)
 - [x] Task 6.10: Bug: Fixed server port mismatch (1050 vs 2378) for sandbox health checks. (Issue #79)
 - [x] Bug #81: Port Inconsistency: Standardized ecosystem on port 2378 and created `.env.example`.

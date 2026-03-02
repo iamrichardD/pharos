@@ -46,7 +46,7 @@ A task is considered complete and may be marked `[x]` only when:
 - **Issue Closure:** Include an **AI-Ready Verification Prompt** (Podman command) and a human-readable **Fix Summary**.
 
 - [x] **Bug #81:** **Port Inconsistency**. `pharos-server` (2378) vs `pharos-console-web` (1050). (Remediation: Centralized in .env.example).
-- [ ] **Bug #82 (Issue #82):** **E2E Backend Failure**. `pre-flight.sh` fails to verify the TCP backend during Playwright runs. (Remediation: Spawn ephemeral backend in script).
+- [x] **Bug #82 (Issue #82):** **E2E Backend Failure**. `pre-flight.sh` fails to verify the TCP backend during Playwright runs. (Remediation: Spawn ephemeral backend in script).
 - [ ] **Debt #01 (Issue #83):** **Auth Bridge Gap**. Web Console lacks SSH-signing logic for backend write operations. (Remediation: Implement Trusted Proxy or backend-side Web Key).
 - [ ] **Debt #02 (Issue #84):** **Logic Duplication**. Move all authorization logic from `lib.rs` into `SecurityTierMiddleware`.
 - [ ] **Debt #03 (Issue #85):** **Hardcoded Paths**. Transition `/home/rdelgado/.ssh/keys` to relative `PHAROS_KEYS_DIR` in container.
