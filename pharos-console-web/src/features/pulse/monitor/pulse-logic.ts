@@ -11,7 +11,7 @@
  * * Traceability:
  * Related to Task 16.4 (Issue #66).
  * ======================================================================== */
-import { executePharosQuery, type PharosRecord } from '../../../lib/pharos';
+import { executePharosQuery } from '../../../lib/pharos';
 
 export interface MachineStatus {
     name: string;

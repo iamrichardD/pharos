@@ -1,0 +1,44 @@
+/* ========================================================================
+ * Project: pharos
+ * Component: Web Console
+ * File: pharos-console-web/tests-e2e/login.test.ts
+ * Author: Richard D. (https://github.com/iamrichardd)
+ * License: AGPL-3.0 (See LICENSE file for details)
+ * * Purpose (The "Why"):
+ * Automated E2E verification of the login flow and navigation.
+ * Ensures redirects and cookie handling work correctly.
+ * ======================================================================== */
+import { test, expect } from '@playwright/test';
+
+test.describe('Authentication Flow', () => {
+  test('should redirect unauthenticated users to login', async ({ page }) => {
+    await page.goto('/');
+    await expect(page).toHaveURL(/.*\/login/);
+  });
+
+  test('should login successfully with admin/admin and redirect home', async ({ page }) => {
+    await page.goto('/login');
+    
+    // Fill the form
+    await page.fill('input[name="username"]', 'admin');
+    await page.fill('input[name="password"]', 'admin');
+    
+    // Click Sign In
+    await page.click('button[type="submit"]');
+
+    // Should redirect to home (/) and show the logout button
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.locator('#logoutBtn')).toBeVisible();
+    await expect(page.locator('text=admin')).toBeVisible();
+  });
+
+  test('should show error message for invalid credentials', async ({ page }) => {
+    await page.goto('/login');
+    await page.fill('input[name="username"]', 'admin');
+    await page.fill('input[name="password"]', 'wrong-pass');
+    await page.click('button[type="submit"]');
+
+    await expect(page.locator('#errorMessage')).toBeVisible();
+    await expect(page.locator('#errorMessage')).toContainText('Invalid credentials');
+  });
+});

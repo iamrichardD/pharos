@@ -13,7 +13,6 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { executePharosQuery } from './pharos';
-import * as net from 'node:net';
 
 const mockSocket = {
     connect: vi.fn(),

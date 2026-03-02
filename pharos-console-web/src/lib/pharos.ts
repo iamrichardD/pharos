@@ -127,7 +127,7 @@ export async function executePharosQuery(clientId: string, queryStr: string, hos
             }
         };
 
-        client.on('data', (data) => {
+        client.on('data', (data: Buffer) => {
             buffer += data.toString();
             let newlineIdx;
             while ((newlineIdx = buffer.indexOf('\n')) !== -1) {
@@ -137,7 +137,7 @@ export async function executePharosQuery(clientId: string, queryStr: string, hos
             }
         });
 
-        client.on('error', (err) => {
+        client.on('error', (err: Error) => {
             cleanup();
             reject(err);
         });

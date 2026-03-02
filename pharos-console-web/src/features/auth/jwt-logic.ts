@@ -11,7 +11,7 @@
  * * Traceability:
  * Related to Task 16.4 (Issue #66).
  * ======================================================================== */
-import { SignJWT, jwtVerify, JWTPayload } from 'jose';
+import { SignJWT, jwtVerify, type JWTPayload } from 'jose';
 
 export interface UserSession extends JWTPayload {
     userId: string;

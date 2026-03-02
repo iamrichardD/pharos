@@ -9,6 +9,7 @@
     "astro": "astro",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "playwright test",
     "check": "astro check"
   },
   "dependencies": {
@@ -19,6 +20,10 @@
     "tailwindcss": "^4.2.1"
   },
   "devDependencies": {
+    "@types/node": "^22.13.5",
+    "@astrojs/check": "^0.9.4",
+    "typescript": "^5.7.3",
+    "@playwright/test": "^1.50.1",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
     "happy-dom": "^17.1.0",
