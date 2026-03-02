@@ -2,7 +2,7 @@
 
 ## Current Status
 **Phase:** 18 (Enterprise Workflows & Pre-Flight Fixes)
-**Active Task:** None
+**Active Task:** Debt #01 (Issue #83): Auth Bridge Gap (Web Console lacks SSH-signing logic)
 **Backlog:** 18.1, 18.2, 19.1
 
 ## Recent Completions
