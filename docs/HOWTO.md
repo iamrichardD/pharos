@@ -96,13 +96,34 @@ export PHAROS_KEYS_DIR="/etc/pharos/keys"
 
 ---
 
-## 5. Automated Discovery (`pharos-scan`)
+## 6. Sandbox Evaluation (Zero-Host)
 
-Scanning the network is a great next step after your server is successfully installed. `pharos-scan` uses mDNS and port fingerprinting to find every node in your lab and provision them into your registry with a single keystroke.
+The Pharos Sandbox is an ephemeral environment that allows you to evaluate the entire ecosystem (Server, Pulse, Web Console) without host pollution.
 
-1.  **Run the Scanner:**
-    ```bash
-    ./pharos-scan
-    ```
+### Browser Access
+The **Pharos Console** is accessible at:
+*   **URL:** [http://localhost:3000](http://localhost:3000)
+*   **Username:** `admin`
+*   **Password:** `admin`
 
-2.  **Interactive TUI:** Use the arrow keys to select discovered nodes and `Enter` to provision them directly into your `mdb` registry using your SSH key.
+### CLI Access (Podman)
+To interact with the running containers via the command line:
+
+```bash
+# Enter the server container (e.g., to run pharos-server commands)
+podman exec -it pharos-server bash
+
+# Check pharos-server logs
+podman logs pharos-server
+
+# Check pharos-web (Console) logs
+podman logs pharos-web
+```
+
+### Manual Querying (Netcat)
+Since the server implements the RFC 2378 protocol (TCP), you can query it directly using `nc`:
+
+```bash
+# Query the server for all machine records
+echo "query type=machine" | nc localhost 2378
+```

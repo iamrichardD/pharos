@@ -41,15 +41,25 @@ Detailed guides include:
 
 Local Markdown versions are also maintained in the [`docs/`](docs/) directory.
 
-### Quick Start
-1. **Server:** Start the server using the in-memory backend for testing.
-   ```bash
-   ./pharos-server
-   ```
-2. **Client:** Query the server using `ph` or `mdb`.
-   ```bash
-   ./ph name=john
-   ```
+### Quick Start (Sandbox / Lab-in-a-Box)
+The fastest way to evaluate Pharos is via our one-liner sandbox deployment:
+```bash
+curl -sSL https://raw.githubusercontent.com/iamrichardD/pharos/main/deploy/sandbox.yml -o sandbox.yml && \
+podman-compose -f sandbox.yml up -d && \
+rm sandbox.yml
+```
+
+Once running, you can access the ecosystem:
+*   **Web Console:** [http://localhost:3000](http://localhost:3000) (User: `admin` / Pass: `admin`)
+*   **Pharos Server (RFC 2378):** `localhost:2378`
+*   **Interactive CLI Access:**
+    ```bash
+    # Access the server container shell
+    podman exec -it pharos-server bash
+    
+    # Access the Web Console container shell
+    podman exec -it pharos-web bash
+    ```
 
 ## Engineering Philosophy
 This project is built using strict **Zero-Host Execution** practices. All execution, testing, and dependency management occurs securely within Podman containers, ensuring total environmental parity and absolute security for CI/CD and production deployments. By isolating the build and run environments from the host system, we eliminate "it works on my machine" issues and provide a predictable, reproducible lifecycle. It further enforces atomic unit testing, continuous integration, and transparent DORA metric tracking via GitHub Issues.
