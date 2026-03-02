@@ -1,9 +1,9 @@
 # Pharos State & Progress
 
 ## Current Status
-**Phase:** 17 (Pharos Sandbox & WebMCP Integration) - COMPLETED
-**Active Task:** None
-**Backlog:** 16.7, 18.1, 18.2, 19.1
+**Phase:** 18 (Enterprise Workflows & Pre-Flight Fixes)
+**Active Task:** Bug #82 (Issue #82): E2E Backend Failure in pre-flight.sh
+**Backlog:** 18.1, 18.2, 19.1
 
 ## Recent Completions
 - [x] Task 17.6: Bug: Fixed Web Console logon (CSRF/Cookies) and automated full-stack verification with Playwright E2E. (Issue #80)

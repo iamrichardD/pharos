@@ -29,10 +29,18 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  webServer: {
-    command: 'PHAROS_SANDBOX=true HOST=0.0.0.0 PORT=3000 node dist/server/entry.mjs',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
-    timeout: 60 * 1000,
-  },
+  webServer: [
+    {
+      command: 'PHAROS_SANDBOX=true HOST=0.0.0.0 PORT=3000 node dist/server/entry.mjs',
+      url: 'http://localhost:3000',
+      reuseExistingServer: !process.env.CI,
+      timeout: 60 * 1000,
+    },
+    {
+      command: 'cargo run --manifest-path ../Cargo.toml --package pharos-server',
+      url: 'http://localhost:9090/metrics',
+      reuseExistingServer: !process.env.CI,
+      timeout: 120 * 1000,
+    }
+  ],
 });

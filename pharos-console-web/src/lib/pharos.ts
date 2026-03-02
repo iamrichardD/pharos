@@ -54,9 +54,14 @@
                     return;
                 }
                 stage = 'query';
-                // Always prepend 'query ' if not present for basic queries, but for simplicity here we just send the command.
+                // Prepend 'query ' if not a recognized top-level command
                 let cmd = queryStr.trim();
-                if (!cmd.startsWith('query ') && !cmd.startsWith('ph ') && !cmd.startsWith('add ') && !cmd.startsWith('change ') && !cmd.startsWith('delete ')) {
+                const lowerCmd = cmd.toLowerCase();
+                const topLevelCommands = ['query', 'ph', 'add', 'change', 'delete', 'status', 'siteinfo', 'help', 'id', 'auth', 'quit'];
+                
+                const isTopLevel = topLevelCommands.some(c => lowerCmd === c || lowerCmd.startsWith(c + ' '));
+                
+                if (!isTopLevel) {
                     cmd = `query ${cmd}`;
                 }
                 client.write(`${cmd}\r\n`);
