@@ -30,6 +30,7 @@ We are building `pharos`, a highly performant, read-optimized (80-90%+ reads) cl
     - `Containerfile`: Use for the final production build.
     - `Containerfile.test`: Use for all test runs, CI/CD, and validation.
     - `Containerfile.debug`: Use for interactive experimentation, REPL tasks, or troubleshooting.
+- **Container Parity:** You MUST ensure that the base OS versions of the Builder and Runtime stages in any `Containerfile` are synchronized (e.g., `rust:1.93-slim` requires `debian:trixie-slim` to match GLIBC versions).
 
 ---
 
@@ -83,6 +84,7 @@ EVERY source code file MUST begin with a standardized prologue block. This ensur
 - **Atomic Unit Tests (XP Focus):** Create tests for EVERY conditional path and ALL IO operations.
 - **Mocking:** IO must be fully isolated. Use the standard, robust mocking frameworks native to your chosen language.
 - **Validation:** After any change, run tests within the Podman `Containerfile.test` environment to verify success. **For Web projects (e.g., Astro), utilize modern testing frameworks (e.g., Vitest, Playwright) to ensure business logic and component integrity.**
+- **The Pre-Flight Mandate (Strict Requirement):** You MUST NOT commit or push code until the centralized `scripts/pre-flight.sh` script passes successfully inside the Podman test environment. This script enforces Rust unit tests, Astro static analysis, and Headless E2E verification (Playwright) to prevent "blind" UI regressions.
 - **Regression:** If unrelated tests fail during your work, you MUST resolve them as part of your current increment of change.
 - **Naming Standard:** Regardless of the language chosen, ALL test functions MUST follow this semantic format:
     - `test_should_[expected_behavior]_when_[state_under_test]`
