@@ -33,19 +33,19 @@ The agent integrates with the host's system manager to capture power events and 
 
 ```mermaid
 flowchart TD
-    subgraph Host [Host System Manager]
+    subgraph HostSystem ["Host System Manager"]
         Start([Start Service])
         Stop([SIGTERM / Stop])
     end
 
-    subgraph Agent [pharos-pulse agent]
+    subgraph PulseAgent ["pharos-pulse agent"]
         Init[Resolve Identity & Metadata]
         Wait{Wait 60m}
         Heartbeat[Send HEARTBEAT]
         Offline[Send OFFLINE]
     end
 
-    subgraph Server [pharos-server]
+    subgraph PharosServer ["pharos-server"]
         RecvOnline[(Receive ONLINE)]
         RecvHB[(Receive HEARTBEAT)]
         RecvOff[(Receive OFFLINE)]

@@ -34,7 +34,7 @@ The TUI will be integrated directly into the `pharos-server` binary.
 
 ```mermaid
 graph TD
-    subgraph Dashboard Layout
+    subgraph DashboardLayout ["Dashboard Layout"]
         Header[Header: Logo, Version, Uptime, Status]
         Metrics[Metrics Panel: CPU, Memory, Net I/O]
         DBStats[Database Stats: People vs Machines]
@@ -48,7 +48,7 @@ graph TD
         EventStream --- Footer
     end
     
-    subgraph Internal Event Broadcast Flow
+    subgraph EventFlow ["Internal Event Broadcast Flow"]
         AsyncRuntime[Tokio Async Runtime] -->|Metrics & Events| Channel(Broadcast Channel)
         ScanLogic[Discovery / Pulse Events] -->|Events| Channel
         Channel -->|Read| UIEventLoop[TUI Event Loop / AppState]

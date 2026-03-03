@@ -49,12 +49,12 @@ The sandbox is orchestrated via `podman-compose` and includes:
 
 ```mermaid
 graph TD
-    subgraph Host Machine
+    subgraph HostMachine ["Host Machine"]
         HostPort2378[Port 2378]
         HostPort3000[Port 3000]
     end
 
-    subgraph pharos-net [Container Network: pharos-net (Bridge)]
+    subgraph PharosNet ["Container Network: pharos-net (Bridge)"]
         Server[pharos-server]
         Web[pharos-web]
         Pulse[pharos-pulse]
@@ -62,7 +62,7 @@ graph TD
         Shell[pharos-shell]
     end
 
-    subgraph Ephemeral Storage
+    subgraph EphemeralStorage ["Ephemeral Storage"]
         TmpFs[(tmpfs: /var/lib/pharos)]
         VolCache[(Named Volume: node_modules)]
     end
