@@ -1,3 +1,4 @@
+<!--
 /* ========================================================================
  * Project: pharos
  * Component: Network Scanner (pharos-scan)
@@ -11,6 +12,7 @@
  * * Traceability:
  * Related to Phase 10 (Issue #39, #40)
  * ======================================================================== */
+   -->
 
 # Pharos Scan: Architectural Design
 

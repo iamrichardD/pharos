@@ -1,5 +1,4 @@
-# Feature Plan: Browser-Synced Theme Management (System Preference)
-
+<!--
 /* ========================================================================
  * Project: pharos
  * Component: Marketing Site - Architecture
@@ -12,6 +11,8 @@
  * * Traceability:
  * Related to GitHub Issue #58 (TBD), enhances Phase 14/15 UX goals.
  * ======================================================================== */
+-->
+# Feature Plan: Browser-Synced Theme Management (System Preference)
 
 ## 1. Executive Summary
 The goal of this feature is to transition the Pharos marketing site from a user-action-triggered theme toggle to a browser-centric synchronization model. The site will automatically adapt to the user's operating system color scheme (`prefers-color-scheme`) in real-time, while still allowing for a persistent user override if desired.

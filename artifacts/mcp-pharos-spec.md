@@ -24,7 +24,7 @@ To support Home Labbers and non-technical staff using LLMs (AI Agents) to manage
 - **Pharos Web Console** (`pharos.internal`): Dynamic, authenticated interface co-hosted with `pharos-server` or as a standalone service. This site implements **WebMCP** patterns, allowing the browser to act as a secure bridge for AI agents.
 
 ## 2. Server & Web Architecture
-- **Location**: Runs as an API module and client-side bridge within the **Pharos Web Console** (Next.js/React).
+- **Location**: Runs as an API module and client-side bridge within the **Pharos Web Console** (Astro/React).
 - **Communication**: 
     - **Stdio/SSE**: For backend-to-agent communication.
     - **WebMCP**: For browser-to-agent communication, replacing DOM scraping with structured JavaScript tool calls.

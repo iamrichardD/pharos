@@ -1,3 +1,4 @@
+<!--
 /* ========================================================================
  * Project: pharos
  * Component: TUI Dashboard
@@ -11,7 +12,7 @@
  * * Traceability:
  * Related to Phase 12 (Issue #44)
  * ======================================================================== */
-
+ -->
 # Pharos TUI Dashboard: Architectural Design
 
 ## 1. Overview

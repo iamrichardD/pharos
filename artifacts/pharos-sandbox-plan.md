@@ -1,3 +1,4 @@
+<!--
 /* ========================================================================
  * Project: pharos
  * Component: Architecture Artifacts
@@ -12,6 +13,7 @@
  * * Traceability:
  * Related to Phase 16 planning, supports WebMCP integration and DORA metrics.
  * ======================================================================== */
+-->
 
 # Pharos Sandbox: Ephemeral "Lab-in-a-Box" Strategy
 
