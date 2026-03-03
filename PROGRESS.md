@@ -2,10 +2,12 @@
 
 ## Current Status
 **Phase:** 18 (Enterprise Workflows & Pre-Flight Fixes)
-**Active Task:** Debt #01 (Issue #83): Auth Bridge Gap (Web Console lacks SSH-signing logic)
+**Active Task:** None
 **Backlog:** 18.1, 18.2, 19.1
 
 ## Recent Completions
+- [x] Debt #01: Fixed Auth Bridge Gap. Web Console now supports automated SSH-challenge signing using `PHAROS_PRIVATE_KEY` and `PHAROS_PUBLIC_KEY`. (Issue #83)
+- [x] Debt #03: Fixed Hardcoded Paths. Transitioned SSH key paths to relative `PHAROS_KEYS_DIR` (default: `./keys`). (Issue #85)
 - [x] Bug #82: Fixed E2E backend connection failure in `pre-flight.sh`. Standardized backend spawning in Playwright. (Issue #82)
 - [x] Task 17.6: Bug: Fixed Web Console logon (CSRF/Cookies) and automated full-stack verification with Playwright E2E. (Issue #80)
 - [x] Task 6.10: Bug: Fixed server port mismatch (1050 vs 2378) for sandbox health checks. (Issue #79)

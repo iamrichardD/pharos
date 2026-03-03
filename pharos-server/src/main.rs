@@ -53,7 +53,7 @@ async fn main() -> anyhow::Result<()> {
     };
 
     // Initialize AuthManager
-    let keys_dir = env::var("PHAROS_KEYS_DIR").unwrap_or_else(|_| "/home/rdelgado/.ssh/keys".to_string());
+    let keys_dir = env::var("PHAROS_KEYS_DIR").unwrap_or_else(|_| "./keys".to_string());
     let auth_manager = Arc::new(AuthManager::new(Path::new(&keys_dir)));
 
     // Initialize Middleware Chain

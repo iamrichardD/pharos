@@ -6,12 +6,13 @@
  * License: AGPL-3.0 (See LICENSE file for details)
  * * Purpose (The "Why"):
  * A lightweight Node.js TCP client for the Pharos protocol. It connects 
- * directly to the backend server (typically port 1050) to execute queries
  * directly to the backend server (typically port 2378) to execute queries
+ * and supports automated SSH-challenge signing for authentication.
  * * Traceability:
- * Related to Task 16.2 (Mobile-First MDB).
+ * Related to Task 16.2 (Mobile-First MDB) and Debt #01 (Issue #83).
  * ======================================================================== */
  import * as net from 'node:net';
+ import * as crypto from 'node:crypto';
 
  export interface PharosRecord {
     id: number;
@@ -41,6 +42,20 @@
             client.destroy();
         };
 
+        const sendQuery = () => {
+            // Prepend 'query ' if not a recognized top-level command
+            let cmd = queryStr.trim();
+            const lowerCmd = cmd.toLowerCase();
+            const topLevelCommands = ['query', 'ph', 'add', 'change', 'delete', 'status', 'siteinfo', 'help', 'id', 'auth', 'quit'];
+            
+            const isTopLevel = topLevelCommands.some(c => lowerCmd === c || lowerCmd.startsWith(c + ' '));
+            
+            if (!isTopLevel) {
+                cmd = `query ${cmd}`;
+            }
+            client.write(`${cmd}\r\n`);
+        };
+
         const onLine = (line: string) => {
             if (stage === 'banner') {
                 stage = 'id';
@@ -54,19 +69,21 @@
                     return;
                 }
                 stage = 'query';
-                // Prepend 'query ' if not a recognized top-level command
-                let cmd = queryStr.trim();
-                const lowerCmd = cmd.toLowerCase();
-                const topLevelCommands = ['query', 'ph', 'add', 'change', 'delete', 'status', 'siteinfo', 'help', 'id', 'auth', 'quit'];
-                
-                const isTopLevel = topLevelCommands.some(c => lowerCmd === c || lowerCmd.startsWith(c + ' '));
-                
-                if (!isTopLevel) {
-                    cmd = `query ${cmd}`;
-                }
-                client.write(`${cmd}\r\n`);
+                sendQuery();
                 return;
             }
+
+            if (stage === 'auth') {
+                if (line.startsWith('200')) {
+                    stage = 'query';
+                    sendQuery();
+                } else {
+                    cleanup();
+                    resolve({ type: 'error', code: 403, message: `Authentication failed: ${line}` });
+                }
+                return;
+            }
+
             if (stage === 'query') {
                 if (line === '') {
                     // end of response
@@ -101,6 +118,34 @@
                     } else {
                         resolve({ type: 'ok', message });
                     }
+                } else if (code === 401) {
+                    // 401:Authentication required. Challenge: <hex>
+                    const challengeMatch = message.match(/Challenge:\s*([0-9a-fA-F]+)/);
+                    const privKeyEnv = process.env.PHAROS_PRIVATE_KEY;
+                    const pubKeyEnv = process.env.PHAROS_PUBLIC_KEY;
+
+                    if (challengeMatch && privKeyEnv && pubKeyEnv) {
+                        try {
+                            const challenge = challengeMatch[1];
+                            const privateKey = privKeyEnv.includes('PRIVATE KEY') 
+                                ? privKeyEnv 
+                                : Buffer.from(privKeyEnv, 'base64').toString();
+                            
+                            const signature = crypto.sign(null, Buffer.from(challenge), privateKey);
+                            const signatureBase64 = signature.toString('base64');
+                            
+                            stage = 'auth';
+                            client.write(`auth ${pubKeyEnv} ${signatureBase64}\r\n`);
+                            return;
+                        } catch (err: any) {
+                            cleanup();
+                            resolve({ type: 'error', code: 500, message: `Signing failed: ${err.message}` });
+                            return;
+                        }
+                    }
+                    
+                    cleanup();
+                    resolve({ type: 'error', code: 401, message: 'Authentication required but no keys provided' });
                 } else if (code === 102) {
                     const matchParts = message.split(/\s+/);
                     if (matchParts.length >= 3) {
