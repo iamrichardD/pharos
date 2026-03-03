@@ -6,6 +6,13 @@ dist/
 # dependencies
 node_modules/
 
+# Security: Never commit SSH keys or private keys
+*.pem
+*.key
+*.pub
+keys/
+.ssh/
+
 # logs
 npm-debug.log*
 yarn-debug.log*
@@ -15,6 +22,8 @@ pnpm-debug.log*
 
 # environment variables
 .env
+.env.*
+!.env.example
 .env.production
 
 # macOS-specific files

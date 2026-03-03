@@ -2,3 +2,13 @@ target/
 website/dist/
 website/node_modules/
 website/.astro/
+
+# Security: Never commit SSH keys or private keys
+*.pem
+*.key
+*.pub
+keys/
+.ssh/
+.env
+.env.*
+!.env.example
