@@ -132,10 +132,11 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Task 17.4 (Issue #74):** Advocacy: Update `pharos-web` to support "Sandbox Mode" with live interactive query components and MCP integration.
 - [x] **Task 17.5 (Issue #75):** Release: Prepare v1.3.0 release including the integrated Pharos Sandbox.
 
-## Phase 18: Enterprise Workflows (Alternation & Coalescing) - PROPOSED
-- [ ] **Task 18.1 (#TBD):** Engineering: Implement Choice-Based Selection `[f1|f2]=val` (OR search) in `protocol.rs`.
-- [ ] **Task 18.2 (#TBD):** Engineering: Implement Return Coalescing `return [f1|f2]` (First-match) in `pharos-server`.
-- [ ] **Task 18.3 (#TBD):** Engineering: Implement `mapping.yaml` global alias support.
+## Phase 18: Enterprise Workflows (Alternation & Coalescing)
+- [ ] **Task 18.1 (Issue #86):** Documentation: Add Mermaid Visualizations for architecture and code path decision trees in \`artifacts/\` files. (HIGH PRIORITY)
+- [ ] **Task 18.2 (#TBD):** Engineering: Implement Choice-Based Selection `[f1|f2]=val` (OR search) in `protocol.rs`.
+- [ ] **Task 18.3 (#TBD):** Engineering: Implement Return Coalescing `return [f1|f2]` (First-match) in `pharos-server`.
+- [ ] **Task 18.4 (#TBD):** Engineering: Implement `mapping.yaml` global alias support.
 
 ## Phase 19: Protocol Standardization (IETF Draft) - PROPOSED
 - [ ] **Task 19.1 (#TBD):** Advocacy: Draft the "Pharos Protocol Extensions (PhP)" in IETF xml2rfc format.

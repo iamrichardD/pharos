@@ -1,9 +1,9 @@
 # Pharos State & Progress
 
 ## Current Status
-**Phase:** 18 (Enterprise Workflows & Pre-Flight Fixes)
+**Phase:** 18 (Enterprise Workflows & Documentation)
 **Active Task:** None
-**Backlog:** 18.1, 18.2, 19.1
+**Backlog:** 18.1 (Mermaid Visuals), 18.2 (Alternation), 18.3 (Coalescing)
 
 ## Recent Completions
 - [x] Debt #02: Fixed Logic Duplication. Moved all authorization logic from `lib.rs` into `SecurityTierMiddleware`. (Issue #84)
