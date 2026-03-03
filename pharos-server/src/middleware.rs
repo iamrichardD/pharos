@@ -25,6 +25,7 @@ pub struct ClientContext {
     pub peer_addr: String,
     pub roles: Vec<String>,
     pub tier: SecurityTier,
+    pub challenge: String,
 }
 
 impl Default for ClientContext {
@@ -35,6 +36,7 @@ impl Default for ClientContext {
             peer_addr: String::new(),
             roles: Vec::new(),
             tier: SecurityTier::Open,
+            challenge: String::new(),
         }
     }
 }
@@ -141,30 +143,42 @@ impl Middleware for SecurityTierMiddleware {
     fn pre_process(&self, command: &mut Command, context: &mut ClientContext) -> Result<MiddlewareAction, ProtocolError> {
         context.tier = self.default_tier; // Set the tier in the context for other middlewares
 
+        let is_auth_bypassed = matches!(command,
+            Command::Status | Command::Id(_) | Command::Auth { .. } | Command::Quit
+        );
+
         match self.default_tier {
             SecurityTier::Open => {
-                // Open tier: Read-only access is open, writes require auth (handled in lib.rs)
+                // Open tier: Read-only access is open, writes require auth
+                let is_write_command = matches!(command, 
+                    Command::Add(_) | Command::Delete(_) | Command::Change { .. }
+                );
+
+                if is_write_command && !context.authenticated {
+                    return Ok(MiddlewareAction::ShortCircuit(format!(
+                        "401:Authentication required. Challenge: {}\n", 
+                        context.challenge
+                    )));
+                }
                 Ok(MiddlewareAction::Continue)
             }
             SecurityTier::Protected => {
                 // Protected tier: ALL commands (except auth/status/id/quit) require authentication
-                let is_auth_bypassed = matches!(command,
-                    Command::Status | Command::Id(_) | Command::Auth { .. } | Command::Quit
-                );
-                
                 if !is_auth_bypassed && !context.authenticated {
-                    return Ok(MiddlewareAction::ShortCircuit("401:Authentication required for Protected tier\n".to_string()));
+                    return Ok(MiddlewareAction::ShortCircuit(format!(
+                        "401:Authentication required for Protected tier. Challenge: {}\n", 
+                        context.challenge
+                    )));
                 }
                 Ok(MiddlewareAction::Continue)
             }
             SecurityTier::Scoped => {
                 // Scoped tier: Same as protected, but also enforces roles
-                let is_auth_bypassed = matches!(command,
-                    Command::Status | Command::Id(_) | Command::Auth { .. } | Command::Quit
-                );
-                
                 if !is_auth_bypassed && !context.authenticated {
-                    return Ok(MiddlewareAction::ShortCircuit("401:Authentication required for Scoped tier\n".to_string()));
+                    return Ok(MiddlewareAction::ShortCircuit(format!(
+                        "401:Authentication required for Scoped tier. Challenge: {}\n", 
+                        context.challenge
+                    )));
                 }
 
                 let is_write_command = matches!(command, 
@@ -249,6 +263,30 @@ mod tests {
         match result {
             MiddlewareAction::Continue => {},
             _ => panic!("Expected Continue"),
+        }
+    }
+
+    #[test]
+    fn test_should_short_circuit_with_challenge_when_open_tier_blocks_unauthenticated_write() {
+        let mut chain = MiddlewareChain::new();
+        chain.add(Arc::new(SecurityTierMiddleware {
+            default_tier: SecurityTier::Open,
+        }));
+
+        let mut command = Command::Add(vec![("name".to_string(), "Test".to_string())]);
+        let mut context = ClientContext {
+            authenticated: false,
+            challenge: "test-challenge".to_string(),
+            ..Default::default()
+        };
+
+        let result = chain.pre_process(&mut command, &mut context).unwrap();
+        match result {
+            MiddlewareAction::ShortCircuit(resp) => {
+                assert!(resp.contains("401:Authentication required"));
+                assert!(resp.contains("test-challenge"));
+            },
+            _ => panic!("Expected ShortCircuit"),
         }
     }
 }

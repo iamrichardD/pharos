@@ -48,7 +48,7 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Bug #81:** **Port Inconsistency**. `pharos-server` (2378) vs `pharos-console-web` (1050). (Remediation: Centralized in .env.example).
 - [x] **Bug #82 (Issue #82):** **E2E Backend Failure**. `pre-flight.sh` fails to verify the TCP backend during Playwright runs. (Remediation: Spawn ephemeral backend in script).
 - [x] **Debt #01 (Issue #83):** **Auth Bridge Gap**. Web Console now supports automated SSH-challenge signing.
-- [ ] **Debt #02 (Issue #84):** **Logic Duplication**. Move all authorization logic from `lib.rs` into `SecurityTierMiddleware`.
+- [x] **Debt #02 (Issue #84):** **Logic Duplication**. Move all authorization logic from `lib.rs` into `SecurityTierMiddleware`.
 - [x] **Debt #03 (Issue #85):** **Hardcoded Paths**. Transitioned SSH key paths to relative `PHAROS_KEYS_DIR`.
 - [ ] **Task 17.6:** Engineering: Implement `/health` API on Warp metrics server.
 - [ ] **Task 17.7:** Advocacy: Document end-user decision paths in `docs/DECISIONS.md`.

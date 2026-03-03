@@ -6,6 +6,7 @@
 **Backlog:** 18.1, 18.2, 19.1
 
 ## Recent Completions
+- [x] Debt #02: Fixed Logic Duplication. Moved all authorization logic from `lib.rs` into `SecurityTierMiddleware`. (Issue #84)
 - [x] Debt #01: Fixed Auth Bridge Gap. Web Console now supports automated SSH-challenge signing using `PHAROS_PRIVATE_KEY` and `PHAROS_PUBLIC_KEY`. (Issue #83)
 - [x] Debt #03: Fixed Hardcoded Paths. Transitioned SSH key paths to relative `PHAROS_KEYS_DIR` (default: `./keys`). (Issue #85)
 - [x] Bug #82: Fixed E2E backend connection failure in `pre-flight.sh`. Standardized backend spawning in Playwright. (Issue #82)

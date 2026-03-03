@@ -102,6 +102,7 @@ async fn test_should_block_write_when_guest_id_provided() {
     middleware_chain.add(Arc::new(ReadOnlyMiddleware {
         read_only_ids: vec!["guest".to_string()],
     }));
+    middleware_chain.add(Arc::new(SecurityTierMiddleware { default_tier: SecurityTier::Open }));
     let middleware_chain = Arc::new(middleware_chain);
 
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
@@ -142,6 +143,7 @@ async fn test_should_allow_write_when_other_id_provided() {
     let auth_manager = Arc::new(AuthManager::new(temp_dir.path()));
     
     let mut middleware_chain = MiddlewareChain::new();
+    middleware_chain.add(Arc::new(SecurityTierMiddleware { default_tier: SecurityTier::Open }));
     middleware_chain.add(Arc::new(ReadOnlyMiddleware {
         read_only_ids: vec!["guest".to_string()],
     }));

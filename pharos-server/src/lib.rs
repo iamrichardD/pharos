@@ -36,16 +36,18 @@ pub async fn handle_connection(mut socket: TcpStream, storage: Arc<RwLock<dyn St
     let (reader, mut writer) = socket.split();
     let mut reader = BufReader::new(reader);
     let mut line = String::new();
+    let mut challenge = vec![0u8; 16];
+    OsRng.fill_bytes(&mut challenge);
+    let challenge_hex = hex::encode(challenge);
+
     let mut context = ClientContext {
         id: None,
         authenticated: false,
         peer_addr: peer_addr.clone(),
         roles: Vec::new(),
         tier: crate::auth::SecurityTier::Open,
+        challenge: challenge_hex.clone(),
     };
-    let mut challenge = vec![0u8; 16];
-    OsRng.fill_bytes(&mut challenge);
-    let challenge_hex = hex::encode(challenge);
 
     let _ = crate::tui::EVENT_TX.send(format!("Connection established from {}", peer_addr));
 
@@ -97,7 +99,7 @@ pub async fn handle_connection(mut socket: TcpStream, storage: Arc<RwLock<dyn St
 ").await?;
                     }
                     Command::Auth { public_key, signature } => {
-                        if auth_manager.verify(public_key, signature, &challenge_hex) {
+                        if auth_manager.verify(public_key, signature, &context.challenge) {
                             context.authenticated = true;
                             context.roles = auth_manager.get_roles(public_key);
                             writer.write_all(b"200:Ok
@@ -113,11 +115,6 @@ pub async fn handle_connection(mut socket: TcpStream, storage: Arc<RwLock<dyn St
                         break;
                     }
                     Command::Add(fields) => {
-                        if !context.authenticated {
-                            writer.write_all(format!("401:Authentication required. Challenge: {}
-", challenge_hex).as_bytes()).await?;
-                            continue;
-                        }
                         let mut field_map = std::collections::HashMap::new();
                         for (k, v) in fields {
                             field_map.insert(k.clone(), v.clone());
@@ -174,20 +171,10 @@ pub async fn handle_connection(mut socket: TcpStream, storage: Arc<RwLock<dyn St
                         }
                     }
                     Command::Delete(_) => {
-                        if !context.authenticated {
-                            writer.write_all(format!("401:Authentication required. Challenge: {}
-", challenge_hex).as_bytes()).await?;
-                            continue;
-                        }
                         writer.write_all(b"598:Command not yet implemented
 ").await?;
                     }
                     Command::Change { .. } => {
-                        if !context.authenticated {
-                            writer.write_all(format!("401:Authentication required. Challenge: {}
-", challenge_hex).as_bytes()).await?;
-                            continue;
-                        }
                         writer.write_all(b"598:Command not yet implemented
 ").await?;
                     }
