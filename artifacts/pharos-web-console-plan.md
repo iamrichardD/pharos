@@ -34,36 +34,37 @@ Astro (SSR Mode with Node.js adapter) is selected over Next.js for:
 
 ```mermaid
 sequenceDiagram
-    participant Mobile
-    participant Desktop as Desktop (CLI/Web)
+    participant User
+    participant Browser as Web Console (SSR)
     participant Server as pharos-server
     participant IdP as OIDC / LDAP (Enterprise)
 
     rect rgb(30, 40, 50)
-    Note over Mobile, Server: Home Lab Posture (QR Handshake)
-    Desktop->>Server: Request Session Transfer Token
-    Server-->>Desktop: Short-lived Token (QR Code)
-    Mobile->>Desktop: Scan QR Code
-    Mobile->>Server: Exchange Token for JWT
-    Server-->>Mobile: Authenticated Session
+    Note over User, Server: Home Lab Posture (CLI-to-Web Handshake)
+    User->>Browser: Access Console
+    Browser-->>User: Display Challenge
+    User->>User: Sign Challenge (ph auth sign)
+    User->>Browser: Submit Signature
+    Browser->>Server: Verify & Issue JWT
+    Server-->>Browser: Session Established
     end
     
     rect rgb(40, 30, 50)
-    Note over Desktop, IdP: Enterprise Intranet Posture (OIDC)
-    Desktop->>Server: Access Request
-    Server->>IdP: Redirect to Login
-    IdP-->>Desktop: OIDC Challenge
-    Desktop->>IdP: Credentials / MFA
+    Note over User, IdP: Enterprise Intranet Posture (OIDC)
+    User->>Browser: Access Console
+    Browser->>Server: Request Auth
+    Server->>IdP: Redirect to Identity Provider
+    IdP-->>User: Auth Challenge (Credentials/MFA)
+    User->>IdP: Authenticate
     IdP-->>Server: Identity Token
-    Server-->>Desktop: Authenticated Session
+    Server-->>Browser: Session Established
     end
 ```
 
 ### A. Home Lab Posture (Mobile-First)
 - **Auth Handshake**: 
-    - **Desktop**: "CLI-to-Web" Handshake. User signs a challenge in the terminal (`ph auth sign`) to authorize the browser.
-    - **Mobile/Tablet**: "QR Code Handshake". Desktop console generates a secure QR code; mobile device scans it to establish a session.
-    - **WebAuthn**: Native Passkey (FaceID/TouchID) support for frictionless mobile access.
+    - **Primary**: "CLI-to-Web" Handshake. User signs a challenge in the terminal (`ph auth sign`) to authorize the browser session.
+    - **WebAuthn**: Native Passkey (FaceID/TouchID) support for frictionless subsequent access on mobile devices.
 - **Trust Model**: Optimized for speed and responsiveness on low-power mobile hardware.
 
 ### B. Enterprise Intranet Posture (Hardened)
@@ -80,7 +81,7 @@ sequenceDiagram
 
 ### Phase 2: Pulse Monitoring & Identity
 - **Feature**: Real-time "ONLINE/OFFLINE" dashboard for all nodes.
-- **Feature**: Handshake UI for Desktop-to-Mobile session transfer.
+- **Feature**: Integrated session management and WebAuthn enrollment.
 
 ### Phase 3: Network Discovery & Automation
 - **Feature**: Trigger `pharos-scan` jobs and bulk-provision discovered devices.
