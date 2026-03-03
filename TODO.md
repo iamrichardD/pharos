@@ -16,6 +16,8 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Task 1.4 (Issue #4):** Create `SECURITY.md` detailing DevSecOps practices.
 - [x] **Task 1.5 (Issue #5):** Scaffold initial GitHub Actions workflow for cross-compiling target triples (`x86_64-unknown-linux-gnu`, `aarch64-apple-darwin`, `x86_64-pc-windows-msvc`).
 - [x] **Task 1.6 (Issue #7):** Refine the release process in `GEMINI.md` to mandate Semantic Versioning and annotated Git tags.
+- [ ] **Task 1.7 (Issue #86):** Documentation: Add Mermaid Visualizations for architecture and code path decision trees in \`artifacts/\` files. (HIGH PRIORITY)
+- [ ] **Task 1.8 (Issue #87):** DevSecOps: Implement AFR, Granular Labeling, and Env Sanity Checks. (HIGH PRIORITY)
 
 ## Phase 2: Core Server (`pharos`) MVP
 - [x] **Task 2.1 (Issue #6):** Implement core TCP listener and base RFC 2378 (Ph) syntax parser.
@@ -133,10 +135,9 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Task 17.5 (Issue #75):** Release: Prepare v1.3.0 release including the integrated Pharos Sandbox.
 
 ## Phase 18: Enterprise Workflows (Alternation & Coalescing)
-- [ ] **Task 18.1 (Issue #86):** Documentation: Add Mermaid Visualizations for architecture and code path decision trees in \`artifacts/\` files. (HIGH PRIORITY)
-- [ ] **Task 18.2 (#TBD):** Engineering: Implement Choice-Based Selection `[f1|f2]=val` (OR search) in `protocol.rs`.
-- [ ] **Task 18.3 (#TBD):** Engineering: Implement Return Coalescing `return [f1|f2]` (First-match) in `pharos-server`.
-- [ ] **Task 18.4 (#TBD):** Engineering: Implement `mapping.yaml` global alias support.
+- [ ] **Task 18.1 (#TBD):** Engineering: Implement Choice-Based Selection `[f1|f2]=val` (OR search) in `protocol.rs`.
+- [ ] **Task 18.2 (#TBD):** Engineering: Implement Return Coalescing `return [f1|f2]` (First-match) in `pharos-server`.
+- [ ] **Task 18.3 (#TBD):** Engineering: Implement `mapping.yaml` global alias support.
 
 ## Phase 19: Protocol Standardization (IETF Draft) - PROPOSED
 - [ ] **Task 19.1 (#TBD):** Advocacy: Draft the "Pharos Protocol Extensions (PhP)" in IETF xml2rfc format.
