@@ -18,6 +18,7 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Task 1.6 (Issue #7):** Refine the release process in `GEMINI.md` to mandate Semantic Versioning and annotated Git tags.
 - [ ] **Task 1.7 (Issue #86):** Documentation: Add Mermaid Visualizations for architecture and code path decision trees in \`artifacts/\` files. (HIGH PRIORITY)
 - [ ] **Task 1.8 (Issue #87):** DevSecOps: Implement AFR, Granular Labeling, and Env Sanity Checks. (HIGH PRIORITY)
+- [ ] **Task 1.9 (Issue #88):** DevSecOps: Implement Automated DORA Metric Generator and \`docs/DORA.md\`. (HIGH PRIORITY)
 
 ## Phase 2: Core Server (`pharos`) MVP
 - [x] **Task 2.1 (Issue #6):** Implement core TCP listener and base RFC 2378 (Ph) syntax parser.

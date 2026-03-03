@@ -3,7 +3,7 @@
 ## Current Status
 **Phase:** 1 (DevSecOps & Documentation)
 **Active Task:** None
-**Backlog:** 1.7 (Mermaid Visuals), 1.8 (DevSecOps Refinement), 18.1 (Alternation)
+**Backlog:** 1.7 (Mermaid Visuals), 1.8 (DevSecOps Refinement), 1.9 (Automated DORA), 18.1 (Alternation)
 
 ## Recent Completions
 - [x] Debt #02: Fixed Logic Duplication. Moved all authorization logic from `lib.rs` into `SecurityTierMiddleware`. (Issue #84)
