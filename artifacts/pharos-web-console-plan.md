@@ -32,6 +32,33 @@ Astro (SSR Mode with Node.js adapter) is selected over Next.js for:
 
 ## 3. Dual-Posture Security Model
 
+```mermaid
+sequenceDiagram
+    participant Mobile
+    participant Desktop as Desktop (CLI/Web)
+    participant Server as pharos-server
+    participant IdP as OIDC / LDAP (Enterprise)
+
+    rect rgb(30, 40, 50)
+    Note over Mobile, Server: Home Lab Posture (QR Handshake)
+    Desktop->>Server: Request Session Transfer Token
+    Server-->>Desktop: Short-lived Token (QR Code)
+    Mobile->>Desktop: Scan QR Code
+    Mobile->>Server: Exchange Token for JWT
+    Server-->>Mobile: Authenticated Session
+    end
+    
+    rect rgb(40, 30, 50)
+    Note over Desktop, IdP: Enterprise Intranet Posture (OIDC)
+    Desktop->>Server: Access Request
+    Server->>IdP: Redirect to Login
+    IdP-->>Desktop: OIDC Challenge
+    Desktop->>IdP: Credentials / MFA
+    IdP-->>Server: Identity Token
+    Server-->>Desktop: Authenticated Session
+    end
+```
+
 ### A. Home Lab Posture (Mobile-First)
 - **Auth Handshake**: 
     - **Desktop**: "CLI-to-Web" Handshake. User signs a challenge in the terminal (`ph auth sign`) to authorize the browser.

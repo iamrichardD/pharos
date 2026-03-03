@@ -31,6 +31,37 @@ The `pharos-pulse` agent is a lightweight, zero-dependency, statically linked Ru
 ## 3. Platform Integrations (Presence Lifecycle)
 The agent integrates with the host's system manager to capture power events and maintain a persistent presence.
 
+```mermaid
+flowchart TD
+    subgraph Host [Host System Manager]
+        Start([Start Service])
+        Stop([SIGTERM / Stop])
+    end
+
+    subgraph Agent [pharos-pulse agent]
+        Init[Resolve Identity & Metadata]
+        Wait{Wait 60m}
+        Heartbeat[Send HEARTBEAT]
+        Offline[Send OFFLINE]
+    end
+
+    subgraph Server [pharos-server]
+        RecvOnline[(Receive ONLINE)]
+        RecvHB[(Receive HEARTBEAT)]
+        RecvOff[(Receive OFFLINE)]
+    end
+
+    Start --> Init
+    Init -->|Event: ONLINE| RecvOnline
+    Init --> Wait
+    Wait --> Heartbeat
+    Heartbeat --> RecvHB
+    Heartbeat --> Wait
+    Stop --> Offline
+    Offline --> RecvOff
+    Offline --> Exit([Exit Process])
+```
+
 ### 3.1 Online Signal (Startup)
 On service start, `pharos-pulse` immediately performs:
 1.  **Identity Resolution**: Loads/Generates the local SSH identity key.

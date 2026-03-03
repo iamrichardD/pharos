@@ -21,6 +21,20 @@
 
 ## 2. Core Components
 
+```mermaid
+flowchart TD
+    A[Discovery Engine] -->|mDNS/DNS-SD| B(Broadcast Services)
+    A -->|ARP/ICMP| C(Silent Hosts)
+    A -->|OUI Resolver| D(Hardware Manufacturer)
+    A -->|Port Fingerprinting| E(Device Role Guessing)
+    B --> F[Interactive CLI]
+    C --> F
+    D --> F
+    E --> F
+    F -->|Template Provisioning| G[Provisioning Layer]
+    G -->|RFC 2378 Integration| H[(Pharos Server)]
+```
+
 ### 2.1. Discovery Engine (Discovery Sub-Agent)
 - **mDNS/DNS-SD:** Detects devices broadcasting services (SSH, HTTP, etc.) on the local network.
 - **ARP/ICMP Scanner:** Performs fast sweeps of the local subnet to identify silent or non-broadcasting hosts.

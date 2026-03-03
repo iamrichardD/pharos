@@ -32,6 +32,30 @@ The TUI will be integrated directly into the `pharos-server` binary.
 
 ## 3. Visual Layout
 
+```mermaid
+graph TD
+    subgraph Dashboard Layout
+        Header[Header: Logo, Version, Uptime, Status]
+        Metrics[Metrics Panel: CPU, Memory, Net I/O]
+        DBStats[Database Stats: People vs Machines]
+        EventStream[Event Stream: Live system events]
+        Footer[Footer: Keybindings]
+        
+        Header --- Metrics
+        Header --- DBStats
+        Metrics --- EventStream
+        DBStats --- EventStream
+        EventStream --- Footer
+    end
+    
+    subgraph Internal Event Broadcast Flow
+        AsyncRuntime[Tokio Async Runtime] -->|Metrics & Events| Channel(Broadcast Channel)
+        ScanLogic[Discovery / Pulse Events] -->|Events| Channel
+        Channel -->|Read| UIEventLoop[TUI Event Loop / AppState]
+        UIEventLoop -->|Render| Terminal[Terminal UI]
+    end
+```
+
 The dashboard will be divided into the following layout panels:
 
 ### 3.1. Header (Top)

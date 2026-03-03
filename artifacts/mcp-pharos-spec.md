@@ -30,6 +30,21 @@ To support Home Labbers and non-technical staff using LLMs (AI Agents) to manage
     - **WebMCP**: For browser-to-agent communication, replacing DOM scraping with structured JavaScript tool calls.
 - **Human/AI MDB Interface**: Provides a searchable, editable view of machine/infrastructure records (the "Web version of `mdb`").
 
+```mermaid
+sequenceDiagram
+    participant AIAgent as AI Agent (LLM)
+    participant Browser as Web Console (Browser)
+    participant WebServer as WebMCP Server (Astro)
+    participant CoreServer as pharos-server
+    
+    AIAgent->>Browser: WebMCP Tool Call (e.g., query_mdb)
+    Browser->>WebServer: API Request (Action)
+    WebServer->>CoreServer: RPC Call (Internal API)
+    CoreServer-->>WebServer: JSON Response
+    WebServer-->>Browser: Formatted Results
+    Browser-->>AIAgent: WebMCP Result
+```
+
 ## 3. WebMCP & MCP Tools Definition
 
 ### 3.1 `query_mdb` (High Priority)

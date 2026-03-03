@@ -47,6 +47,35 @@ The sandbox is orchestrated via `podman-compose` and includes:
 - **Network Name:** `pharos-net` (Bridge).
 - **Service Discovery:** Standard container hostnames (e.g., `http://pharos-server`).
 
+```mermaid
+graph TD
+    subgraph Host Machine
+        HostPort2378[Port 2378]
+        HostPort3000[Port 3000]
+    end
+
+    subgraph pharos-net [Container Network: pharos-net (Bridge)]
+        Server[pharos-server]
+        Web[pharos-web]
+        Pulse[pharos-pulse]
+        Scan[pharos-scan]
+        Shell[pharos-shell]
+    end
+
+    subgraph Ephemeral Storage
+        TmpFs[(tmpfs: /var/lib/pharos)]
+        VolCache[(Named Volume: node_modules)]
+    end
+
+    HostPort2378 --> Server
+    HostPort3000 --> Web
+    Server --> TmpFs
+    Web --> VolCache
+    Pulse -->|Internal DNS| Server
+    Scan -->|Internal DNS| Server
+    Shell -->|Internal DNS| Server
+```
+
 ### 2.3 Ephemeral Data Strategy
 To ensure a clean state every time:
 - Use `tmpfs` for the server database.

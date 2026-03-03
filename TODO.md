@@ -16,7 +16,7 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Task 1.4 (Issue #4):** Create `SECURITY.md` detailing DevSecOps practices.
 - [x] **Task 1.5 (Issue #5):** Scaffold initial GitHub Actions workflow for cross-compiling target triples (`x86_64-unknown-linux-gnu`, `aarch64-apple-darwin`, `x86_64-pc-windows-msvc`).
 - [x] **Task 1.6 (Issue #7):** Refine the release process in `GEMINI.md` to mandate Semantic Versioning and annotated Git tags.
-- [ ] **Task 1.7 (Issue #86):** Documentation: Add Mermaid Visualizations for architecture and code path decision trees in \`artifacts/\` files. (HIGH PRIORITY)
+- [x] **Task 1.7 (Issue #86):** Documentation: Add Mermaid Visualizations for architecture and code path decision trees in `artifacts/` files. (HIGH PRIORITY)
 - [ ] **Task 1.8 (Issue #87):** DevSecOps: Implement AFR, Granular Labeling, and Env Sanity Checks. (HIGH PRIORITY)
 - [ ] **Task 1.9 (Issue #88):** DevSecOps: Implement Automated DORA Metric Generator and \`docs/DORA.md\`. (HIGH PRIORITY)
 

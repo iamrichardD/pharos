@@ -40,6 +40,16 @@ PhP mandates a `presence` field for `Machine` (type=machine) records with the fo
 - **`OFFLINE`**: Explicitly reported graceful shutdown (SIGTERM).
 - **`UNREACHABLE`**: Inferred state after a 70-minute silence (Dead Man's Switch).
 
+```mermaid
+stateDiagram-v2
+    [*] --> ONLINE : Power-on / Heartbeat
+    ONLINE --> OFFLINE : Graceful Shutdown (SIGTERM)
+    ONLINE --> UNREACHABLE : 70-minute silence (Timeout)
+    UNREACHABLE --> ONLINE : Heartbeat Restored
+    UNREACHABLE --> [*] : Manual Decommission
+    OFFLINE --> [*] : Manual Decommission
+```
+
 ### 3.2 Fencing Protocol
 Implementers of PhP MUST NOT perform destructive automation (e.g., node replacement) on records in the `UNREACHABLE` state. Only `OFFLINE` or a human-led `status` change (e.g., `RMA`, `DECOMMISSIONED`) authorizes decommissioning.
 
