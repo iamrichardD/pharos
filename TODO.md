@@ -124,8 +124,9 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Task 16.3 (Issue #65):** Engineering: Implement "One-off Addition" forms using Astro Actions with HitL confirmation.
 - [x] **Task 16.6 (Issue #69):** Engineering: Align `pharos-console-web` with TDD, VSA, and SOLID mandates. Initialized Vitest, refactored to Vertical Slice Architecture, and implemented security reviews.
 - [x] **Task 16.4 (Issue #66):** Engineering: Implement "Presence Monitoring" UI and Secure Logon (JWT-based).
-- [x] **Task 16.9 (Issue #90):** Engineering: Implement CLI Handshake Authentication for Web Console.
-- [x] **Task 16.8 (Issue #70):** Advocacy: Refine marketing site for end-user focus (MDB & Automation). Move technical Zero-Host details to README.md.
+- [x] Task 16.9 (Issue #90): Engineering: Implement CLI Handshake Authentication for Web Console.
+- [x] Task 16.10 (Issue #91): Engineering: Implement MDB Handshake support and standardize CLI Handshake command in Web Console.
+- [x] Task 16.8 (Issue #70): Advocacy: Refine marketing site for end-user focus (MDB & Automation). Move technical Zero-Host details to README.md.
 - [x] **Task 16.5 (Issue #67):** Advocacy: Document the Human/AI/Mobile Web Console as the primary interface for non-technical users and mobile Home Labbers.
 
 ## Phase 17: Pharos Sandbox & WebMCP Integration

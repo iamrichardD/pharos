@@ -6,6 +6,7 @@
 **Backlog:** 1.8 (DevSecOps Refinement), 1.9 (Automated DORA), 18.1 (Alternation)
 
 ## Recent Completions
+- [x] Task 16.10: Engineering: Implemented MDB Handshake support and standardized CLI Handshake command in Web Console. (Issue #91)
 - [x] Task 16.9: Engineering: Implemented CLI Handshake authentication (CLI-to-Web) for the Web Console. Added 'auth-check' protocol command to 'pharos-server' and 'ph auth sign' to 'ph' CLI. (Issue #90)
 - [x] Debt #04: Graceful Shutdown. Implemented SIGTERM handlers in `pharos-server` and `pharos-pulse`, and integrated `tini` into all Containerfiles for proper signal reaping as PID 1. (Issue #89)
 - [x] Task 1.7: Documentation: Integrated Mermaid.js visualizations for all core architecture artifacts in `artifacts/`. (Issue #86)

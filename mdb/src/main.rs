@@ -26,6 +26,23 @@ async fn main() -> Result<()> {
     }
 
     let query_string = args.join(" ");
+    let lower_cmd = query_string.to_lowercase();
+
+    // Handle 'auth sign' locally without server connection
+    if lower_cmd.starts_with("auth sign ") {
+        let challenge = &query_string[10..];
+        match PharosClient::sign_message(challenge) {
+            Ok((pub_key, sig)) => {
+                println!("Public Key: {}", pub_key);
+                println!("Signature:  {}", sig);
+                return Ok(());
+            }
+            Err(e) => {
+                eprintln!("Error signing challenge: {}", e);
+                process::exit(1);
+            }
+        }
+    }
     
     let host = env::var("PHAROS_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
     let port = env::var("PHAROS_PORT").unwrap_or_else(|_| "2378".to_string());
