@@ -30,22 +30,37 @@ async fn main() -> Result<()> {
 
     let mut sys = System::new_all();
     
-    loop {
-        sys.refresh_all();
-        
-        let uptime = sysinfo::System::uptime();
-        let total_mem = sys.total_memory();
-        let used_mem = sys.used_memory();
-        let global_cpu = sys.global_cpu_info().cpu_usage();
+    let shutdown = async {
+        tokio::signal::ctrl_c()
+            .await
+            .expect("failed to install CTRL+C handler");
+        println!("Shutdown signal received, closing agent...");
+    };
 
-        println!("Metrics: CPU: {:.2}% | Mem: {}/{} KB | Uptime: {}s", global_cpu, used_mem, total_mem, uptime);
+    tokio::select! {
+        _ = async {
+            loop {
+                sys.refresh_all();
+                
+                let uptime = sysinfo::System::uptime();
+                let total_mem = sys.total_memory();
+                let used_mem = sys.used_memory();
+                let global_cpu = sys.global_cpu_info().cpu_usage();
 
-        if let Err(e) = send_metrics(&server_addr, &machine_name, global_cpu, used_mem, total_mem, uptime).await {
-            eprintln!("Failed to send metrics: {:?}", e);
-        }
+                println!("Metrics: CPU: {:.2}% | Mem: {}/{} KB | Uptime: {}s", global_cpu, used_mem, total_mem, uptime);
 
-        sleep(Duration::from_secs(10)).await;
+                if let Err(e) = send_metrics(&server_addr, &machine_name, global_cpu, used_mem, total_mem, uptime).await {
+                    eprintln!("Failed to send metrics: {:?}", e);
+                }
+
+                sleep(Duration::from_secs(10)).await;
+            }
+        } => {},
+        _ = shutdown => {},
     }
+
+    println!("pharos-pulse agent shutdown complete.");
+    Ok(())
 }
 
 async fn send_metrics(server_addr: &str, machine_name: &str, cpu: f32, used_mem: u64, total_mem: u64, uptime: u64) -> Result<()> {

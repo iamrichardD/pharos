@@ -124,39 +124,58 @@ async fn main() -> anyhow::Result<()> {
     let listener = TcpListener::bind(&addr).await?;
     info!("Pharos Server listening on {}", addr);
 
+    // Prepare shutdown signal
+    let shutdown = async {
+        tokio::signal::ctrl_c()
+            .await
+            .expect("failed to install CTRL+C handler");
+        info!("Shutdown signal received, closing server...");
+    };
+
     if use_tui {
-        tokio::spawn(async move {
-            loop {
-                if let Ok((socket, _)) = listener.accept().await {
+        tokio::select! {
+            _ = async {
+                loop {
+                    if let Ok((socket, _)) = listener.accept().await {
+                        let storage_ref: Arc<RwLock<dyn Storage>> = Arc::clone(&storage);
+                        let auth_ref = Arc::clone(&auth_manager);
+                        let middleware_ref = Arc::clone(&middleware_chain);
+                        tokio::spawn(async move {
+                            if let Err(_e) = handle_connection(socket, storage_ref, auth_ref, middleware_ref).await {
+                                // Suppress error log since TUI uses stdout
+                            }
+                        });
+                    }
+                }
+            } => {},
+            _ = shutdown => {},
+            res = pharos_server::tui::run_tui() => {
+                if let Err(e) = res {
+                    eprintln!("TUI Error: {}", e);
+                }
+            }
+        }
+    } else {
+        tokio::select! {
+            _ = async {
+                loop {
+                    let (socket, _) = listener.accept().await?;
                     let storage_ref: Arc<RwLock<dyn Storage>> = Arc::clone(&storage);
                     let auth_ref = Arc::clone(&auth_manager);
                     let middleware_ref = Arc::clone(&middleware_chain);
                     tokio::spawn(async move {
-                        if let Err(_e) = handle_connection(socket, storage_ref, auth_ref, middleware_ref).await {
-                            // Suppress error log since TUI uses stdout
+                        if let Err(e) = handle_connection(socket, storage_ref, auth_ref, middleware_ref).await {
+                            error!("Error handling connection: {:?}", e);
                         }
                     });
                 }
-            }
-        });
-        
-        if let Err(e) = pharos_server::tui::run_tui().await {
-            // Restore terminal state is handled inside run_tui, just print error
-            eprintln!("TUI Error: {}", e);
-        }
-    } else {
-        loop {
-            let (socket, _) = listener.accept().await?;
-            let storage_ref: Arc<RwLock<dyn Storage>> = Arc::clone(&storage);
-            let auth_ref = Arc::clone(&auth_manager);
-            let middleware_ref = Arc::clone(&middleware_chain);
-            tokio::spawn(async move {
-                if let Err(e) = handle_connection(socket, storage_ref, auth_ref, middleware_ref).await {
-                    error!("Error handling connection: {:?}", e);
-                }
-            });
+                #[allow(unreachable_code)]
+                anyhow::Ok(())
+            } => {},
+            _ = shutdown => {},
         }
     }
 
+    info!("Pharos Server shutdown complete.");
     Ok(())
 }

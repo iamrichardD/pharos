@@ -38,10 +38,11 @@ FROM public.ecr.aws/docker/library/debian:trixie-slim AS runtime
 
 WORKDIR /app
 
-# Install runtime dependencies (OpenSSL/CA-certs for LDAP/SSH logic)
+# Install runtime dependencies (OpenSSL/CA-certs for LDAP/SSH logic) and tini
 RUN apt-get update && apt-get install -y \
     libssl3 \
     ca-certificates \
+    tini \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy the binary from the builder stage
@@ -54,5 +55,5 @@ RUN mkdir -p /var/lib/pharos
 ENV RUST_LOG=info
 EXPOSE 2378
 
-# Start the server
-ENTRYPOINT ["pharos-server"]
+# Start the server with tini for proper signal reaping
+ENTRYPOINT ["/usr/bin/tini", "--", "pharos-server"]

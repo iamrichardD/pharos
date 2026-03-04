@@ -6,6 +6,7 @@
 **Backlog:** 1.8 (DevSecOps Refinement), 1.9 (Automated DORA), 18.1 (Alternation)
 
 ## Recent Completions
+- [x] Debt #04: Graceful Shutdown. Implemented SIGTERM handlers in `pharos-server` and `pharos-pulse`, and integrated `tini` into all Containerfiles for proper signal reaping as PID 1. (Issue #89)
 - [x] Task 1.7: Documentation: Integrated Mermaid.js visualizations for all core architecture artifacts in `artifacts/`. (Issue #86)
 - [x] Debt #02: Fixed Logic Duplication. Moved all authorization logic from `lib.rs` into `SecurityTierMiddleware`. (Issue #84)
 - [x] Debt #01: Fixed Auth Bridge Gap. Web Console now supports automated SSH-challenge signing using `PHAROS_PRIVATE_KEY` and `PHAROS_PUBLIC_KEY`. (Issue #83)

@@ -21,6 +21,7 @@ RUN npm run build
 
 FROM public.ecr.aws/docker/library/node:22-slim AS runtime
 WORKDIR /app
+RUN apt-get update && apt-get install -y tini && rm -rf /var/lib/apt/lists/*
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package.json ./package.json
@@ -29,4 +30,6 @@ ENV HOST=0.0.0.0
 ENV PORT=3000
 EXPOSE 3000
 
+# Start with tini for proper signal handling in Node.js
+ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD ["node", "./dist/server/entry.mjs"]

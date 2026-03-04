@@ -37,9 +37,10 @@ FROM public.ecr.aws/docker/library/debian:trixie-slim AS runtime
 
 WORKDIR /app
 
-# Install runtime dependencies (minimal)
+# Install runtime dependencies and tini
 RUN apt-get update && apt-get install -y \
     ca-certificates \
+    tini \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy the binary from the builder stage
@@ -48,5 +49,5 @@ COPY --from=builder /app/target/release/pharos-pulse /usr/local/bin/pharos-pulse
 # Environment (Pulse expects PHAROS_SERVER env var)
 ENV PHAROS_SERVER=pharos-server:2378
 
-# Start the agent
-ENTRYPOINT ["pharos-pulse"]
+# Start the agent with tini for proper signal reaping
+ENTRYPOINT ["/usr/bin/tini", "--", "pharos-pulse"]
