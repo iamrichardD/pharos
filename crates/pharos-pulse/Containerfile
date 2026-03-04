@@ -29,8 +29,8 @@ COPY Cargo.toml Cargo.lock ./
 # Copy all crate structures (needed for workspace resolution)
 COPY . .
 
-# Build the pharos-pulse binary in release mode
-RUN cargo build --release --bin pharos-pulse
+# Build the pharos-pulse binary and toolbelt in release mode
+RUN cargo build --release --bin pharos-pulse --bin ph --bin mdb
 
 # --- Runtime Stage ---
 FROM public.ecr.aws/docker/library/debian:trixie-slim AS runtime
@@ -43,8 +43,10 @@ RUN apt-get update && apt-get install -y \
     tini \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy the binary from the builder stage
+# Copy the binaries from the builder stage
 COPY --from=builder /app/target/release/pharos-pulse /usr/local/bin/pharos-pulse
+COPY --from=builder /app/target/release/ph /usr/local/bin/ph
+COPY --from=builder /app/target/release/mdb /usr/local/bin/mdb
 
 # Environment (Pulse expects PHAROS_SERVER env var)
 ENV PHAROS_SERVER=pharos-server:2378

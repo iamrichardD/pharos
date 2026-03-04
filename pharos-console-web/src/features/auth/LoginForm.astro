@@ -9,9 +9,13 @@
  * A standalone, accessible login form component that utilizes Astro 
  * Actions for secure session management. Now supports CLI Handshake.
  * * Traceability:
- * Related to Task 16.9 (Issue #90).
+ * Related to Task 16.9 (Issue #90) and Task 17.8 (Issue #92).
  * ======================================================================== */
 const challenge = crypto.randomUUID();
+const isSandbox = process.env.PHAROS_SANDBOX === 'true';
+const commandHint = isSandbox 
+    ? `podman exec -it pharos-pulse mdb auth sign ${challenge}`
+    : `mdb auth sign ${challenge}`;
 ---
 
 <div class="max-w-md w-full mx-auto space-y-8">
@@ -71,7 +75,7 @@ const challenge = crypto.randomUUID();
         </div>
 
         <div class="bg-black p-4 rounded-xl border border-slate-700 font-mono text-xs text-blue-400 break-all select-all">
-            mdb auth sign {challenge}
+            {commandHint}
         </div>
 
         <form id="handshakeForm" class="space-y-4">

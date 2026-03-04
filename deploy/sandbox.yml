@@ -52,6 +52,7 @@ services:
       - "3000:3000"
     environment:
       - PHAROS_SERVER_URL=http://pharos-server:2378
+      - PHAROS_HOST=pharos-server
       - PHAROS_SANDBOX=true
     depends_on:
       pharos-server:
