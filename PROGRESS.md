@@ -3,7 +3,7 @@
 ## Current Status
 **Phase:** 1 (DevSecOps & Documentation)
 **Active Task:** None
-**Backlog:** 1.8 (DevSecOps Refinement), 1.9 (Automated DORA), 18.1 (Alternation)
+**Backlog:** 1.8 (DevSecOps Refinement), 1.9 (Automated DORA), 17.8 (Pharos Toolbelt), 18.1 (Alternation)
 
 ## Recent Completions
 - [x] Task 16.10: Engineering: Implemented MDB Handshake support and standardized CLI Handshake command in Web Console. (Issue #91)
