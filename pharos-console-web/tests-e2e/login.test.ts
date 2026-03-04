@@ -11,9 +11,12 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Authentication Flow', () => {
-  test('should redirect unauthenticated users to login', async ({ page }) => {
+  test('should allow unauthenticated users to see the landing page on root', async ({ page }) => {
     await page.goto('/');
-    await expect(page).toHaveURL(/.*\/login/);
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.locator('text=Manage your Home Lab')).toBeVisible();
+    await expect(page.locator('text=Secure Access')).toBeVisible();
+    await expect(page.locator('#connectCliBtn')).toBeVisible();
   });
 
   test('should login successfully with admin/admin and redirect home', async ({ page }) => {

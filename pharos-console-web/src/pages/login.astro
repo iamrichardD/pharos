@@ -25,7 +25,51 @@ if (session) {
 ---
 
 <ConsoleLayout title="Sign In">
-    <div class="flex items-center justify-center min-h-[60vh]">
-        <LoginForm />
+    <div class="space-y-12 py-10">
+        <div class="flex items-center justify-center">
+            <LoginForm />
+        </div>
+
+        <div class="max-w-md mx-auto">
+            <div class="relative flex items-center py-5">
+                <div class="flex-grow border-t border-slate-200"></div>
+                <span class="flex-shrink mx-4 text-slate-400 text-sm font-medium">Or continue with</span>
+                <div class="flex-grow border-t border-slate-200"></div>
+            </div>
+
+            <section class="bg-slate-900 text-white rounded-3xl p-8 overflow-hidden relative">
+                <div class="relative z-10 space-y-4">
+                    <h2 class="text-xl font-bold text-center">Enterprise & Handshake</h2>
+                    <p class="text-slate-400 text-sm text-center">
+                        Authorize using OIDC (Azure/Okta) or your CLI SSH keys.
+                    </p>
+                    <div class="pt-2 flex flex-col gap-3">
+                        <button id="ssoBtn" class="w-full py-3 bg-white/10 hover:bg-white/20 rounded-xl font-semibold transition-colors cursor-pointer text-sm">
+                            Sign in with SSO (OIDC)
+                        </button>
+                        <button id="connectCliBtn" class="w-full py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-semibold transition-colors cursor-pointer text-sm">
+                            Connect CLI Handshake
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </div>
     </div>
 </ConsoleLayout>
+
+<script>
+    const connectCliBtn = document.getElementById('connectCliBtn');
+    const ssoBtn = document.getElementById('ssoBtn');
+
+    if (connectCliBtn) {
+        connectCliBtn.addEventListener('click', () => {
+            alert('CLI Handshake is currently being implemented! Please use standard login for now.');
+        });
+    }
+
+    if (ssoBtn) {
+        ssoBtn.addEventListener('click', () => {
+            alert('Enterprise OIDC integration (Azure/Okta) is currently being scaffolded! Please use standard login for now.');
+        });
+    }
+</script>

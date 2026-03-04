@@ -53,7 +53,7 @@ sequenceDiagram
     Note over User, IdP: Enterprise Intranet Posture (OIDC)
     User->>Browser: Access Console
     Browser->>Server: Request Auth
-    Server->>IdP: Redirect to Identity Provider
+    Server->>IdP: Redirect to Identity Provider (Azure AD/Okta)
     IdP-->>User: Auth Challenge (Credentials/MFA)
     User->>IdP: Authenticate
     IdP-->>Server: Identity Token
@@ -61,16 +61,16 @@ sequenceDiagram
     end
 ```
 
-### A. Home Lab Posture (Mobile-First)
+### A. Home Lab Posture (CLI Handshake)
 - **Auth Handshake**: 
     - **Primary**: "CLI-to-Web" Handshake. User signs a challenge in the terminal (`ph auth sign`) to authorize the browser session.
-    - **WebAuthn**: Native Passkey (FaceID/TouchID) support for frictionless subsequent access on mobile devices.
-- **Trust Model**: Optimized for speed and responsiveness on low-power mobile hardware.
+    - **WebAuthn**: Native Passkey (FaceID/TouchID) support for frictionless subsequent access.
+- **Trust Model**: Optimized for speed and responsiveness on private home networks.
 
-### B. Enterprise Intranet Posture (Hardened)
-- **Identity**: OIDC / LDAP integration via Astro Middleware.
-- **Hardening**: Mandatory TLS, CSRF protection (Astro Actions), and strict HSTS headers.
-- **Auditability**: Every write operation (MDB/PH) includes `Original-Signer-Identity` provenance metadata.
+### B. Enterprise Posture (OIDC/SSO)
+- **Identity**: OIDC integration (e.g., Entra ID/Azure, Okta) via Astro Middleware.
+- **Hardening**: Mandatory TLS, CSRF protection, and strict session management.
+- **Auditability**: Every write operation includes `Original-Signer-Identity` provenance metadata from the IdP.
 
 ## 4. Product Roadmap (Prioritized)
 

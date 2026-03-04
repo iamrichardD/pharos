@@ -12,3 +12,4 @@ keys/
 .env
 .env.*
 !.env.example
+/.ai/
