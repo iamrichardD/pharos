@@ -15,18 +15,21 @@
  * ======================================================================== */
 -->
 
-# Pharos Pulse (`pharos-pulse`) Technical Specification
+# Pharos Pulse (`pharos-pulse`) & Toolbelt Technical Specification
 
 ## 1. Overview
-The `pharos-pulse` agent is a lightweight, zero-dependency, statically linked Rust binary. Its primary goal is to ensure a node's presence and identity are known to the Pharos server. It acts as a "Presence Heartbeat," reporting when a device is powered on (Online), providing a low-impact hourly heartbeat (Presence), and gracefully signaling when it is shutting down (Offline).
+The `pharos-pulse` agent is a lightweight, statically linked Rust binary. While its primary background role is to ensure a node's presence and identity are known to the Pharos server, it also serves as the **Pharos Toolbelt**. 
 
-**Note:** High-frequency performance metrics (Prometheus/OpenTelemetry) are handled centrally by the `pharos-server` or dedicated collectors; `pharos-pulse` focuses strictly on identity, metadata, and availability.
+In the "Toolbelt" configuration (standard for Sandbox and managed nodes), the container image bundles the `ph` and `mdb` CLI utilities. This transforms the Pulse agent from a passive reporter into an active management endpoint, allowing engineers to perform queries, updates, and "CLI Handshakes" directly from the managed node without local host installations.
+
+**Note:** High-frequency performance metrics (Prometheus/OpenTelemetry) are handled centrally by the `pharos-server` or dedicated collectors; `pharos-pulse` focuses strictly on identity, availability, and providing a local management interface.
 
 ## 2. Core Constraints
 - **Language**: Rust
 - **Linking**: Fully static (musl for Linux).
 - **Execution Context**: Runs as a background service/daemon (Systemd, launchd, SCM).
-- **Resource Footprint**: Must consume less than 10MB RAM and negligible CPU.
+- **Resource Footprint**: Must consume less than 12MB RAM (including CLI overhead) and negligible CPU.
+- **Included Utilities**: `ph` (People/Contact Management), `mdb` (Machine/Infrastructure Management).
 
 ## 3. Platform Integrations (Presence Lifecycle)
 The agent integrates with the host's system manager to capture power events and maintain a persistent presence.
@@ -74,7 +77,34 @@ To ensure the server's record remains "Fresh" and to detect ungraceful failures 
 ### 3.3 Offline Signal (Shutdown)
 The agent must catch `SIGTERM` (Linux/macOS) or the `Service Stop` control code (Windows) to send a final `OFFLINE` message before the process exits.
 
-## 4. Presence Payload Schema
+## 4. Ecosystem Management (The Toolbelt)
+The Pulse agent container functions as a **Managed Node** with a full management toolset. This enables a "Zero-Host" workflow where an engineer can authenticate a Web Console session from a remote terminal.
+
+```mermaid
+graph TD
+    subgraph ManagedNode ["Managed Node (Pulse + Toolbelt)"]
+        PulseAgent[pharos-pulse: Background Presence]
+        MDB[mdb auth sign: Handshake Provider]
+        PH[ph: Contact Lookup]
+    end
+
+    subgraph UserInterface ["Engineer Workspace"]
+        Terminal[podman exec -it pharos-pulse]
+        Browser[Pharos Web Console]
+    end
+
+    subgraph PharosCore ["Pharos Ecosystem Hub"]
+        Server[pharos-server: RFC 2378 Hub]
+    end
+
+    Terminal -->|Invoke Toolbelt| MDB
+    Terminal -->|Invoke Toolbelt| PH
+    PulseAgent -->|HEARTBEAT| Server
+    MDB -->|Generate Signature| Browser
+    Browser -->|Verify Handshake| Server
+```
+
+## 5. Presence Payload Schema
 Sent via JSON over a secure channel to the Pharos server.
 
 ```json

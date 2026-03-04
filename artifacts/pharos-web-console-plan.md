@@ -43,7 +43,7 @@ sequenceDiagram
     Note over User, Server: Home Lab Posture (CLI-to-Web Handshake)
     User->>Browser: Access Console
     Browser-->>User: Display Challenge
-    User->>User: Sign Challenge (ph auth sign)
+    User->>User: Sign Challenge (mdb auth sign)
     User->>Browser: Submit Signature
     Browser->>Server: Verify & Issue JWT
     Server-->>Browser: Session Established
@@ -63,7 +63,7 @@ sequenceDiagram
 
 ### A. Home Lab Posture (CLI Handshake)
 - **Auth Handshake**: 
-    - **Primary**: "CLI-to-Web" Handshake. User signs a challenge in the terminal (`ph auth sign`) to authorize the browser session.
+    - **Primary**: "CLI-to-Web" Handshake. User signs a challenge in the terminal (`mdb auth sign`) to authorize the browser session.
     - **WebAuthn**: Native Passkey (FaceID/TouchID) support for frictionless subsequent access.
 - **Trust Model**: Optimized for speed and responsiveness on private home networks.
 
