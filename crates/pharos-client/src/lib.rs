@@ -203,7 +203,7 @@ impl PharosClient {
         let resp = self.execute(command).await?;
         
         if let PharosResponse::AuthenticationRequired { challenge } = resp {
-            let (pub_key_ssh, sig_b64) = self.sign_challenge(&challenge)?;
+            let (pub_key_ssh, sig_b64) = Self::sign_message(&challenge)?;
             
             self.send_line(&format!("auth \"{}\" \"{}\"", pub_key_ssh, sig_b64)).await?;
             let auth_resp = self.read_line().await?;
@@ -219,7 +219,9 @@ impl PharosClient {
         Ok(resp)
     }
 
-    fn sign_challenge(&self, challenge_hex: &str) -> Result<(String, String)> {
+    /// Signs a message using the configured SSH private key.
+    /// Returns (Public Key SSH string, Signature Base64 string).
+    pub fn sign_message(message: &str) -> Result<(String, String)> {
         let priv_key_path = env::var("PHAROS_PRIVATE_KEY").unwrap_or_else(|_| {
             let home = env::var("HOME").unwrap_or_else(|_| ".".to_string());
             format!("{}/.ssh/id_ed25519", home)
@@ -240,7 +242,7 @@ impl PharosClient {
             ssh_key::private::KeypairData::Ed25519(kp) => {
                 use ed25519_dalek::{Signer, SigningKey};
                 let signing_key = SigningKey::from_bytes(&kp.private.to_bytes());
-                signing_key.sign(challenge_hex.as_bytes()).to_vec()
+                signing_key.sign(message.as_bytes()).to_vec()
             }
             _ => return Err(anyhow!("Unsupported key type for raw signing. Only Ed25519 is supported in this version.")),
         };

@@ -39,3 +39,4 @@ warp = "0.3"
 
 [dev-dependencies]
 tempfile = "3"
+ed25519-dalek = "2.2"

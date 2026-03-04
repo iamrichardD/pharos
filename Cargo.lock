@@ -1622,6 +1622,7 @@ dependencies = [
  "anyhow",
  "base64 0.22.1",
  "crossterm 0.28.1",
+ "ed25519-dalek",
  "futures",
  "hex",
  "lazy_static",

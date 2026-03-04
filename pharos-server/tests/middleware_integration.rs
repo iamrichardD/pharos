@@ -178,3 +178,57 @@ async fn test_should_allow_write_when_other_id_provided() {
     // It should reach the Auth check and return 401 (not 500)
     assert!(response.contains("401:Authentication required"));
 }
+
+#[tokio::test]
+async fn test_should_verify_auth_check_command() {
+    // 1. Generate a keypair
+    use ssh_key::PrivateKey;
+    let mut rng = rand::rngs::OsRng;
+    let priv_key = PrivateKey::random(&mut rng, ssh_key::Algorithm::Ed25519).unwrap();
+    let pub_key_openssh = priv_key.public_key().to_openssh().unwrap();
+    
+    // 2. Setup server with this authorized key
+    let temp_dir = tempdir().unwrap();
+    let key_path = temp_dir.path().join("test.pub");
+    std::fs::write(&key_path, pub_key_openssh.as_bytes()).unwrap();
+    
+    let storage: Arc<RwLock<dyn Storage>> = Arc::new(RwLock::new(MemoryStorage::new()));
+    let auth_manager = Arc::new(AuthManager::new(temp_dir.path()));
+    let mut chain = MiddlewareChain::new();
+    chain.add(Arc::new(SecurityTierMiddleware { default_tier: SecurityTier::Open }));
+    let middleware_chain = Arc::new(chain);
+    
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    
+    let server_storage = Arc::clone(&storage);
+    tokio::spawn(async move {
+        let (socket, _) = listener.accept().await.unwrap();
+        handle_connection(socket, server_storage, auth_manager, middleware_chain).await.unwrap();
+    });
+    
+    // 3. Connect and send auth-check
+    let mut stream = TcpStream::connect(addr).await.unwrap();
+    let mut buf = [0u8; 1024];
+    stream.read(&mut buf).await.unwrap(); // welcome
+    
+    let challenge = "test-challenge";
+    // Sign the challenge
+    let sig_bytes = match priv_key.key_data() {
+        ssh_key::private::KeypairData::Ed25519(kp) => {
+            use ed25519_dalek::{Signer, SigningKey};
+            let signing_key = SigningKey::from_bytes(&kp.private.to_bytes());
+            signing_key.sign(challenge.as_bytes()).to_vec()
+        }
+        _ => panic!("Unsupported key type"),
+    };
+    use base64::{Engine as _, engine::general_purpose::STANDARD};
+    let sig_b64 = STANDARD.encode(&sig_bytes);
+    
+    let cmd = format!("auth-check \"{}\" \"{}\" \"{}\"\n", pub_key_openssh, sig_b64, challenge);
+    stream.write_all(cmd.as_bytes()).await.unwrap();
+    
+    let n = stream.read(&mut buf).await.unwrap();
+    let response = String::from_utf8_lossy(&buf[..n]);
+    assert!(response.contains("200:Ok"));
+}

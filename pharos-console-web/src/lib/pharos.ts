@@ -198,3 +198,71 @@
         client.connect(portEnv, hostEnv);
     });
 }
+
+/**
+ * Executes a stateless authentication check against the Pharos server.
+ */
+export async function executeAuthCheck(publicKey: string, signature: string, challenge: string): Promise<boolean> {
+    const host = process.env.PHAROS_HOST || '127.0.0.1';
+    const port = parseInt(process.env.PHAROS_PORT || '2378', 10);
+
+    return new Promise((resolve, reject) => {
+        const client = new net.Socket();
+        let buffer = '';
+        let stage = 'banner';
+
+        const cleanup = () => {
+            client.destroy();
+        };
+
+        const onLine = (line: string) => {
+            if (stage === 'banner') {
+                stage = 'id';
+                client.write('id web-console-auth\r\n');
+                return;
+            }
+            if (stage === 'id') {
+                if (line.startsWith('200')) {
+                    stage = 'auth-check';
+                    client.write(`auth-check "${publicKey}" "${signature}" "${challenge}"\r\n`);
+                } else {
+                    cleanup();
+                    resolve(false);
+                }
+                return;
+            }
+            if (stage === 'auth-check') {
+                cleanup();
+                resolve(line.startsWith('200'));
+                return;
+            }
+        };
+
+        client.on('data', (data: Buffer) => {
+            buffer += data.toString();
+            let newlineIdx;
+            while ((newlineIdx = buffer.indexOf('\n')) !== -1) {
+                const line = buffer.substring(0, newlineIdx).replace('\r', '');
+                buffer = buffer.substring(newlineIdx + 1);
+                onLine(line);
+            }
+        });
+
+        client.on('error', (err: Error) => {
+            cleanup();
+            reject(err);
+        });
+
+        client.on('close', () => {
+            resolve(false);
+        });
+
+        client.connect(port, host);
+
+        // Timeout after 5 seconds
+        setTimeout(() => {
+            cleanup();
+            resolve(false);
+        }, 5000);
+    });
+}

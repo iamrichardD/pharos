@@ -47,7 +47,17 @@ impl AuthManager {
         let mut authorized_keys = Vec::new();
         let mut key_roles = HashMap::new();
 
-        if keys_dir.exists() && keys_dir.is_dir() {
+        // Ensure keys directory exists
+        if !keys_dir.exists() {
+            if let Err(e) = fs::create_dir_all(keys_dir) {
+                error!("Failed to create keys directory {:?}: {}", keys_dir, e);
+            } else {
+                info!("Created keys directory {:?}", keys_dir);
+            }
+        }
+
+        // 1. Initial Load
+        if keys_dir.is_dir() {
             if let Ok(entries) = fs::read_dir(keys_dir) {
                 for entry in entries.flatten() {
                     let path = entry.path();
@@ -56,19 +66,7 @@ impl AuthManager {
                             match PublicKey::from_openssh(&content) {
                                 Ok(key) => {
                                     info!("Loaded authorized key from {:?}", path);
-                                    let key_b64 = STANDARD.encode(key.to_bytes().unwrap_or_default());
-                                    authorized_keys.push(key);
-
-                                    // Extract roles from comment or filename
-                                    let mut roles = Vec::new();
-                                    if let Some(filename) = path.file_stem().and_then(|s| s.to_str()) {
-                                        if filename.contains("admin") {
-                                            roles.push("admin".to_string());
-                                        } else if filename.contains("user") {
-                                            roles.push("user".to_string());
-                                        }
-                                    }
-                                    key_roles.insert(key_b64, roles);
+                                    Self::register_key(&mut authorized_keys, &mut key_roles, &path, key);
                                 }
                                 Err(e) => error!("Failed to parse public key {:?}: {}", path, e),
                             }
@@ -76,10 +74,65 @@ impl AuthManager {
                     }
                 }
             }
-        } else {
-            info!("Authorized keys directory {:?} does not exist or is not a directory.", keys_dir);
         }
+
+        // 2. Auto-generation if no keys found
+        if authorized_keys.is_empty() {
+            info!("No authorized keys found. Generating initial admin keypair...");
+            let admin_priv_path = keys_dir.join("admin_id_ed25519");
+            let admin_pub_path = keys_dir.join("admin_id_ed25519.pub");
+
+            use ssh_key::PrivateKey;
+            let mut rng = rand::rngs::OsRng;
+            match PrivateKey::random(&mut rng, ssh_key::Algorithm::Ed25519) {
+                Ok(priv_key) => {
+                    let priv_openssh = priv_key.to_openssh(ssh_key::LineEnding::LF).unwrap();
+                    let pub_openssh = priv_key.public_key().to_openssh().unwrap();
+
+                    if let Err(e) = fs::write(&admin_priv_path, priv_openssh.as_bytes()) {
+                        error!("Failed to save initial private key: {}", e);
+                    } else {
+                        // Set strict permissions on private key if on Unix
+                        #[cfg(unix)]
+                        {
+                            use std::os::unix::fs::PermissionsExt;
+                            let mut perms = fs::metadata(&admin_priv_path).unwrap().permissions();
+                            perms.set_mode(0o600);
+                            let _ = fs::set_permissions(&admin_priv_path, perms);
+                        }
+                        info!("Initial private key saved to {:?}", admin_priv_path);
+                    }
+
+                    if let Err(e) = fs::write(&admin_pub_path, pub_openssh.as_bytes()) {
+                        error!("Failed to save initial public key: {}", e);
+                    } else {
+                        info!("Initial public key saved to {:?}", admin_pub_path);
+                        if let Ok(key) = PublicKey::from_openssh(&pub_openssh) {
+                            Self::register_key(&mut authorized_keys, &mut key_roles, &admin_pub_path, key);
+                        }
+                    }
+                }
+                Err(e) => error!("Failed to generate initial keypair: {}", e),
+            }
+        }
+
         Self { authorized_keys, key_roles }
+    }
+
+    fn register_key(authorized_keys: &mut Vec<PublicKey>, key_roles: &mut HashMap<String, Vec<String>>, path: &Path, key: PublicKey) {
+        let key_b64 = STANDARD.encode(key.to_bytes().unwrap_or_default());
+        authorized_keys.push(key);
+
+        // Extract roles from comment or filename
+        let mut roles = Vec::new();
+        if let Some(filename) = path.file_stem().and_then(|s| s.to_str()) {
+            if filename.contains("admin") {
+                roles.push("admin".to_string());
+            } else if filename.contains("user") {
+                roles.push("user".to_string());
+            }
+        }
+        key_roles.insert(key_b64, roles);
     }
 
     pub fn verify(&self, public_key_b64: &str, signature_b64: &str, challenge: &str) -> bool {

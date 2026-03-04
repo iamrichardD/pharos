@@ -109,6 +109,15 @@ pub async fn handle_connection(mut socket: TcpStream, storage: Arc<RwLock<dyn St
 ").await?;
                         }
                     }
+                    Command::AuthCheck { public_key, signature, challenge } => {
+                        if auth_manager.verify(public_key, signature, challenge) {
+                            writer.write_all(b"200:Ok
+").await?;
+                        } else {
+                            writer.write_all(b"403:Forbidden
+").await?;
+                        }
+                    }
                     Command::Quit => {
                         writer.write_all(b"200:Bye!
 ").await?;

@@ -13,3 +13,4 @@ keys/
 .env.*
 !.env.example
 /.ai/
+/keys_auto/

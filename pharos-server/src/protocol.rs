@@ -46,6 +46,11 @@ pub enum Command {
         public_key: String,
         signature: String,
     },
+    AuthCheck {
+        public_key: String,
+        signature: String,
+        challenge: String,
+    },
     Quit,
 }
 
@@ -83,6 +88,16 @@ pub fn parse_command(line: &str) -> Result<Command, ProtocolError> {
             Ok(Command::Auth {
                 public_key: tokens[1].clone(),
                 signature: tokens[2].clone(),
+            })
+        }
+        "auth-check" => {
+            if tokens.len() < 4 {
+                return Err(ProtocolError::SyntaxError);
+            }
+            Ok(Command::AuthCheck {
+                public_key: tokens[1].clone(),
+                signature: tokens[2].clone(),
+                challenge: tokens[3].clone(),
             })
         }
         "set" => Ok(Command::Set(tokens[1..].to_vec())),

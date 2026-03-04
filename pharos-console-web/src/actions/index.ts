@@ -15,7 +15,7 @@ import { z } from 'astro:schema';
 import { commitMdbRecord } from '../features/mdb/add/add-logic';
 import { createSessionToken } from '../features/auth/session-logic';
 import { AUTH_COOKIE_NAME } from '../features/auth/auth-config';
-import { executePharosQuery } from '../lib/pharos';
+import { executePharosQuery, executeAuthCheck } from '../lib/pharos';
 
 export const server = {
     sandboxQuery: defineAction({
@@ -61,6 +61,38 @@ export const server = {
                 return { success: true };
             }
             throw new Error('Invalid credentials');
+        }
+    }),
+    handshakeLogin: defineAction({
+        accept: 'form',
+        input: z.object({
+            publicKey: z.string().min(1, 'Public key is required'),
+            signature: z.string().min(1, 'Signature is required'),
+            challenge: z.string().min(1, 'Challenge is required'),
+        }),
+        handler: async (input, context) => {
+            try {
+                const isValid = await executeAuthCheck(input.publicKey, input.signature, input.challenge);
+                
+                if (isValid) {
+                    // Extract user ID from public key (simplified: last part of comment if exists)
+                    const userId = input.publicKey.split(' ').pop() || 'cli-user';
+                    const token = await createSessionToken(userId, ['admin']);
+                    const isSandbox = process.env.PHAROS_SANDBOX === 'true';
+                    
+                    context.cookies.set(AUTH_COOKIE_NAME, token, {
+                        httpOnly: true,
+                        secure: process.env.NODE_ENV === 'production' && !isSandbox,
+                        sameSite: 'strict',
+                        path: '/',
+                        maxAge: 60 * 60 * 24 // 24 hours
+                    });
+                    return { success: true };
+                }
+            } catch (e: any) {
+                console.error('Handshake verification error:', e);
+            }
+            throw new Error('Handshake verification failed');
         }
     }),
     logout: defineAction({
