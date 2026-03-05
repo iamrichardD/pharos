@@ -20,8 +20,10 @@ services:
       - RUST_LOG=info
     ports:
       - "2378:2378"
+    volumes:
+      - pharos-keys:/var/lib/pharos/keys
     tmpfs:
-      - /var/lib/pharos
+      - /var/lib/pharos/storage
     networks:
       - pharos-net
     security_opt:
@@ -37,6 +39,8 @@ services:
     container_name: pharos-pulse
     environment:
       - PHAROS_SERVER=pharos-server:2378
+    volumes:
+      - pharos-keys:/root/.ssh:ro
     depends_on:
       pharos-server:
         condition: service_healthy
@@ -65,3 +69,7 @@ services:
 networks:
   pharos-net:
     driver: bridge
+
+volumes:
+  pharos-keys:
+    driver: local

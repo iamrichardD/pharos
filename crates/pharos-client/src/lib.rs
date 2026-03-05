@@ -222,9 +222,15 @@ impl PharosClient {
     /// Signs a message using the configured SSH private key.
     /// Returns (Public Key SSH string, Signature Base64 string).
     pub fn sign_message(message: &str) -> Result<(String, String)> {
+        let home = env::var("HOME").unwrap_or_else(|_| "/root".to_string());
         let priv_key_path = env::var("PHAROS_PRIVATE_KEY").unwrap_or_else(|_| {
-            let home = env::var("HOME").unwrap_or_else(|_| ".".to_string());
-            format!("{}/.ssh/id_ed25519", home)
+            let p = format!("{}/.ssh/id_ed25519", home);
+            if Path::new(&p).exists() {
+                p
+            } else {
+                // Fallback for Pharos-managed admin key
+                format!("{}/.ssh/admin_id_ed25519", home)
+            }
         });
 
         if !Path::new(&priv_key_path).exists() {

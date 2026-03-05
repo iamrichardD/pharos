@@ -49,10 +49,11 @@ RUN apt-get update && apt-get install -y \
 COPY --from=builder /app/target/release/pharos-server /usr/local/bin/pharos-server
 
 # Create data directory (to be mounted as tmpfs in sandbox)
-RUN mkdir -p /var/lib/pharos
-
-# Environment & Ports
+# Environment
 ENV RUST_LOG=info
+ENV PHAROS_KEYS_DIR=/var/lib/pharos/keys
+ENV PHAROS_STORAGE_PATH=/var/lib/pharos/storage.json
+
 EXPOSE 2378
 
 # Start the server with tini for proper signal reaping
