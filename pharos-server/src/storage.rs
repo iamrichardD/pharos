@@ -51,12 +51,22 @@ pub struct Record {
     pub id: usize,
     pub record_type: Option<RecordType>,
     pub fields: HashMap<String, String>,
+    pub owner_fingerprint: Option<String>,
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum StorageError {
+    #[error("Record already exists and is bonded to a different fingerprint (Collision)")]
+    Collision,
+    #[error("Internal storage error: {0}")]
+    Internal(String),
 }
 
 pub trait Storage: Send + Sync {
     fn record_count(&self) -> usize;
-    fn add_record(&mut self, fields: HashMap<String, String>);
+    fn add_record(&mut self, fields: HashMap<String, String>, fingerprint: Option<String>);
     fn query(&self, selections: &[(Option<String>, String)], default_type: Option<RecordType>) -> Vec<Record>;
+    fn upsert_record(&mut self, fields: HashMap<String, String>, fingerprint: Option<String>) -> Result<(), StorageError>;
 }
 
 pub struct MemoryStorage {
@@ -111,12 +121,13 @@ impl Storage for MemoryStorage {
     }
 
     #[instrument(skip(self))]
-    fn add_record(&mut self, fields: HashMap<String, String>) {
+    fn add_record(&mut self, fields: HashMap<String, String>, fingerprint: Option<String>) {
         let record_type = fields.get("type").map(|s| RecordType::from(s.as_str()));
         let record = Record {
             id: self.next_id,
             record_type,
             fields,
+            owner_fingerprint: fingerprint,
         };
         self.records.push(record);
         self.next_id += 1;
@@ -153,6 +164,35 @@ impl Storage for MemoryStorage {
                 }
             })
         }).cloned().collect()
+    }
+
+    #[instrument(skip(self))]
+    fn upsert_record(&mut self, fields: HashMap<String, String>, fingerprint: Option<String>) -> Result<(), StorageError> {
+        let identifier = fields.get("hostname").or_else(|| fields.get("alias"));
+
+        if let Some(id_val) = identifier {
+            let existing = self.records.iter_mut().find(|r| {
+                r.fields.get("hostname") == Some(id_val) || r.fields.get("alias") == Some(id_val)
+            });
+
+            if let Some(record) = existing {
+                if let Some(ref bonded) = record.owner_fingerprint {
+                    if Some(bonded) != fingerprint.as_ref() {
+                        return Err(StorageError::Collision);
+                    }
+                } else {
+                    record.owner_fingerprint = fingerprint;
+                }
+
+                for (k, v) in fields {
+                    record.fields.insert(k, v);
+                }
+                return Ok(());
+            }
+        }
+
+        self.add_record(fields, fingerprint);
+        Ok(())
     }
 }
 
@@ -239,13 +279,19 @@ impl Storage for FileStorage {
         self.memory.record_count()
     }
 
-    fn add_record(&mut self, fields: HashMap<String, String>) {
-        self.memory.add_record(fields);
+    fn add_record(&mut self, fields: HashMap<String, String>, fingerprint: Option<String>) {
+        self.memory.add_record(fields, fingerprint);
         self.persist_to_disk();
     }
 
     fn query(&self, selections: &[(Option<String>, String)], default_type: Option<RecordType>) -> Vec<Record> {
         self.memory.query(selections, default_type)
+    }
+
+    fn upsert_record(&mut self, fields: HashMap<String, String>, fingerprint: Option<String>) -> Result<(), StorageError> {
+        self.memory.upsert_record(fields, fingerprint)?;
+        self.persist_to_disk();
+        Ok(())
     }
 }
 
@@ -335,7 +381,7 @@ impl Storage for LdapStorage {
     }
 
     #[instrument(skip(self))]
-    fn add_record(&mut self, _fields: HashMap<String, String>) {
+    fn add_record(&mut self, _fields: HashMap<String, String>, _fingerprint: Option<String>) {
         error!("LDAP storage is currently read-only (Write operations pending Task 4.3)");
     }
 
@@ -410,10 +456,17 @@ impl Storage for LdapStorage {
                 id: i + 1,
                 record_type,
                 fields,
+                owner_fingerprint: None,
             });
         }
 
         records
+    }
+
+    #[instrument(skip(self))]
+    fn upsert_record(&mut self, _fields: HashMap<String, String>, _fingerprint: Option<String>) -> Result<(), StorageError> {
+        error!("LDAP storage is currently read-only (Write operations pending Task 4.3)");
+        Err(StorageError::Internal("LDAP write not implemented".to_string()))
     }
 }
 
@@ -432,7 +485,7 @@ mod tests {
         let mut fields = HashMap::new();
         fields.insert("name".to_string(), "John Doe".to_string());
         fields.insert("email".to_string(), "john@example.com".to_string());
-        storage.add_record(fields);
+        storage.add_record(fields, None);
 
         let selections = vec![(Some("name".to_string()), "john".to_string())];
         let results = storage.query(&selections, None);
@@ -445,7 +498,7 @@ mod tests {
         let mut storage = MemoryStorage::new();
         let mut fields = HashMap::new();
         fields.insert("name".to_string(), "John Doe".to_string());
-        storage.add_record(fields);
+        storage.add_record(fields, None);
 
         let selections = vec![(Some("name".to_string()), "jane".to_string())];
         let results = storage.query(&selections, None);
@@ -457,7 +510,7 @@ mod tests {
         let mut storage = MemoryStorage::new();
         let mut fields = HashMap::new();
         fields.insert("name".to_string(), "John Doe".to_string());
-        storage.add_record(fields);
+        storage.add_record(fields, None);
 
         let selections = vec![(Some("name".to_string()), "jo*".to_string())];
         let results = storage.query(&selections, None);
@@ -470,7 +523,7 @@ mod tests {
         let mut fields = HashMap::new();
         fields.insert("name".to_string(), "John Doe".to_string());
         fields.insert("alias".to_string(), "jdoe".to_string());
-        storage.add_record(fields);
+        storage.add_record(fields, None);
 
         let selections = vec![(None, "jdoe".to_string())];
         let results = storage.query(&selections, None);
@@ -483,12 +536,12 @@ mod tests {
         let mut fields1 = HashMap::new();
         fields1.insert("name".to_string(), "John Doe".to_string());
         fields1.insert("city".to_string(), "New York".to_string());
-        storage.add_record(fields1);
+        storage.add_record(fields1, None);
+                let mut fields2 = HashMap::new();
+                fields2.insert("name".to_string(), "Jane Doe".to_string());
+                fields2.insert("city".to_string(), "London".to_string());
+                storage.add_record(fields2, None);
 
-        let mut fields2 = HashMap::new();
-        fields2.insert("name".to_string(), "Jane Doe".to_string());
-        fields2.insert("city".to_string(), "London".to_string());
-        storage.add_record(fields2);
 
         let selections = vec![
             (Some("name".to_string()), "doe".to_string()),
@@ -506,12 +559,12 @@ mod tests {
         let mut fields1 = HashMap::new();
         fields1.insert("name".to_string(), "John Person".to_string());
         fields1.insert("type".to_string(), "person".to_string());
-        storage.add_record(fields1);
+        storage.add_record(fields1, None);
 
         let mut fields2 = HashMap::new();
         fields2.insert("name".to_string(), "Server Machine".to_string());
         fields2.insert("type".to_string(), "machine".to_string());
-        storage.add_record(fields2);
+        storage.add_record(fields2, None);
 
         let selections = vec![(Some("name".to_string()), "server".to_string())];
         
@@ -530,6 +583,52 @@ mod tests {
     }
 
     #[test]
+    fn test_should_bond_record_to_fingerprint_when_upserted_first_time() {
+        let mut storage = MemoryStorage::new();
+        let mut fields = HashMap::new();
+        fields.insert("hostname".to_string(), "server-01".to_string());
+        
+        let fingerprint = Some("SHA256:abcd".to_string());
+        storage.upsert_record(fields, fingerprint.clone()).unwrap();
+        
+        let results = storage.query(&[(Some("hostname".to_string()), "server-01".to_string())], None);
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].owner_fingerprint, fingerprint);
+    }
+
+    #[test]
+    fn test_should_fail_upsert_when_fingerprint_mismatch() {
+        let mut storage = MemoryStorage::new();
+        let mut fields = HashMap::new();
+        fields.insert("hostname".to_string(), "server-01".to_string());
+        
+        storage.upsert_record(fields.clone(), Some("SHA256:abcd".to_string())).unwrap();
+        
+        // Attempt update with different fingerprint
+        let result = storage.upsert_record(fields, Some("SHA256:wrong".to_string()));
+        assert!(matches!(result, Err(StorageError::Collision)));
+    }
+
+    #[test]
+    fn test_should_allow_upsert_when_fingerprint_matches() {
+        let mut storage = MemoryStorage::new();
+        let mut fields = HashMap::new();
+        fields.insert("hostname".to_string(), "server-01".to_string());
+        fields.insert("status".to_string(), "online".to_string());
+        
+        let fingerprint = Some("SHA256:abcd".to_string());
+        storage.upsert_record(fields.clone(), fingerprint.clone()).unwrap();
+        
+        // Update status
+        let mut update_fields = fields.clone();
+        update_fields.insert("status".to_string(), "busy".to_string());
+        storage.upsert_record(update_fields, fingerprint.clone()).unwrap();
+        
+        let results = storage.query(&[(Some("hostname".to_string()), "server-01".to_string())], None);
+        assert_eq!(results[0].fields.get("status").unwrap(), "busy");
+    }
+
+    #[test]
     fn test_should_persist_and_reload_records_when_using_file_storage() {
         let temp_dir = std::env::temp_dir();
         let storage_path = temp_dir.join("pharos_test.json");
@@ -543,7 +642,7 @@ mod tests {
             let mut storage = FileStorage::new(storage_path.clone());
             let mut fields = HashMap::new();
             fields.insert("name".to_string(), "Persistent Pete".to_string());
-            storage.add_record(fields);
+            storage.add_record(fields, None);
             assert_eq!(storage.record_count(), 1);
         } // storage dropped, should be persisted
 

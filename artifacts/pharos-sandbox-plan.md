@@ -33,8 +33,9 @@ The sandbox is orchestrated via `podman-compose` and includes:
 1.  **`pharos-server`**: The core RFC 2378 engine.
     - Port: `2378` (mapped to host).
     - Storage: `tmpfs` mounted at `/var/lib/pharos`.
-2.  **`pharos-pulse`**: Monitoring agent.
+2.  **`pharos-pulse` (Simulator Mode)**: Monitoring agent.
     - Monitors `pharos-server` health.
+    - **Bootstrapped Identity**: Upon startup, it automatically registers the server itself as the first `mdb` record, ensuring the Web Console is not empty on first login.
 3.  **`pharos-scan`**: Network discovery engine.
     - Scans the internal container network (`pharos-net`).
 4.  **`pharos-web`**: The Astro-based documentation/console site.

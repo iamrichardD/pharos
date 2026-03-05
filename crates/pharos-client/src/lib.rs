@@ -55,6 +55,7 @@ pub enum PharosResponse {
 
 pub struct PharosClient {
     stream: BufReader<TcpStream>,
+    client_id: String,
 }
 
 impl PharosClient {
@@ -75,6 +76,7 @@ impl PharosClient {
 
         let mut client = PharosClient {
             stream: reader,
+            client_id: client_id.to_string(),
         };
 
         // Send ID
@@ -91,6 +93,28 @@ impl PharosClient {
     pub async fn execute(&mut self, command: &str) -> Result<PharosResponse> {
         self.send_line(command).await?;
         self.parse_response().await
+    }
+
+    /// Explicitly authenticates the session using the configured client ID.
+    pub async fn authenticate(&mut self) -> Result<()> {
+        self.send_line(&format!("login {}", self.client_id)).await?;
+        let resp = self.read_line().await?;
+        
+        if resp.starts_with("301:") {
+            let challenge = &resp[4..];
+            let (pub_key_ssh, sig_b64) = Self::sign_message(challenge)?;
+            
+            self.send_line(&format!("auth \"{}\" \"{}\"", pub_key_ssh, sig_b64)).await?;
+            let auth_resp = self.read_line().await?;
+            
+            if auth_resp.starts_with("200") {
+                Ok(())
+            } else {
+                Err(anyhow!("Authentication failed: {}", auth_resp))
+            }
+        } else {
+            Err(anyhow!("Failed to receive challenge from server: {}", resp))
+        }
     }
 
     async fn send_line(&mut self, line: &str) -> Result<()> {
@@ -152,11 +176,8 @@ impl PharosClient {
                     }
                 }
                 401 => {
-                    if let Some(challenge_pos) = message.find("Challenge: ") {
-                        let challenge = message[challenge_pos + 11..].to_string();
-                        return Ok(PharosResponse::AuthenticationRequired { challenge });
-                    }
-                    return Ok(PharosResponse::Error { code, message: message.to_string() });
+                    // New message format: 401:Authentication required. Use 'login [alias]' to receive a challenge.
+                    return Ok(PharosResponse::AuthenticationRequired { challenge: String::new() });
                 }
                 c if c >= 400 => {
                     return Ok(PharosResponse::Error { code: c, message: message.to_string() });
@@ -202,18 +223,10 @@ impl PharosClient {
     pub async fn execute_authenticated(&mut self, command: &str) -> Result<PharosResponse> {
         let resp = self.execute(command).await?;
         
-        if let PharosResponse::AuthenticationRequired { challenge } = resp {
-            let (pub_key_ssh, sig_b64) = Self::sign_message(&challenge)?;
-            
-            self.send_line(&format!("auth \"{}\" \"{}\"", pub_key_ssh, sig_b64)).await?;
-            let auth_resp = self.read_line().await?;
-            
-            if auth_resp.starts_with("200") {
-                // Retry original command
-                return self.execute(command).await;
-            } else {
-                return Err(anyhow!("Authentication failed: {}", auth_resp));
-            }
+        if let PharosResponse::AuthenticationRequired { .. } = resp {
+            self.authenticate().await?;
+            // Retry original command
+            return self.execute(command).await;
         }
 
         Ok(resp)

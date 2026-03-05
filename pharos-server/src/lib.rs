@@ -26,9 +26,6 @@ use crate::storage::{Storage};
 use crate::auth::AuthManager;
 use crate::middleware::{MiddlewareChain, ClientContext, MiddlewareAction};
 use std::sync::{Arc, RwLock};
-use rand::rngs::OsRng;
-use rand::RngCore;
-use hex;
 
 #[instrument(skip(socket, storage, auth_manager, middleware_chain))]
 pub async fn handle_connection(mut socket: TcpStream, storage: Arc<RwLock<dyn Storage>>, auth_manager: Arc<AuthManager>, middleware_chain: Arc<MiddlewareChain>) -> anyhow::Result<()> {
@@ -36,9 +33,6 @@ pub async fn handle_connection(mut socket: TcpStream, storage: Arc<RwLock<dyn St
     let (reader, mut writer) = socket.split();
     let mut reader = BufReader::new(reader);
     let mut line = String::new();
-    let mut challenge = vec![0u8; 16];
-    OsRng.fill_bytes(&mut challenge);
-    let challenge_hex = hex::encode(challenge);
 
     let mut context = ClientContext {
         id: None,
@@ -46,7 +40,8 @@ pub async fn handle_connection(mut socket: TcpStream, storage: Arc<RwLock<dyn St
         peer_addr: peer_addr.clone(),
         roles: Vec::new(),
         tier: crate::auth::SecurityTier::Open,
-        challenge: challenge_hex.clone(),
+        login_alias: None,
+        fingerprint: None,
     };
 
     let _ = crate::tui::EVENT_TX.send(format!("Connection established from {}", peer_addr));
@@ -98,14 +93,32 @@ pub async fn handle_connection(mut socket: TcpStream, storage: Arc<RwLock<dyn St
                         writer.write_all(b"200:Ok
 ").await?;
                     }
+                    Command::Login(alias) => {
+                        let challenge = auth_manager.generate_challenge(alias);
+                        context.login_alias = Some(alias.clone());
+                        writer.write_all(format!("301:{}
+", challenge).as_bytes()).await?;
+                    }
                     Command::Auth { public_key, signature } => {
-                        if auth_manager.verify(public_key, signature, &context.challenge) {
-                            context.authenticated = true;
-                            context.roles = auth_manager.get_roles(public_key);
-                            writer.write_all(b"200:Ok
+                        let challenge = context.login_alias.as_ref()
+                            .and_then(|alias| auth_manager.get_challenge(alias));
+
+                        if let Some(challenge) = challenge {
+                            if let Some(fingerprint) = auth_manager.verify_with_fingerprint(public_key, signature, &challenge) {
+                                if let Some(alias) = &context.login_alias {
+                                    auth_manager.consume_challenge(alias);
+                                }
+                                context.authenticated = true;
+                                context.roles = auth_manager.get_roles(public_key);
+                                context.fingerprint = Some(fingerprint);
+                                writer.write_all(b"200:Ok
 ").await?;
+                            } else {
+                                writer.write_all(b"403:Forbidden
+").await?;
+                            }
                         } else {
-                            writer.write_all(b"403:Forbidden
+                            writer.write_all(b"506:Request refused; must be logged in to execute (Challenge expired or not found)
 ").await?;
                         }
                     }
@@ -128,13 +141,28 @@ pub async fn handle_connection(mut socket: TcpStream, storage: Arc<RwLock<dyn St
                         for (k, v) in fields {
                             field_map.insert(k.clone(), v.clone());
                         }
-                        {
+                        
+                        let result = {
                             let mut lock = storage.write().map_err(|_| anyhow::anyhow!("Storage lock poisoned"))?;
-                            lock.add_record(field_map);
-                        }
-                        let _ = crate::tui::EVENT_TX.send(format!("[{}] Added new record", context.peer_addr));
-                        writer.write_all(b"200:Ok
+                            lock.upsert_record(field_map, context.fingerprint.clone())
+                        };
+
+                        match result {
+                            Ok(_) => {
+                                let _ = crate::tui::EVENT_TX.send(format!("[{}] Added/Updated record", context.peer_addr));
+                                writer.write_all(b"200:Ok
 ").await?;
+                            }
+                            Err(crate::storage::StorageError::Collision) => {
+                                writer.write_all(b"409:Conflict: Record already bonded to a different identity
+").await?;
+                            }
+                            Err(e) => {
+                                error!("Storage error: {}", e);
+                                writer.write_all(b"500:Internal storage error
+").await?;
+                            }
+                        }
                     }
                     Command::Query { selections, returns } => {
                         let default_type = match context.id.as_deref() {

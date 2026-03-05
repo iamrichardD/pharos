@@ -1,11 +1,15 @@
 # Pharos State & Progress
 
 ## Current Status
-**Phase:** 1 (DevSecOps & Documentation)
+**Phase:** 20 (Pharos Sandbox "Simulator Mode")
 **Active Task:** None
 **Backlog:** 1.8 (DevSecOps Refinement), 1.9 (Automated DORA), 18.1 (Alternation)
 
 ## Recent Completions
+- [x] Task 20.4: Engineering: Sandbox Simulator Bootstrapping. Configured Pulse to auto-register as `pharos-main`. (Issue #97)
+- [x] Task 20.3: Engineering: Pulse Resilient Retry Loop (Wait-for-Server). Implemented exponential backoff. (Issue #96)
+- [x] Task 20.2: Engineering: Identity Bonding (First-to-Claim). Implemented fingerprint bonding in storage. (Issue #95)
+- [x] Task 20.1: Engineering: Server-Side Challenge Generation (5m TTL). Implemented stateful challenges in `pharos-server`. (Issue #94)
 - [x] Bug #93: Fixed Sandbox CLI Handshake failure by implementing shared key volumes and enhanced key discovery. (Issue #93)
 - [x] Task 17.8: Engineering: Implemented the "Pharos Toolbelt" and Sandbox-Aware UI. Added `ph` and `mdb` to `pharos-pulse` container and conditional `podman exec` hints to Web Console. (Issue #92)
 - [x] Task 16.10: Engineering: Implemented MDB Handshake support and standardized CLI Handshake command in Web Console. (Issue #91)

@@ -25,7 +25,8 @@ pub struct ClientContext {
     pub peer_addr: String,
     pub roles: Vec<String>,
     pub tier: SecurityTier,
-    pub challenge: String,
+    pub login_alias: Option<String>,
+    pub fingerprint: Option<String>,
 }
 
 impl Default for ClientContext {
@@ -36,7 +37,8 @@ impl Default for ClientContext {
             peer_addr: String::new(),
             roles: Vec::new(),
             tier: SecurityTier::Open,
-            challenge: String::new(),
+            login_alias: None,
+            fingerprint: None,
         }
     }
 }
@@ -144,7 +146,7 @@ impl Middleware for SecurityTierMiddleware {
         context.tier = self.default_tier; // Set the tier in the context for other middlewares
 
         let is_auth_bypassed = matches!(command,
-            Command::Status | Command::Id(_) | Command::Auth { .. } | Command::Quit
+            Command::Status | Command::Id(_) | Command::Login(_) | Command::Auth { .. } | Command::Quit
         );
 
         match self.default_tier {
@@ -155,30 +157,27 @@ impl Middleware for SecurityTierMiddleware {
                 );
 
                 if is_write_command && !context.authenticated {
-                    return Ok(MiddlewareAction::ShortCircuit(format!(
-                        "401:Authentication required. Challenge: {}\n", 
-                        context.challenge
-                    )));
+                    return Ok(MiddlewareAction::ShortCircuit(
+                        "401:Authentication required. Use 'login [alias]' to receive a challenge.\n".to_string()
+                    ));
                 }
                 Ok(MiddlewareAction::Continue)
             }
             SecurityTier::Protected => {
-                // Protected tier: ALL commands (except auth/status/id/quit) require authentication
+                // Protected tier: ALL commands (except auth/status/id/login/quit) require authentication
                 if !is_auth_bypassed && !context.authenticated {
-                    return Ok(MiddlewareAction::ShortCircuit(format!(
-                        "401:Authentication required for Protected tier. Challenge: {}\n", 
-                        context.challenge
-                    )));
+                    return Ok(MiddlewareAction::ShortCircuit(
+                        "401:Authentication required for Protected tier. Use 'login [alias]' to receive a challenge.\n".to_string()
+                    ));
                 }
                 Ok(MiddlewareAction::Continue)
             }
             SecurityTier::Scoped => {
                 // Scoped tier: Same as protected, but also enforces roles
                 if !is_auth_bypassed && !context.authenticated {
-                    return Ok(MiddlewareAction::ShortCircuit(format!(
-                        "401:Authentication required for Scoped tier. Challenge: {}\n", 
-                        context.challenge
-                    )));
+                    return Ok(MiddlewareAction::ShortCircuit(
+                        "401:Authentication required for Scoped tier. Use 'login [alias]' to receive a challenge.\n".to_string()
+                    ));
                 }
 
                 let is_write_command = matches!(command, 
@@ -267,7 +266,7 @@ mod tests {
     }
 
     #[test]
-    fn test_should_short_circuit_with_challenge_when_open_tier_blocks_unauthenticated_write() {
+    fn test_should_short_circuit_when_open_tier_blocks_unauthenticated_write() {
         let mut chain = MiddlewareChain::new();
         chain.add(Arc::new(SecurityTierMiddleware {
             default_tier: SecurityTier::Open,
@@ -276,7 +275,6 @@ mod tests {
         let mut command = Command::Add(vec![("name".to_string(), "Test".to_string())]);
         let mut context = ClientContext {
             authenticated: false,
-            challenge: "test-challenge".to_string(),
             ..Default::default()
         };
 
@@ -284,7 +282,7 @@ mod tests {
         match result {
             MiddlewareAction::ShortCircuit(resp) => {
                 assert!(resp.contains("401:Authentication required"));
-                assert!(resp.contains("test-challenge"));
+                assert!(resp.contains("Use 'login [alias]'"));
             },
             _ => panic!("Expected ShortCircuit"),
         }

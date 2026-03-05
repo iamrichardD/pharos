@@ -23,10 +23,12 @@ use anyhow::Result;
 async fn main() -> Result<()> {
     println!("Starting pharos-pulse agent...");
     
-    let server_addr = env::var("PHAROS_SERVER").unwrap_or_else(|_| "127.0.0.1:10011".to_string());
+    let server_addr = env::var("PHAROS_SERVER").unwrap_or_else(|_| "127.0.0.1:2378".to_string());
     let machine_name = env::var("PHAROS_MACHINE_NAME").unwrap_or_else(|_| {
         sysinfo::System::host_name().unwrap_or_else(|| "unknown-host".to_string())
     });
+
+    wait_for_server(&server_addr).await;
 
     let mut sys = System::new_all();
     
@@ -83,6 +85,23 @@ async fn send_metrics(server_addr: &str, machine_name: &str, cpu: f32, used_mem:
 
     client.quit().await?;
     Ok(())
+}
+
+async fn wait_for_server(server_addr: &str) {
+    let mut delay = Duration::from_secs(1);
+    loop {
+        match tokio::net::TcpStream::connect(server_addr).await {
+            Ok(_) => {
+                println!("Connectivity verified to pharos-server at {}", server_addr);
+                break;
+            }
+            Err(e) => {
+                eprintln!("Waiting for pharos-server at {}: {} (Retrying in {:?})", server_addr, e, delay);
+                sleep(delay).await;
+                delay = std::cmp::min(delay * 2, Duration::from_secs(60));
+            }
+        }
+    }
 }
 
 #[cfg(test)]

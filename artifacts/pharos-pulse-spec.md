@@ -43,6 +43,8 @@ flowchart TD
 
     subgraph PulseAgent ["pharos-pulse agent"]
         Init[Resolve Identity & Metadata]
+        Discover{mDNS Discovery?}
+        WaitSrv{Wait for Server}
         Wait{Wait 60m}
         Heartbeat[Send HEARTBEAT]
         Offline[Send OFFLINE]
@@ -55,8 +57,11 @@ flowchart TD
     end
 
     Start --> Init
-    Init -->|Event: ONLINE| RecvOnline
-    Init --> Wait
+    Init --> Discover
+    Discover -->|Found| WaitSrv
+    Discover -->|Not Found| Init
+    WaitSrv -->|Healthy: 2378| RecvOnline
+    OnlineSignal --> Wait
     Wait --> Heartbeat
     Heartbeat --> RecvHB
     Heartbeat --> Wait
@@ -65,16 +70,26 @@ flowchart TD
     Offline --> Exit([Exit Process])
 ```
 
-### 3.1 Online Signal (Startup)
+### 3.1 mDNS Discovery & HA
+In High Availability (HA) or dynamic home lab environments, `pharos-pulse` performs an mDNS search for services of type `_pharos._tcp.local`. 
+- **Multi-Registration**: The agent attempts to register its state with **all** discovered servers to ensure state consistency across stateless gateways.
+- **Fallback**: If no servers are discovered via mDNS, the agent falls back to the static `PHAROS_SERVER` environment variable.
+
+### 3.2 Wait-for-Server Logic (Healthcheck)
+The agent MUST NOT attempt registration until it verifies the target server's TCP listener is accepting connections.
+- **Mechanism**: A retry loop with exponential backoff (e.g., 1s, 2s, 4s... up to 60s) probing Port 2378.
+- **Deployment**: In `systemd` environments, the agent uses `After=pharos-server.service` but still employs the internal wait-loop to ensure the application-layer is ready.
+
+### 3.3 Online Signal (Startup)
 On service start, `pharos-pulse` immediately performs:
 1.  **Identity Resolution**: Loads/Generates the local SSH identity key.
 2.  **Metadata Collection**: Gathers hardware UUID, OS version, and network interfaces.
 3.  **Presence Assertion**: Sends an `ONLINE` event to the Pharos server.
 
-### 3.2 Periodic Heartbeat (Hourly)
+### 3.4 Periodic Heartbeat (Hourly)
 To ensure the server's record remains "Fresh" and to detect ungraceful failures (e.g., power loss without shutdown), the agent sends a low-impact `HEARTBEAT` event every **60 minutes**.
 
-### 3.3 Offline Signal (Shutdown)
+### 3.5 Offline Signal (Shutdown)
 The agent must catch `SIGTERM` (Linux/macOS) or the `Service Stop` control code (Windows) to send a final `OFFLINE` message before the process exits.
 
 ## 4. Ecosystem Management (The Toolbelt)
