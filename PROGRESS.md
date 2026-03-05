@@ -6,6 +6,7 @@
 **Backlog:** 1.8 (DevSecOps Refinement), 1.9 (Automated DORA), 18.1 (Alternation)
 
 ## Recent Completions
+- [x] Bug #93: Fixed Sandbox CLI Handshake failure by implementing shared key volumes and enhanced key discovery. (Issue #93)
 - [x] Task 17.8: Engineering: Implemented the "Pharos Toolbelt" and Sandbox-Aware UI. Added `ph` and `mdb` to `pharos-pulse` container and conditional `podman exec` hints to Web Console. (Issue #92)
 - [x] Task 16.10: Engineering: Implemented MDB Handshake support and standardized CLI Handshake command in Web Console. (Issue #91)
 - [x] Task 16.9: Engineering: Implemented CLI Handshake authentication (CLI-to-Web) for the Web Console. Added 'auth-check' protocol command to 'pharos-server' and 'ph auth sign' to 'ph' CLI. (Issue #90)
