@@ -58,21 +58,21 @@ const machines = await getPulseStatus();
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
                             </svg>
-                            <span class="truncate">{machine.cpuBrand || 'Unknown CPU'}</span>
-                            <span class="font-bold border-l border-slate-200 pl-2">{machine.cpuCores} cores</span>
+                            <span class="truncate">{machine.cpu_brand || 'Unknown CPU'}</span>
+                            <span class="font-bold border-l border-slate-200 pl-2">{machine.cpu_cores} cores</span>
                         </div>
 
                         <div class="flex items-center space-x-2 text-xs text-slate-600 bg-slate-50 p-2 rounded-lg">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                             </svg>
-                            <span>{machine.osName} {machine.osVersion}</span>
+                            <span>{machine.os_name} {machine.os_version}</span>
                         </div>
 
                         <div class="flex justify-between items-center pt-2 mt-2 border-t border-slate-100">
                             <div class="flex flex-col">
                                 <span class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Serial Number</span>
-                                <span class="text-xs font-mono text-slate-600">{machine.serialNumber || 'N/A'}</span>
+                                <span class="text-xs font-mono text-slate-600">{machine.serial_number || 'N/A'}</span>
                             </div>
                             <a href={`/mdb/${machine.hostname}`} class="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center">
                                 Details

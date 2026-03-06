@@ -17,14 +17,14 @@ export interface MachineStatus {
     name: string;
     hostname: string;
     status: 'ONLINE' | 'OFFLINE' | 'UNREACHABLE';
-    lastSeen: Date;
-    cpuBrand?: string;
-    cpuCores?: string;
-    memTotalKb?: string;
-    osName?: string;
-    osVersion?: string;
-    kernelVersion?: string;
-    serialNumber?: string;
+    last_seen: Date;
+    cpu_brand?: string;
+    cpu_cores?: string;
+    mem_total_kb?: string;
+    os_name?: string;
+    os_version?: string;
+    kernel_version?: string;
+    serial_number?: string;
 }
 
 /**
@@ -47,30 +47,30 @@ export async function getPulseStatus(): Promise<MachineStatus[]> {
         const hostname = record.fields.find(f => f.key === 'hostname')?.value || name;
         const statusField = record.fields.find(f => f.key === 'status')?.value || 'online';
         
-        const cpuBrand = record.fields.find(f => f.key === 'cpu_brand')?.value;
-        const cpuCores = record.fields.find(f => f.key === 'cpu_cores')?.value;
-        const memTotalKb = record.fields.find(f => f.key === 'mem_total_kb')?.value;
-        const osName = record.fields.find(f => f.key === 'os_name')?.value;
-        const osVersion = record.fields.find(f => f.key === 'os_version')?.value;
-        const kernelVersion = record.fields.find(f => f.key === 'kernel_version')?.value;
-        const serialNumber = record.fields.find(f => f.key === 'serial_number')?.value;
+        const cpu_brand = record.fields.find(f => f.key === 'cpu_brand')?.value;
+        const cpu_cores = record.fields.find(f => f.key === 'cpu_cores')?.value;
+        const mem_total_kb = record.fields.find(f => f.key === 'mem_total_kb')?.value;
+        const os_name = record.fields.find(f => f.key === 'os_name')?.value;
+        const os_version = record.fields.find(f => f.key === 'os_version')?.value;
+        const kernel_version = record.fields.find(f => f.key === 'kernel_version')?.value;
+        const serial_number = record.fields.find(f => f.key === 'serial_number')?.value;
         
         // In the absence of an explicit timestamp from the server, 
         // we'll assume the record exists and is recent if it was returned.
-        const lastSeen = new Date(); 
+        const last_seen = new Date(); 
 
         const status: MachineStatus = {
             name,
             hostname,
             status: statusField.toUpperCase() === 'OFFLINE' ? 'OFFLINE' : 'ONLINE',
-            lastSeen,
-            cpuBrand,
-            cpuCores,
-            memTotalKb,
-            osName,
-            osVersion,
-            kernelVersion,
-            serialNumber
+            last_seen,
+            cpu_brand,
+            cpu_cores,
+            mem_total_kb,
+            os_name,
+            os_version,
+            kernel_version,
+            serial_number
         };
 
         machineMap.set(hostname, status);

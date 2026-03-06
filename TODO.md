@@ -132,6 +132,7 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] Task 16.8 (Issue #70): Advocacy: Refine marketing site for end-user focus (MDB & Automation). Move technical Zero-Host details to README.md.
 - [x] **Task 16.5 (Issue #67):** Advocacy: Document the Human/AI/Mobile Web Console as the primary interface for non-technical users and mobile Home Labbers.
 - [x] **Task 16.11 (Issue #98):** Engineering: Implement the high-density green bar chart visualization and pagination logic for MDB results. Handled 501 'No matches' normalization for consistent UI.
+- [x] **Task 16.12 (Issue #100):** Engineering: Implement "Snake-Case Harmonization" for the Pharos Web Console to ensure 100% protocol fidelity. Refactored MachineStatus and UI components to use snake_case properties.
 
 ## Phase 17: Pharos Sandbox & WebMCP Integration
 - [x] **Task 17.1 (Issue #71):** Engineering: Automate Container Image Publishing to GHCR. Created production `Containerfile`s and updated `ci.yml`.
