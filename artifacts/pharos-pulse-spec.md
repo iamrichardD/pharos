@@ -27,6 +27,7 @@ In the "Toolbelt" configuration (standard for Sandbox and managed nodes), the co
 ## 2. Core Constraints
 - **Language**: Rust
 - **Linking**: Fully static (musl for Linux).
+- **Naming Convention**: **STRICT SNAKE_CASE**. All inventory fields, presence events, and JSON keys MUST use `snake_case` (e.g., `serial_number`, `cpu_brand`). This ensures cross-platform consistency and zero-mapping overhead for AI Agents and webMCP tools.
 - **Execution Context**: Runs as a background service/daemon (Systemd, launchd, SCM).
 - **Resource Footprint**: Must consume less than 12MB RAM (including CLI overhead) and negligible CPU.
 - **Included Utilities**: `ph` (People/Contact Management), `mdb` (Machine/Infrastructure Management).

@@ -51,27 +51,27 @@ sequenceDiagram
 Enables searching and filtering of machine/infrastructure records.
 - **Input parameters**:
   - `query` (string, required): Search term (e.g., "proxmox-01", "192.168.1.50").
-- **Output**: JSON representation of matching `mdb` records.
+- **Output**: JSON representation of matching `mdb` records using standardized `snake_case` keys (e.g., `serial_number`, `os_name`).
 
 ### 3.2 `upsert_record` (High Priority, Requires HitL)
 Adds or updates a record in the Pharos server. 
 - **Verification**: The Web Console will trigger a browser-level modal for user confirmation.
 - **Input parameters**:
-  - `type` (string, required): `people` | `machine`.
-  - `data` (object, required): The record fields (hostname, IP, owner, etc.).
+  - `record_type` (string, required): `people` | `machine`.
+  - `record_data` (object, required): The record fields using `snake_case` (e.g., `hostname`, `ip_address`, `owner_id`).
 - **Output**: Success confirmation or permission denial.
 
 ### 3.3 `add_ssh_key`
 Enrolls a new public SSH key into the Pharos server's authorization store.
 - **Input parameters**:
-  - `pub_key` (string, required): The public SSH key content (e.g., `ssh-ed25519 ...`).
+  - `public_key` (string, required): The public SSH key content (e.g., `ssh-ed25519 ...`).
   - `team_scope` (string, optional): The LDAP or internal group this key should be mapped to.
 - **Output**: Success confirmation.
 
 ### 3.4 `revoke_ssh_key` (Requires HitL)
 Removes a public key to immediately cut off write access. 
 - **Input parameters**:
-  - `pub_key_fingerprint` (string, required): The SHA256 fingerprint.
+  - `key_fingerprint` (string, required): The SHA256 fingerprint.
 - **Output**: Confirmation of revocation.
 
 ### 3.5 `create_provisioning_token` (Requires HitL)
