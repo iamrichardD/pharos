@@ -130,6 +130,7 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] Task 16.10 (Issue #91): Engineering: Implement MDB Handshake support and standardize CLI Handshake command in Web Console.
 - [x] Task 16.8 (Issue #70): Advocacy: Refine marketing site for end-user focus (MDB & Automation). Move technical Zero-Host details to README.md.
 - [x] **Task 16.5 (Issue #67):** Advocacy: Document the Human/AI/Mobile Web Console as the primary interface for non-technical users and mobile Home Labbers.
+- [x] **Task 16.11 (#TBD):** Planning: Design the high-density green bar chart visualization and pagination logic for MDB results.
 
 ## Phase 17: Pharos Sandbox & WebMCP Integration
 - [x] **Task 17.1 (Issue #71):** Engineering: Automate Container Image Publishing to GHCR. Created production `Containerfile`s and updated `ci.yml`.
