@@ -26,21 +26,6 @@ function getFieldValue(record: PharosRecord, key: string): string | undefined {
     return record.fields.find(f => f.key === key)?.value;
 }
 
-function getMetricValue(record: PharosRecord): number {
-    const cpu = getFieldValue(record, 'cpu');
-    if (cpu) return parseFloat(cpu);
-    
-    const memUsed = getFieldValue(record, 'mem_used');
-    const memTotal = getFieldValue(record, 'mem_total');
-    if (memUsed && memTotal) {
-        return (parseFloat(memUsed) / parseFloat(memTotal)) * 100;
-    }
-    
-    // Default aesthetic height if no metric exists
-    // Deterministic random-ish height based on ID for a varied chart look
-    return 10 + ((record.id * 7) % 80); 
-}
-
 const totalCount = result?.count || 0;
 const totalPages = Math.ceil(totalCount / pageSize);
 const hasPrev = currentPage > 1;
@@ -72,7 +57,7 @@ const query = Astro.url.searchParams.get('q') || '';
     <div class="space-y-6">
         <div class="flex justify-between items-center border-b border-slate-200 pb-2">
             <div class="flex items-center space-x-2">
-                <h2 class="text-lg font-medium text-slate-900">Infrastructure Metrics</h2>
+                <h2 class="text-lg font-medium text-slate-900">Search Results</h2>
                 <span class="text-xs text-slate-500 font-mono">(Showing page {currentPage} of {totalPages || 1})</span>
             </div>
             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
@@ -82,42 +67,6 @@ const query = Astro.url.searchParams.get('q') || '';
 
         {result.type === 'matches' && records.length > 0 ? (
             <div class="space-y-4">
-                {/* Chart Area */}
-                <div class="bg-slate-900 rounded-xl p-6 shadow-inner border border-slate-800 overflow-hidden">
-                    <div class="flex items-end justify-between h-48 space-x-1">
-                        {records.map((record) => {
-                            const value = getMetricValue(record);
-                            const name = getFieldValue(record, 'name') || getFieldValue(record, 'hostname') || `ID:${record.id}`;
-                            const ip = getFieldValue(record, 'ip') || 'N/A';
-                            
-                            return (
-                                <div class="group relative flex-1 flex flex-col items-center h-full justify-end">
-                                    {/* Tooltip */}
-                                    <div class="absolute bottom-full mb-2 hidden group-hover:block z-20 pointer-events-none">
-                                        <div class="bg-slate-800 text-white text-[10px] p-2 rounded shadow-lg border border-slate-700 min-w-[120px]">
-                                            <p class="font-bold text-emerald-400">{name}</p>
-                                            <p class="text-slate-300">IP: {ip}</p>
-                                            <p class="text-slate-300">Metric: {value.toFixed(1)}%</p>
-                                            <div class="mt-1 pt-1 border-t border-slate-700">
-                                                {record.fields.slice(0, 3).map(f => (
-                                                    <p class="text-[8px] text-slate-400 uppercase truncate">{f.key}: {f.value}</p>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        <div class="w-2 h-2 bg-slate-800 rotate-45 mx-auto -mt-1 border-r border-b border-slate-700"></div>
-                                    </div>
-                                    
-                                    {/* Bar */}
-                                    <div 
-                                        class="w-full bg-emerald-500/80 group-hover:bg-emerald-400 transition-all rounded-t-sm"
-                                        style={`height: ${Math.max(5, value)}%`}
-                                    ></div>
-                                </div>
-                            )
-                        })}
-                    </div>
-                </div>
-
                 {/* Tabular Data View */}
                 <div class="overflow-x-auto bg-white rounded-xl border border-slate-200 shadow-sm">
                     <table class="min-w-full divide-y divide-slate-200">

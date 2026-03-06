@@ -1,11 +1,12 @@
 # Pharos State & Progress
 
 ## Current Status
-**Phase:** 20 (Pharos Sandbox "Simulator Mode")
+**Phase:** 16 (Pharos Web Console)
 **Active Task:** None
 **Backlog:** 1.8 (DevSecOps Refinement), 1.9 (Automated DORA), 18.1 (Alternation)
 
 ## Recent Completions
+- [x] Task 16.13: Engineering: Refactor MDB Search UI to focus on Inventory vs. Metrics. Removed visual bar chart and renamed header to 'Search Results' (Issue #101).
 - [x] Task 16.12: Engineering: Snake-Case Harmonization for Pharos Web Console. Refactored MachineStatus and UI components to use snake_case properties (Issue #100).
 - [x] Task 14.11: Engineering: Refactor `pharos-pulse` to implement the "Baseline vs. Delta" inventory strategy. Collect hardware metadata (CPU cores/brand, serial, RAM) once at `ONLINE` and send minimal `HEARTBEAT` every 60 minutes. (Issue #99)
 - [x] Task 14.10: Advocacy: Refined `pharos-pulse` documentation and marketing to transition from metrics monitoring to an Automated Inventory System. Updated `pharos-pulse-spec.md`, `index.astro`, and `automation.mdx`. (Issue #99)
