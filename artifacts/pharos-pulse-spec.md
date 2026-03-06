@@ -83,11 +83,11 @@ The agent MUST NOT attempt registration until it verifies the target server's TC
 ### 3.3 Online Signal (Startup)
 On service start, `pharos-pulse` immediately performs:
 1.  **Identity Resolution**: Loads/Generates the local SSH identity key.
-2.  **Metadata Collection**: Gathers hardware UUID, OS version, and network interfaces.
-3.  **Presence Assertion**: Sends an `ONLINE` event to the Pharos server.
+2.  **Inventory Collection**: Gathers hardware details (CPU cores, brand, serial number), OS version, and network interfaces.
+3.  **Presence Assertion**: Sends an `ONLINE` event to the Pharos server with the full inventory payload.
 
 ### 3.4 Periodic Heartbeat (Hourly)
-To ensure the server's record remains "Fresh" and to detect ungraceful failures (e.g., power loss without shutdown), the agent sends a low-impact `HEARTBEAT` event every **60 minutes**.
+To ensure the server's record remains "Fresh" and to detect ungraceful failures (e.g., power loss without shutdown), the agent sends a low-impact `HEARTBEAT` event every **60 minutes**. This heartbeat focuses on presence and identity verification rather than performance metrics.
 
 ### 3.5 Offline Signal (Shutdown)
 The agent must catch `SIGTERM` (Linux/macOS) or the `Service Stop` control code (Windows) to send a final `OFFLINE` message before the process exits.
@@ -120,21 +120,25 @@ graph TD
 ```
 
 ## 5. Presence Payload Schema
-Sent via JSON over a secure channel to the Pharos server.
+Sent via JSON over a secure channel to the Pharos server (or via Ph protocol `add` command).
 
 ```json
 {
   "event": "ONLINE | HEARTBEAT | OFFLINE",
   "identity": {
-    "hw_uuid": "string",
     "hostname": "string",
+    "hw_uuid": "string (Machine ID / Product UUID)",
     "ssh_pubkey_fingerprint": "string"
   },
-  "metadata": {
-    "os_family": "string",
-    "os_version": "string",
+  "inventory": {
+    "os_name": "string (e.g., Ubuntu, Windows, macOS)",
+    "os_version": "string (e.g., 24.04, 11, 14.2)",
     "kernel_version": "string",
-    "platform": "string (e.g., proxmox-lxc, bare-metal)",
+    "cpu_brand": "string (e.g., Apple M1 Max, AMD Ryzen 9 5950X)",
+    "cpu_cores": "number (Physical + Logical)",
+    "mem_total_kb": "number (Total RAM)",
+    "serial_number": "string (Manufacturer Serial)",
+    "platform": "string (e.g., proxmox-lxc, bare-metal, Hyper-V)",
     "local_ips": ["string"]
   },
   "timestamp": "string (ISO8601)"
