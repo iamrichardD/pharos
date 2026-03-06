@@ -36,4 +36,41 @@ describe('searchMdb', () => {
         expect(pharosClient.executePharosQuery).toHaveBeenCalledWith('web-mdb-search', 'return all');
         expect(result).toEqual(mockResponse);
     });
+
+    it('test_should_slice_records_for_pagination_page_1', async () => {
+        const mockRecords = Array.from({ length: 10 }, (_, i) => ({ id: i + 1, fields: [] }));
+        const mockResponse: pharosClient.PharosResponse = { type: 'matches', count: 10, records: mockRecords };
+        vi.mocked(pharosClient.executePharosQuery).mockResolvedValue(mockResponse);
+
+        const result = await searchMdb('all', 1, 5);
+        
+        expect(result.records?.length).toBe(5);
+        expect(result.records?.[0].id).toBe(1);
+        expect(result.records?.[4].id).toBe(5);
+        expect(result.count).toBe(10); // total remains 10
+    });
+
+    it('test_should_slice_records_for_pagination_page_2', async () => {
+        const mockRecords = Array.from({ length: 10 }, (_, i) => ({ id: i + 1, fields: [] }));
+        const mockResponse: pharosClient.PharosResponse = { type: 'matches', count: 10, records: mockRecords };
+        vi.mocked(pharosClient.executePharosQuery).mockResolvedValue(mockResponse);
+
+        const result = await searchMdb('all', 2, 5);
+        
+        expect(result.records?.length).toBe(5);
+        expect(result.records?.[0].id).toBe(6);
+        expect(result.records?.[4].id).toBe(10);
+        expect(result.count).toBe(10);
+    });
+
+    it('test_should_return_empty_records_if_page_is_out_of_bounds', async () => {
+        const mockRecords = Array.from({ length: 10 }, (_, i) => ({ id: i + 1, fields: [] }));
+        const mockResponse: pharosClient.PharosResponse = { type: 'matches', count: 10, records: mockRecords };
+        vi.mocked(pharosClient.executePharosQuery).mockResolvedValue(mockResponse);
+
+        const result = await searchMdb('all', 3, 5);
+        
+        expect(result.records?.length).toBe(0);
+        expect(result.count).toBe(10);
+    });
 });

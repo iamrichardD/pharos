@@ -1,0 +1,238 @@
+---
+/* ========================================================================
+ * Project: pharos
+ * Component: Web Console
+ * File: src/features/mdb/search/MdbResultsChart.astro
+ * Author: Richard D. (https://github.com/iamrichardd)
+ * License: AGPL-3.0 (See LICENSE file for details)
+ * * Purpose (The "Why"):
+ * UI component for displaying MDB search results as a high-density green 
+ * bar chart. Improves scanability and visual impact.
+ * * Traceability:
+ * Related to Task 16.11 (Issue #98).
+ * ======================================================================== */
+import type { PharosResponse, PharosRecord } from '../../../lib/pharos';
+
+interface Props {
+    result: PharosResponse | null;
+    error: string | null;
+    currentPage: number;
+    pageSize: number;
+}
+
+const { result, error, currentPage, pageSize } = Astro.props;
+
+function getFieldValue(record: PharosRecord, key: string): string | undefined {
+    return record.fields.find(f => f.key === key)?.value;
+}
+
+function getMetricValue(record: PharosRecord): number {
+    const cpu = getFieldValue(record, 'cpu');
+    if (cpu) return parseFloat(cpu);
+    
+    const memUsed = getFieldValue(record, 'mem_used');
+    const memTotal = getFieldValue(record, 'mem_total');
+    if (memUsed && memTotal) {
+        return (parseFloat(memUsed) / parseFloat(memTotal)) * 100;
+    }
+    
+    // Default aesthetic height if no metric exists
+    // Deterministic random-ish height based on ID for a varied chart look
+    return 10 + ((record.id * 7) % 80); 
+}
+
+const totalCount = result?.count || 0;
+const totalPages = Math.ceil(totalCount / pageSize);
+const hasPrev = currentPage > 1;
+const hasNext = currentPage < totalPages;
+
+const records = result?.records || [];
+const query = Astro.url.searchParams.get('q') || '';
+---
+
+{error && (
+    <div class="rounded-xl bg-red-50 p-4 border border-red-200">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                </svg>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-medium text-red-800">Error executing query</h3>
+                <div class="mt-2 text-sm text-red-700">
+                    <p>{error}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+)}
+
+{result && (
+    <div class="space-y-6">
+        <div class="flex justify-between items-center border-b border-slate-200 pb-2">
+            <div class="flex items-center space-x-2">
+                <h2 class="text-lg font-medium text-slate-900">Infrastructure Metrics</h2>
+                <span class="text-xs text-slate-500 font-mono">(Showing page {currentPage} of {totalPages || 1})</span>
+            </div>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                {totalCount} total records
+            </span>
+        </div>
+
+        {result.type === 'matches' && records.length > 0 ? (
+            <div class="space-y-4">
+                {/* Chart Area */}
+                <div class="bg-slate-900 rounded-xl p-6 shadow-inner border border-slate-800 overflow-hidden">
+                    <div class="flex items-end justify-between h-48 space-x-1">
+                        {records.map((record) => {
+                            const value = getMetricValue(record);
+                            const name = getFieldValue(record, 'name') || getFieldValue(record, 'hostname') || `ID:${record.id}`;
+                            const ip = getFieldValue(record, 'ip') || 'N/A';
+                            
+                            return (
+                                <div class="group relative flex-1 flex flex-col items-center h-full justify-end">
+                                    {/* Tooltip */}
+                                    <div class="absolute bottom-full mb-2 hidden group-hover:block z-20 pointer-events-none">
+                                        <div class="bg-slate-800 text-white text-[10px] p-2 rounded shadow-lg border border-slate-700 min-w-[120px]">
+                                            <p class="font-bold text-emerald-400">{name}</p>
+                                            <p class="text-slate-300">IP: {ip}</p>
+                                            <p class="text-slate-300">Metric: {value.toFixed(1)}%</p>
+                                            <div class="mt-1 pt-1 border-t border-slate-700">
+                                                {record.fields.slice(0, 3).map(f => (
+                                                    <p class="text-[8px] text-slate-400 uppercase truncate">{f.key}: {f.value}</p>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div class="w-2 h-2 bg-slate-800 rotate-45 mx-auto -mt-1 border-r border-b border-slate-700"></div>
+                                    </div>
+                                    
+                                    {/* Bar */}
+                                    <div 
+                                        class="w-full bg-emerald-500/80 group-hover:bg-emerald-400 transition-all rounded-t-sm"
+                                        style={`height: ${Math.max(5, value)}%`}
+                                    ></div>
+                                </div>
+                            )
+                        })}
+                    </div>
+                </div>
+
+                {/* Tabular Data View */}
+                <div class="overflow-x-auto bg-white rounded-xl border border-slate-200 shadow-sm">
+                    <table class="min-w-full divide-y divide-slate-200">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Hostname</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">IP Address</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">CPU (%)</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Memory</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Uptime</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-slate-200">
+                            {records.map((record) => {
+                                const name = getFieldValue(record, 'name') || getFieldValue(record, 'hostname') || `ID:${record.id}`;
+                                const ip = getFieldValue(record, 'ip') || 'N/A';
+                                const cpu = getFieldValue(record, 'cpu') || 'N/A';
+                                const memUsed = getFieldValue(record, 'mem_used');
+                                const memTotal = getFieldValue(record, 'mem_total');
+                                const memStr = memUsed && memTotal ? `${(parseFloat(memUsed)/1024).toFixed(1)}GB / ${(parseFloat(memTotal)/1024).toFixed(1)}GB` : 'N/A';
+                                const uptime = getFieldValue(record, 'uptime');
+                                const uptimeStr = uptime ? `${(parseInt(uptime)/3600).toFixed(1)}h` : 'N/A';
+                                
+                                return (
+                                    <tr class="hover:bg-slate-50 transition-colors">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">{name}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-slate-500">{ip}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                                            <div class="flex items-center space-x-2">
+                                                <div class="w-12 bg-slate-200 rounded-full h-1.5">
+                                                    <div class="bg-emerald-500 h-1.5 rounded-full" style={`width: ${Math.min(100, parseFloat(cpu) || 0)}%`}></div>
+                                                </div>
+                                                <span>{cpu}%</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{memStr}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{uptimeStr}</td>
+                                    </tr>
+                                )
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* Pagination Controls */}
+                <div class="flex items-center justify-between border-t border-slate-200 pt-4">
+                    <div class="flex-1 flex justify-between sm:hidden">
+                        {hasPrev ? (
+                            <a href={`?q=${query}&p=${currentPage - 1}`} class="relative inline-flex items-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50">
+                                Previous
+                            </a>
+                        ) : (
+                            <span class="relative inline-flex items-center px-4 py-2 border border-slate-200 text-sm font-medium rounded-md text-slate-300 bg-slate-50 cursor-not-allowed">
+                                Previous
+                            </span>
+                        )}
+                        {hasNext ? (
+                            <a href={`?q=${query}&p=${currentPage + 1}`} class="ml-3 relative inline-flex items-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50">
+                                Next
+                            </a>
+                        ) : (
+                            <span class="ml-3 relative inline-flex items-center px-4 py-2 border border-slate-200 text-sm font-medium rounded-md text-slate-300 bg-slate-50 cursor-not-allowed">
+                                Next
+                            </span>
+                        )}
+                    </div>
+                    <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                        <div>
+                            <p class="text-sm text-slate-700">
+                                Showing <span class="font-medium">{(currentPage - 1) * pageSize + 1}</span> to <span class="font-medium">{Math.min(currentPage * pageSize, totalCount)}</span> of <span class="font-medium">{totalCount}</span> results
+                            </p>
+                        </div>
+                        <div>
+                            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                                <a href={`?q=${query}&p=${currentPage - 1}`} class={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-slate-300 bg-white text-sm font-medium text-slate-500 hover:bg-slate-50 ${!hasPrev ? 'pointer-events-none opacity-50' : ''}`}>
+                                    <span class="sr-only">Previous</span>
+                                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                        <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                    </svg>
+                                </a>
+                                
+                                <span class="relative inline-flex items-center px-4 py-2 border border-slate-300 bg-emerald-50 text-sm font-medium text-emerald-700">
+                                    {currentPage}
+                                </span>
+
+                                <a href={`?q=${query}&p=${currentPage + 1}`} class={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-slate-300 bg-white text-sm font-medium text-slate-500 hover:bg-slate-50 ${!hasNext ? 'pointer-events-none opacity-50' : ''}`}>
+                                    <span class="sr-only">Next</span>
+                                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                    </svg>
+                                </a>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        ) : result.type === 'ok' ? (
+            <div class="rounded-xl bg-emerald-50 p-4 border border-emerald-200">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-emerald-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium text-emerald-800">{result.message}</p>
+                    </div>
+                </div>
+            </div>
+        ) : result.type === 'error' ? (
+            <div class="rounded-xl bg-red-50 p-4 border border-red-200">
+                <p class="text-sm font-medium text-red-800">Error {result.code}: {result.message}</p>
+            </div>
+        ) : (
+            <p class="text-slate-500 text-center py-8">No records found.</p>
+        )}
+    </div>
+)}

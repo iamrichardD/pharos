@@ -6,24 +6,27 @@
  * Author: Richard D. (https://github.com/iamrichardd)
  * License: AGPL-3.0 (See LICENSE file for details)
  * * Purpose (The "Why"):
- * The main searchable interface for machine/infrastructure records (MDB).
- * Uses Vertical Slice Architecture to delegate logic and UI.
+ * The main MDB search page. Allows users to query machine records and 
+ * visualize infrastructure metrics via a high-density bar chart and table.
  * * Traceability:
- * Related to Task 16.6 (Issue #69).
+ * Related to Task 16.11 (Issue #98).
  * ======================================================================== */
 import ConsoleLayout from '../../layouts/ConsoleLayout.astro';
 import MdbSearchForm from '../../features/mdb/search/MdbSearchForm.astro';
-import MdbResultsGrid from '../../features/mdb/search/MdbResultsGrid.astro';
+import MdbResultsChart from '../../features/mdb/search/MdbResultsChart.astro';
 import { searchMdb } from '../../features/mdb/search/search-logic';
 import type { PharosResponse } from '../../lib/pharos';
 
 let query = Astro.url.searchParams.get('q') || '';
+let page = parseInt(Astro.url.searchParams.get('p') || '1', 10);
+const pageSize = 25;
+
 let result: PharosResponse | null = null;
 let error: string | null = null;
 
 if (query.trim() !== '') {
     try {
-        result = await searchMdb(query);
+        result = await searchMdb(query, page, pageSize);
     } catch (e: any) {
         error = e.message || 'Failed to connect to Pharos server';
     }
@@ -39,6 +42,6 @@ if (query.trim() !== '') {
 
         <MdbSearchForm query={query} />
 
-        <MdbResultsGrid result={result} error={error} />
+        <MdbResultsChart result={result} error={error} currentPage={page} pageSize={pageSize} />
     </div>
 </ConsoleLayout>

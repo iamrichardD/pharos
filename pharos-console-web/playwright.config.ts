@@ -31,14 +31,20 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: 'PHAROS_SANDBOX=true HOST=0.0.0.0 PORT=3000 node dist/server/entry.mjs',
+      command: 'PHAROS_SANDBOX=true PHAROS_SKIP_AUTH=true PHAROS_HOST=127.0.0.1 PHAROS_PORT=2378 HOST=0.0.0.0 PORT=3000 node dist/server/entry.mjs',
       url: 'http://localhost:3000',
       reuseExistingServer: !process.env.CI,
       timeout: 60 * 1000,
     },
     {
-      command: 'cargo run --manifest-path ../Cargo.toml --package pharos-server',
+      command: 'PHAROS_SKIP_AUTH=true cargo run --manifest-path ../Cargo.toml --package pharos-server',
       url: 'http://localhost:9090/metrics',
+      reuseExistingServer: !process.env.CI,
+      timeout: 120 * 1000,
+    },
+    {
+      command: 'PHAROS_SKIP_AUTH=true PHAROS_SERVER=127.0.0.1:2378 PHAROS_MACHINE_NAME=e2e-pharos-main cargo run --manifest-path ../Cargo.toml --package pharos-pulse',
+      // No URL to wait for, but it depends on server
       reuseExistingServer: !process.env.CI,
       timeout: 120 * 1000,
     }

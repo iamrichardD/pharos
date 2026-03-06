@@ -38,11 +38,11 @@ const session = await getSession(Astro.cookies.get(AUTH_COOKIE_NAME)?.value);
 		<header class="bg-white border-b border-slate-200 sticky top-0 z-10">
 			<div class="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
 				<a href="/" class="flex items-center space-x-2 hover:opacity-80 transition-opacity">
-					<span class="text-2xl font-bold tracking-tight text-slate-950">Pharos<span class="text-blue-600">Console</span></span>
+					<span class="text-2xl font-bold tracking-tight text-slate-950">Pharos<span class="text-emerald-600">Console</span></span>
 				</a>
 				<nav class="flex items-center space-x-4">
-                    <a href="/mdb" class="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors hidden sm:block">Search MDB</a>
-                    <a href="/pulse" class="text-sm font-medium text-slate-600 hover:text-green-600 transition-colors hidden sm:block">Pulse Monitor</a>
+                    <a href="/mdb" class="text-sm font-medium text-slate-600 hover:text-emerald-600 transition-colors hidden sm:block">Search MDB</a>
+                    <a href="/pulse" class="text-sm font-medium text-slate-600 hover:text-emerald-600 transition-colors hidden sm:block">Pulse Monitor</a>
 					
                     {session ? (
                         <div class="flex items-center space-x-3 pl-2 border-l border-slate-200">
