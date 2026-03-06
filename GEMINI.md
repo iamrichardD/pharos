@@ -108,7 +108,17 @@ EVERY source code file MUST begin with a standardized prologue block. This ensur
 
 ## DevSecOps & Workflow
 
-### 1. State Management, Focus, & DORA Metrics
+### 1. AI-Handover & Task Closure Checklist (Strict Requirement)
+This checklist MUST be verified before marking any task as complete in `@PROGRESS.md` or closing a GitHub Issue.
+- [ ] **Standardization:** Standardized File Prologue present in all new files.
+- [ ] **Validation:** `scripts/pre-flight.sh` passes successfully in the Podman environment.
+- [ ] **Persistence:** All changes are committed with a clear, descriptive message (prefix with `feat:`, `fix:`, `docs:`, or `debt:`).
+- [ ] **Synchronization:** Changes are pushed to the remote repository.
+- [ ] **CI Monitoring:** GitHub Action `run_id` identified and watched to 'Success' status via `gh run watch`.
+- [ ] **Handover Data:** GitHub Issue closed with a human-readable **Fix Summary**, **Security Review**, and **AI-Ready Verification Prompt**.
+- [ ] **State Sync:** `@TODO.md` and `@PROGRESS.md` reflect the latest state.
+
+### 2. State Management, Focus, & DORA Metrics
 - **Single-Task Focus:** Work on exactly ONE feature or bug fix at a time.
 - **Read Before Write:** Always read existing code first to prevent logic duplication.
 - **Local State Tracking:** - Maintain `@TODO.md` for the backlog.
