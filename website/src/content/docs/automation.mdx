@@ -104,8 +104,19 @@ Pharos is designed for high-velocity DevSecOps teams. You can automate your infr
 
 ## 🩺 Automated Inventory with Pulse
 
-Pharos doesn't just store static data; it automatically discovers and maintains your fleet's inventory using `pharos-pulse`.
+Pharos doesn't just store static data; it automatically discovers and maintains your fleet's inventory using `pharos-pulse` with an **Inventory-First** approach.
 
-1.  **Autonomous Heartbeats**: Every node running the `pharos-pulse` agent sends periodic identity and hardware inventory (CPU cores, Brand, OS Version) to the server.
-2.  **Inventory Dashboard**: Use the [Pharos Console](./console) to visualize your entire hardware and software fleet at a glance.
-3.  **Presence Tracking**: Pharos automatically marks nodes as `ONLINE`, `HEARTBEAT`, or `OFFLINE` based on the agent's lifecycle signals.
+### Baseline vs. Delta Strategy
+To minimize network overhead and CPU impact, the Pulse agent employs a two-tier reporting strategy:
+
+1.  **Baseline (ONLINE)**: On startup, `pharos-pulse` collects a full hardware and OS metadata package (CPU Brand, Core count, Total RAM, Kernel version, and Serial Number) and registers it with the server.
+2.  **Delta (HEARTBEAT)**: Every **60 minutes**, the agent sends a minimal presence signal to maintain the record's freshness and verify identity.
+
+### Presence Lifecycle
+Pharos automatically tracks the lifecycle of your nodes based on agent signals:
+- **ONLINE**: Node has recently sent a baseline or heartbeat signal.
+- **OFFLINE**: Node has gracefully shut down and sent a final `SIGTERM` signal.
+- **UNREACHABLE**: (Inferred) Node hasn't been seen by the server for over 70 minutes.
+
+### Inventory Dashboard
+Use the [Pharos Console](./console) to visualize your entire hardware and software fleet. Click any node to see its deep-linkable **Identity Card**, featuring manufacturer serial numbers and specific kernel versions—essential for security audits and hardware lifecycle management.

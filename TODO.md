@@ -105,7 +105,7 @@ A task is considered complete and may be marked `[x]` only when:
 
 ## Phase 14: Pulse (Presence) & Multi-Tenant Architecture
 - [x] **Task 14.1 (Issue #47):** Engineering: Implement `pharos-pulse` presence agent in Rust for cross-platform system manager integration (Systemd, SCM, launchd). Focused on Online/Offline status reporting.
-- [ ] **Task 14.11 (Issue #100):** Engineering: Refactor `pharos-pulse` to implement the "Baseline vs. Delta" inventory strategy. Collect hardware metadata (CPU cores/brand, serial, RAM) once at `ONLINE` and send minimal `HEARTBEAT` every 60 minutes.
+- [x] **Task 14.11 (Issue #99):** Engineering: Refactor `pharos-pulse` to implement the "Baseline vs. Delta" inventory strategy. Collect hardware metadata (CPU cores/brand, serial, RAM) once at `ONLINE` and send minimal `HEARTBEAT` every 60 minutes.
 - [ ] **Task 14.8 (#TBD):** Engineering: Implement "Presence Monitor" background sweep in `pharos-server` to infer `UNREACHABLE` state (70m timeout).
 - [ ] **Task 14.9 (#TBD):** Engineering: Implement "Presence Fencing" logic in storage layer to prevent destructive automation on `UNREACHABLE` nodes.
 - [x] **Task 14.2 (Issue #49):** Engineering: Extend `pharos-server` security model to support Triple-Tier Security (open, protected, scoped) and Provenance Metadata.

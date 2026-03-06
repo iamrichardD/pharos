@@ -1,0 +1,149 @@
+---
+/* ========================================================================
+ * Project: pharos
+ * Component: Web Console
+ * File: src/pages/mdb/[hostname].astro
+ * Author: Richard D. (https://github.com/iamrichardd)
+ * License: AGPL-3.0 (See LICENSE file for details)
+ * * Purpose (The "Why"):
+ * Deep-linkable Inventory Detail View for a specific machine record.
+ * Provides a "Resource-First" view for humans and AI agents (webMCP).
+ * * Traceability:
+ * Related to Task 14.11 (Issue #99) and webMCP Specification.
+ * ======================================================================== */
+import ConsoleLayout from '../../layouts/ConsoleLayout.astro';
+import { executePharosQuery } from '../../lib/pharos';
+
+const { hostname } = Astro.params;
+
+if (!hostname) {
+    return Astro.redirect('/mdb');
+}
+
+// Fetch record details
+const response = await executePharosQuery('web-console', `query hostname="${hostname}"`);
+const record = response.type === 'matches' && response.records ? response.records[0] : null;
+
+function getFieldValue(key: string): string | undefined {
+    return record?.fields.find(f => f.key === key)?.value;
+}
+
+// Security Review: Input is escaped by executePharosQuery and then 
+// sanitized by Astro's default HTML escaping during rendering.
+---
+
+<ConsoleLayout title={`Inventory: ${hostname}`}>
+    <div class="max-w-4xl mx-auto space-y-6">
+        {/* Breadcrumbs / Back */}
+        <nav class="flex items-center space-x-2 text-sm text-slate-500">
+            <a href="/mdb" class="hover:text-emerald-600 transition-colors">Infrastructure</a>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+            <span class="font-medium text-slate-900">{hostname}</span>
+        </nav>
+
+        {!record ? (
+            <div class="p-12 text-center bg-white border border-slate-200 rounded-3xl">
+                <h2 class="text-xl font-bold text-slate-900">Record Not Found</h2>
+                <p class="text-slate-500 mt-2">No infrastructure record exists for "{hostname}".</p>
+                <a href="/mdb" class="mt-4 inline-block px-6 py-2 bg-slate-900 text-white rounded-full font-bold text-sm">Return to Search</a>
+            </div>
+        ) : (
+            <div class="space-y-6">
+                {/* Header Card */}
+                <div class="bg-slate-900 rounded-3xl p-8 text-white shadow-xl relative overflow-hidden">
+                    <div class="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                        <div class="space-y-2">
+                            <div class="flex items-center space-x-3">
+                                <h1 class="text-4xl font-black tracking-tight">{hostname}</h1>
+                                <span class={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest ${getFieldValue('status') === 'offline' ? 'bg-slate-700 text-slate-300' : 'bg-emerald-500 text-slate-900'}`}>
+                                    {getFieldValue('status') || 'Online'}
+                                </span>
+                            </div>
+                            <p class="text-slate-400 font-mono text-sm">{getFieldValue('ip') || 'Unknown IP'}</p>
+                        </div>
+                        
+                        <div class="flex flex-col md:items-end space-y-1">
+                            <span class="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Serial Number</span>
+                            <span class="text-xl font-mono text-emerald-400">{getFieldValue('serial_number') || 'UNSET'}</span>
+                        </div>
+                    </div>
+                    
+                    {/* Background Decorative Element */}
+                    <div class="absolute -right-12 -bottom-12 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                </div>
+
+                {/* Info Grid */}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Hardware Card */}
+                    <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
+                        <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+                            </svg>
+                            Hardware Blueprint
+                        </h3>
+                        <div class="space-y-4">
+                            <div>
+                                <p class="text-xs text-slate-400">Processor</p>
+                                <p class="text-slate-900 font-bold">{getFieldValue('cpu_brand') || 'Unknown CPU'}</p>
+                            </div>
+                            <div class="flex justify-between border-t border-slate-50 pt-3">
+                                <div>
+                                    <p class="text-xs text-slate-400">Cores</p>
+                                    <p class="text-slate-900 font-bold">{getFieldValue('cpu_cores') || 'N/A'}</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-slate-400">Memory</p>
+                                    <p class="text-slate-900 font-bold">{getFieldValue('mem_total_kb') ? `${(parseInt(getFieldValue('mem_total_kb')!) / 1024 / 1024).toFixed(1)} GB` : 'N/A'}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Software Card */}
+                    <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
+                        <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                            </svg>
+                            System Depth
+                        </h3>
+                        <div class="space-y-4">
+                            <div>
+                                <p class="text-xs text-slate-400">Operating System</p>
+                                <p class="text-slate-900 font-bold">{getFieldValue('os_name')} {getFieldValue('os_version')}</p>
+                            </div>
+                            <div class="border-t border-slate-50 pt-3">
+                                <p class="text-xs text-slate-400">Kernel Version</p>
+                                <p class="text-slate-900 font-mono text-sm font-bold truncate" title={getFieldValue('kernel_version')}>{getFieldValue('kernel_version') || 'Unknown'}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Raw Attributes Table (For AI Agents & Power Users) */}
+                <div class="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+                    <div class="px-6 py-4 bg-slate-50 border-b border-slate-200">
+                        <h3 class="text-sm font-bold text-slate-900 uppercase tracking-widest">Full Record Metadata</h3>
+                    </div>
+                    <div class="divide-y divide-slate-100">
+                        {record.fields.sort((a,b) => a.key.localeCompare(b.key)).map(field => (
+                            <div class="px-6 py-3 flex justify-between items-center text-sm">
+                                <span class="text-slate-500 font-medium">{field.key}</span>
+                                <span class="text-slate-900 font-mono bg-slate-50 px-2 py-0.5 rounded">{field.value}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+                
+                <div class="text-center pt-4">
+                    <button onclick="history.back()" class="text-slate-400 hover:text-slate-900 text-sm font-medium transition-colors">
+                        &larr; Return to previous view
+                    </button>
+                </div>
+            </div>
+        )}
+    </div>
+</ConsoleLayout>

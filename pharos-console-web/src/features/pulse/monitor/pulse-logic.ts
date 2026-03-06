@@ -15,12 +15,16 @@ import { executePharosQuery } from '../../../lib/pharos';
 
 export interface MachineStatus {
     name: string;
+    hostname: string;
     status: 'ONLINE' | 'OFFLINE' | 'UNREACHABLE';
     lastSeen: Date;
-    cpu?: string;
-    memUsed?: string;
-    memTotal?: string;
-    uptime?: string;
+    cpuBrand?: string;
+    cpuCores?: string;
+    memTotalKb?: string;
+    osName?: string;
+    osVersion?: string;
+    kernelVersion?: string;
+    serialNumber?: string;
 }
 
 /**
@@ -37,31 +41,39 @@ export async function getPulseStatus(): Promise<MachineStatus[]> {
     const machineMap = new Map<string, MachineStatus>();
 
     for (const record of response.records) {
-        const name = record.fields.find(f => f.key === 'name')?.value || 'unknown';
-        const cpu = record.fields.find(f => f.key === 'cpu')?.value;
-        const memUsed = record.fields.find(f => f.key === 'mem_used')?.value;
-        const memTotal = record.fields.find(f => f.key === 'mem_total')?.value;
-        const uptime = record.fields.find(f => f.key === 'uptime')?.value;
+        const name = record.fields.find(f => f.key === 'name')?.value || 
+                     record.fields.find(f => f.key === 'hostname')?.value || 
+                     'unknown';
+        const hostname = record.fields.find(f => f.key === 'hostname')?.value || name;
+        const statusField = record.fields.find(f => f.key === 'status')?.value || 'online';
+        
+        const cpuBrand = record.fields.find(f => f.key === 'cpu_brand')?.value;
+        const cpuCores = record.fields.find(f => f.key === 'cpu_cores')?.value;
+        const memTotalKb = record.fields.find(f => f.key === 'mem_total_kb')?.value;
+        const osName = record.fields.find(f => f.key === 'os_name')?.value;
+        const osVersion = record.fields.find(f => f.key === 'os_version')?.value;
+        const kernelVersion = record.fields.find(f => f.key === 'kernel_version')?.value;
+        const serialNumber = record.fields.find(f => f.key === 'serial_number')?.value;
         
         // In the absence of an explicit timestamp from the server, 
         // we'll assume the record exists and is recent if it was returned.
-        // NOTE: Future server versions will include a 'last_seen' or similar.
         const lastSeen = new Date(); 
 
         const status: MachineStatus = {
             name,
-            status: 'ONLINE', // Default to ONLINE if we found it
+            hostname,
+            status: statusField.toUpperCase() === 'OFFLINE' ? 'OFFLINE' : 'ONLINE',
             lastSeen,
-            cpu,
-            memUsed,
-            memTotal,
-            uptime
+            cpuBrand,
+            cpuCores,
+            memTotalKb,
+            osName,
+            osVersion,
+            kernelVersion,
+            serialNumber
         };
 
-        // If we have multiple records for the same machine (due to historical pulses),
-        // we take the latest one. (Ph server currently returns all matches).
-        // Since IDs are incremental, the last one in the list is the newest.
-        machineMap.set(name, status);
+        machineMap.set(hostname, status);
     }
 
     return Array.from(machineMap.values());
