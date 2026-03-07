@@ -1,8 +1,8 @@
 # Pharos State & Progress
 
 ## Current Status
-**Phase:** 16 (Pharos Web Console)
-**Active Task:** None
+**Phase:** 17 (Pharos Sandbox)
+**Active Task:** Task 17.9: Pre-configure PHAROS_HOST in Sandbox. (Issue #104)
 **Backlog:** 1.8 (DevSecOps Refinement), 1.9 (Automated DORA), 18.1 (Alternation)
 
 ## Recent Completions
