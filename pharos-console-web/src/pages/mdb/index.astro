@@ -20,6 +20,7 @@ import type { PharosResponse } from '../../lib/pharos';
 let query = Astro.url.searchParams.get('q') || '';
 let page = parseInt(Astro.url.searchParams.get('p') || '1', 10);
 const pageSize = 25;
+const session = Astro.locals.session;
 
 let result: PharosResponse | null = null;
 let error: string | null = null;
@@ -35,13 +36,20 @@ if (query.trim() !== '') {
 
 <ConsoleLayout title="Search MDB">
     <div class="space-y-6">
-        <div>
-            <h1 class="text-2xl font-bold text-slate-900 sm:text-3xl">Search MDB</h1>
-            <p class="text-slate-600">Find machine and infrastructure records by IP, MAC, hostname, or alias.</p>
+        <div class="flex justify-between items-start">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900 sm:text-3xl">Search MDB</h1>
+                <p class="text-slate-600">Find machine and infrastructure records by IP, MAC, hostname, or alias.</p>
+            </div>
+            {session && (
+                <a href="/mdb/add" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-bold rounded-xl shadow-sm text-white bg-blue-600 hover:bg-blue-700 transition-colors">
+                    Add Record +
+                </a>
+            )}
         </div>
 
         <MdbSearchForm query={query} />
 
-        <MdbResultsChart result={result} error={error} currentPage={page} pageSize={pageSize} />
+        <MdbResultsChart result={result} error={error} currentPage={page} pageSize={pageSize} session={session} />
     </div>
 </ConsoleLayout>

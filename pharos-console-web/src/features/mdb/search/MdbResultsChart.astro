@@ -18,9 +18,10 @@ interface Props {
     error: string | null;
     currentPage: number;
     pageSize: number;
+    session?: any;
 }
 
-const { result, error, currentPage, pageSize } = Astro.props;
+const { result, error, currentPage, pageSize, session } = Astro.props;
 
 function getFieldValue(record: PharosRecord, key: string): string | undefined {
     return record.fields.find(f => f.key === key)?.value;
@@ -75,7 +76,7 @@ const query = Astro.url.searchParams.get('q') || '';
                                 <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Hostname</th>
                                 <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">IP Address</th>
                                 <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">OS / Kernel</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Serial Number</th>
+                                {session && <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Serial Number</th>}
                                 <th scope="col" class="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Action</th>
                             </tr>
                         </thead>
@@ -106,7 +107,7 @@ const query = Astro.url.searchParams.get('q') || '';
                                             <div class="text-sm text-slate-900">{os}</div>
                                             {kernel && <div class="text-[10px] font-mono text-slate-400">{kernel}</div>}
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-slate-500">{serial}</td>
+                                        {session && <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-slate-500">{serial}</td>}
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <a href={`/mdb/${hostname}`} class="text-emerald-600 hover:text-emerald-900 font-bold bg-emerald-50 px-3 py-1 rounded-full transition-colors">View Details</a>
                                         </td>

@@ -32,7 +32,7 @@ test.describe('Authentication Flow', () => {
     // Should redirect to home (/) and show the logout button
     await expect(page).toHaveURL(/\/$/);
     await expect(page.locator('#logoutBtn')).toBeVisible();
-    await expect(page.locator('text=admin')).toBeVisible();
+    await expect(page.locator('header').getByText('admin')).toBeVisible();
   });
 
   test('should show error message for invalid credentials', async ({ page }) => {

@@ -17,25 +17,27 @@ import { AUTH_COOKIE_NAME } from './features/auth/auth-config';
 export const onRequest = defineMiddleware(async (context, next) => {
     const { url, cookies, redirect } = context;
 
+    // Verify session
+    const session = await getSession(cookies.get(AUTH_COOKIE_NAME)?.value);
+    
+    // Attach session to locals for use in pages/components
+    if (session) {
+        context.locals.session = session;
+    }
+
     // Public routes that don't require authentication
     // Note: /_actions must be allowed so that the login action can be called
-    const publicRoutes = ['/login', '/_actions'];
-    const isPublicRoute = publicRoutes.some(route => url.pathname.startsWith(route)) || url.pathname === '/';
+    const publicRoutes = ['/login', '/_actions', '/mdb'];
+    const isPublicRoute = (publicRoutes.some(route => url.pathname.startsWith(route)) || url.pathname === '/') && !url.pathname.startsWith('/mdb/add');
 
     if (isPublicRoute) {
         return next();
     }
 
-    // Verify session
-    const session = await getSession(cookies.get(AUTH_COOKIE_NAME)?.value);
-
     if (!session) {
         // Redirect to login if unauthenticated on a protected route
         return redirect('/login');
     }
-
-    // Attach session to locals for use in pages/components
-    context.locals.session = session;
 
     return next();
 });

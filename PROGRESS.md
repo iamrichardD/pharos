@@ -6,6 +6,8 @@
 **Backlog:** 1.8 (DevSecOps Refinement), 1.9 (Automated DORA), 18.1 (Alternation)
 
 ## Recent Completions
+- [x] Bug #103: Fixed MDB Search Redirect. Updated middleware to allow Guest access to `/mdb` and protected sensitive fields (Serial Number, Full Metadata) for unauthenticated users. Verified with new E2E tests (Issue #103).
+- [x] Task: Refined RBAC & Team-Based Authorization. Implemented protocol restrictions (Guest search, Auth write), One-to-Many team checks, and SSH Fingerprint bonding. Verified with `tests/rbac_integration.rs` (Issue #33).
 - [x] Task 16.14: Engineering: Implement Unified Auth Gateway. Consolidated Standard, CLI Handshake, and Enterprise login into a single tabbed UI (Issue #102).
 - [x] Task 16.13: Engineering: Refactor MDB Search UI to focus on Inventory vs. Metrics. Removed visual bar chart and renamed header to 'Search Results' (Issue #101).
 - [x] Task 16.12: Engineering: Snake-Case Harmonization for Pharos Web Console. Refactored MachineStatus and UI components to use snake_case properties (Issue #100).
