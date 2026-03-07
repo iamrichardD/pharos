@@ -39,6 +39,7 @@ services:
     container_name: pharos-pulse
     environment:
       - PHAROS_SERVER=pharos-server:2378
+      - PHAROS_HOST=pharos-server
       - PHAROS_MACHINE_NAME=pharos-main
     volumes:
       - pharos-keys:/root/.ssh:ro

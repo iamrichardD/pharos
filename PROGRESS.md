@@ -2,10 +2,11 @@
 
 ## Current Status
 **Phase:** 17 (Pharos Sandbox)
-**Active Task:** Task 17.9: Pre-configure PHAROS_HOST in Sandbox. (Issue #104)
+**Active Task:** Task 17.5: Release: Prepare v1.3.0. (Issue #75)
 **Backlog:** 1.8 (DevSecOps Refinement), 1.9 (Automated DORA), 18.1 (Alternation)
 
 ## Recent Completions
+- [x] Task 17.9: Pre-configure PHAROS_HOST in Sandbox. Updated `deploy/sandbox.yml` to include `PHAROS_HOST=pharos-server` in the `pharos-pulse` service, improving CLI DX by eliminating the need for manual overrides. Verified with `mdb status` (Issue #104).
 - [x] Bug #103: Fixed MDB Search Redirect. Updated middleware to allow Guest access to `/mdb` and protected sensitive fields (Serial Number, Full Metadata) for unauthenticated users. Verified with new E2E tests (Issue #103).
 - [x] Task: Refined RBAC & Team-Based Authorization. Implemented protocol restrictions (Guest search, Auth write), One-to-Many team checks, and SSH Fingerprint bonding. Verified with `tests/rbac_integration.rs` (Issue #33).
 - [x] Task 16.14: Engineering: Implement Unified Auth Gateway. Consolidated Standard, CLI Handshake, and Enterprise login into a single tabbed UI (Issue #102).
@@ -15,7 +16,7 @@
 - [x] Task 14.10: Advocacy: Refined `pharos-pulse` documentation and marketing to transition from metrics monitoring to an Automated Inventory System. Updated `pharos-pulse-spec.md`, `index.astro`, and `automation.mdx`. (Issue #99)
 - [x] Task 16.11: Engineering: Implemented MDB Results Chart and Pagination. Replaced MdbResultsGrid with a high-density green bar chart (MdbResultsChart.astro) and implemented client-side slicing for pagination in search-logic.ts. (Issue #98)
 - [x] Task 20.4: Engineering: Sandbox Simulator Bootstrapping. Configured Pulse to auto-register as `pharos-main`. (Issue #97)
-- [x] Task 20.3: Engineering: Pulse Resilient Retry Loop (Wait-for-Server). Implemented exponential backoff. (Issue #96)
+- [x] Task 20.3: Engineering: Pulse Resilient Retry loop (Wait-for-Server). Implemented exponential backoff. (Issue #96)
 - [x] Task 20.2: Engineering: Identity Bonding (First-to-Claim). Implemented fingerprint bonding in storage. (Issue #95)
 - [x] Task 20.1: Engineering: Server-Side Challenge Generation (5m TTL). Implemented stateful challenges in `pharos-server`. (Issue #94)
 - [x] Bug #93: Fixed Sandbox CLI Handshake failure by implementing shared key volumes and enhanced key discovery. (Issue #93)
@@ -101,9 +102,6 @@
 - [x] Task 2.2: Implement the in-memory storage engine (Development Tier). (Issue #8)
 - [x] Task 1.6: Refined the release process in `GEMINI.md` to include Git tags and SemVer. (Issue #7)
 - [x] Task 2.1: Core TCP listener and base RFC 2378 (Ph) syntax parser implemented. (Issue #6)
-- [x] Project inception and system prompt (`GEMINI.md`) finalized.
-- [x] Strict Zero-Host (Podman), Clean Architecture, and DORA metric tracking established.
-- [x] Phase 1: Zero-Host & DevSecOps Foundation (Issue #1, #2, #3, #4, #5).
 
 ## AI Agent Instructions for Next Session
 1. Read `GEMINI.md` to internalize strict Zero-Host constraints, Clean Code philosophies, **TDD-first workflow**, and **Vertical Slice Architecture** mandates.
