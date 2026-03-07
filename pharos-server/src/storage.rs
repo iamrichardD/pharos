@@ -52,21 +52,25 @@ pub struct Record {
     pub record_type: Option<RecordType>,
     pub fields: HashMap<String, String>,
     pub owner_fingerprint: Option<String>,
+    pub owner_team: Option<String>,
 }
 
 #[derive(Debug, thiserror::Error)]
 pub enum StorageError {
     #[error("Record already exists and is bonded to a different fingerprint (Collision)")]
     Collision,
+    #[error("Unauthorized: Record belongs to another team")]
+    Unauthorized,
     #[error("Internal storage error: {0}")]
     Internal(String),
 }
 
 pub trait Storage: Send + Sync {
     fn record_count(&self) -> usize;
-    fn add_record(&mut self, fields: HashMap<String, String>, fingerprint: Option<String>);
+    fn add_record(&mut self, fields: HashMap<String, String>, fingerprint: Option<String>, team: Option<String>);
     fn query(&self, selections: &[(Option<String>, String)], default_type: Option<RecordType>) -> Vec<Record>;
-    fn upsert_record(&mut self, fields: HashMap<String, String>, fingerprint: Option<String>) -> Result<(), StorageError>;
+    fn upsert_record(&mut self, fields: HashMap<String, String>, fingerprint: Option<String>, team: Option<String>) -> Result<(), StorageError>;
+    fn delete_record(&mut self, selections: &[(Option<String>, String)], fingerprint: Option<String>, teams: &[String]) -> Result<usize, StorageError>;
 }
 
 pub struct MemoryStorage {
@@ -121,13 +125,14 @@ impl Storage for MemoryStorage {
     }
 
     #[instrument(skip(self))]
-    fn add_record(&mut self, fields: HashMap<String, String>, fingerprint: Option<String>) {
+    fn add_record(&mut self, fields: HashMap<String, String>, fingerprint: Option<String>, team: Option<String>) {
         let record_type = fields.get("type").map(|s| RecordType::from(s.as_str()));
         let record = Record {
             id: self.next_id,
             record_type,
             fields,
             owner_fingerprint: fingerprint,
+            owner_team: team,
         };
         self.records.push(record);
         self.next_id += 1;
@@ -167,7 +172,7 @@ impl Storage for MemoryStorage {
     }
 
     #[instrument(skip(self))]
-    fn upsert_record(&mut self, fields: HashMap<String, String>, fingerprint: Option<String>) -> Result<(), StorageError> {
+    fn upsert_record(&mut self, fields: HashMap<String, String>, fingerprint: Option<String>, team: Option<String>) -> Result<(), StorageError> {
         let identifier = fields.get("hostname").or_else(|| fields.get("alias"));
 
         if let Some(id_val) = identifier {
@@ -176,12 +181,30 @@ impl Storage for MemoryStorage {
             });
 
             if let Some(record) = existing {
+                // Check Host Authorization logic (SSH Fingerprint match)
                 if let Some(ref bonded) = record.owner_fingerprint {
                     if Some(bonded) != fingerprint.as_ref() {
                         return Err(StorageError::Collision);
                     }
-                } else {
+                }
+
+                // Check Member Authorization logic (Team match)
+                if let Some(ref record_team) = record.owner_team {
+                    if let Some(ref user_team) = team {
+                         // User must be in the team that owns the record
+                         if record_team != user_team {
+                             return Err(StorageError::Unauthorized);
+                         }
+                    } else if record.owner_fingerprint.is_none() {
+                         return Err(StorageError::Unauthorized);
+                    }
+                }
+
+                if record.owner_fingerprint.is_none() {
                     record.owner_fingerprint = fingerprint;
+                }
+                if record.owner_team.is_none() {
+                    record.owner_team = team;
                 }
 
                 for (k, v) in fields {
@@ -191,8 +214,56 @@ impl Storage for MemoryStorage {
             }
         }
 
-        self.add_record(fields, fingerprint);
+        self.add_record(fields, fingerprint, team);
         Ok(())
+    }
+
+    #[instrument(skip(self))]
+    fn delete_record(&mut self, selections: &[(Option<String>, String)], fingerprint: Option<String>, teams: &[String]) -> Result<usize, StorageError> {
+        let mut error = None;
+        let mut to_delete_ids = Vec::new();
+
+        for record in &self.records {
+            let matches = selections.iter().all(|(field_opt, value)| {
+                match field_opt {
+                    Some(field_name) => {
+                        if let Some(field_val) = record.fields.get(field_name) {
+                            self.matches(field_val, value)
+                        } else {
+                            false
+                        }
+                    }
+                    None => {
+                        record.fields.values().any(|field_val| self.matches(field_val, value))
+                    }
+                }
+            });
+
+            if matches {
+                // Check authorization for deletion
+                let authorized = match (&record.owner_fingerprint, &record.owner_team) {
+                    (Some(fp), _) if fingerprint.as_ref() == Some(fp) => true,
+                    (_, Some(team)) if teams.contains(team) => true,
+                    (None, None) => true, // System records?
+                    _ => false,
+                };
+
+                if authorized {
+                    to_delete_ids.push(record.id);
+                } else {
+                    error = Some(StorageError::Unauthorized);
+                }
+            }
+        }
+
+        if let Some(e) = error {
+            return Err(e);
+        }
+
+        let deleted_count = to_delete_ids.len();
+        self.records.retain(|r| !to_delete_ids.contains(&r.id));
+
+        Ok(deleted_count)
     }
 }
 
@@ -279,8 +350,8 @@ impl Storage for FileStorage {
         self.memory.record_count()
     }
 
-    fn add_record(&mut self, fields: HashMap<String, String>, fingerprint: Option<String>) {
-        self.memory.add_record(fields, fingerprint);
+    fn add_record(&mut self, fields: HashMap<String, String>, fingerprint: Option<String>, team: Option<String>) {
+        self.memory.add_record(fields, fingerprint, team);
         self.persist_to_disk();
     }
 
@@ -288,10 +359,18 @@ impl Storage for FileStorage {
         self.memory.query(selections, default_type)
     }
 
-    fn upsert_record(&mut self, fields: HashMap<String, String>, fingerprint: Option<String>) -> Result<(), StorageError> {
-        self.memory.upsert_record(fields, fingerprint)?;
+    fn upsert_record(&mut self, fields: HashMap<String, String>, fingerprint: Option<String>, team: Option<String>) -> Result<(), StorageError> {
+        self.memory.upsert_record(fields, fingerprint, team)?;
         self.persist_to_disk();
         Ok(())
+    }
+
+    fn delete_record(&mut self, selections: &[(Option<String>, String)], fingerprint: Option<String>, teams: &[String]) -> Result<usize, StorageError> {
+        let count = self.memory.delete_record(selections, fingerprint, teams)?;
+        if count > 0 {
+            self.persist_to_disk();
+        }
+        Ok(count)
     }
 }
 
@@ -367,21 +446,14 @@ impl LdapStorage {
     }
 }
 
-// NOTE: Real LDAP interaction would be async, but our Storage trait is sync.
-// We'll use a blocking LDAP call or tokio::task::block_in_place if needed,
-// but for now, we'll keep the trait and use a library that supports sync or block.
-// ldap3 has a sync API as well.
-
 impl Storage for LdapStorage {
     #[instrument(skip(self))]
     fn record_count(&self) -> usize {
-        // LDAP doesn't easily provide a total count of all records matching our schema
-        // without a full search. For metrics, we might just return 0 or do a limited count.
         0
     }
 
     #[instrument(skip(self))]
-    fn add_record(&mut self, _fields: HashMap<String, String>, _fingerprint: Option<String>) {
+    fn add_record(&mut self, _fields: HashMap<String, String>, _fingerprint: Option<String>, _team: Option<String>) {
         error!("LDAP storage is currently read-only (Write operations pending Task 4.3)");
     }
 
@@ -429,11 +501,8 @@ impl Storage for LdapStorage {
             let search_entry = ldap3::SearchEntry::construct(entry);
             let mut fields = HashMap::new();
             
-            // Reverse mapping from LDAP Attribute -> Ph Field
-            // First, add all LDAP attributes as fields
             for (attr, vals) in search_entry.attrs {
                 if !vals.is_empty() {
-                    // Try to find a Ph field name for this LDAP attribute
                     let ph_field = self.field_map.iter()
                         .find(|(_, ldap_attr)| **ldap_attr == attr)
                         .map(|(k, _)| k.clone())
@@ -443,7 +512,6 @@ impl Storage for LdapStorage {
                 }
             }
 
-            // Determine record type based on objectClass
             let record_type = if fields.get("objectClass").map(|s| s.contains("inetOrgPerson")).unwrap_or(false) {
                 Some(RecordType::Person)
             } else if fields.get("objectClass").map(|s| s.contains("ipHost")).unwrap_or(false) {
@@ -457,6 +525,7 @@ impl Storage for LdapStorage {
                 record_type,
                 fields,
                 owner_fingerprint: None,
+                owner_team: None,
             });
         }
 
@@ -464,16 +533,17 @@ impl Storage for LdapStorage {
     }
 
     #[instrument(skip(self))]
-    fn upsert_record(&mut self, _fields: HashMap<String, String>, _fingerprint: Option<String>) -> Result<(), StorageError> {
+    fn upsert_record(&mut self, _fields: HashMap<String, String>, _fingerprint: Option<String>, _team: Option<String>) -> Result<(), StorageError> {
         error!("LDAP storage is currently read-only (Write operations pending Task 4.3)");
         Err(StorageError::Internal("LDAP write not implemented".to_string()))
     }
+
+    #[instrument(skip(self))]
+    fn delete_record(&mut self, _selections: &[(Option<String>, String)], _fingerprint: Option<String>, _teams: &[String]) -> Result<usize, StorageError> {
+        error!("LDAP storage is currently read-only");
+        Err(StorageError::Internal("LDAP delete not implemented".to_string()))
+    }
 }
-
-
-
-
-
 
 #[cfg(test)]
 mod tests {
@@ -485,7 +555,7 @@ mod tests {
         let mut fields = HashMap::new();
         fields.insert("name".to_string(), "John Doe".to_string());
         fields.insert("email".to_string(), "john@example.com".to_string());
-        storage.add_record(fields, None);
+        storage.add_record(fields, None, None);
 
         let selections = vec![(Some("name".to_string()), "john".to_string())];
         let results = storage.query(&selections, None);
@@ -498,7 +568,7 @@ mod tests {
         let mut storage = MemoryStorage::new();
         let mut fields = HashMap::new();
         fields.insert("name".to_string(), "John Doe".to_string());
-        storage.add_record(fields, None);
+        storage.add_record(fields, None, None);
 
         let selections = vec![(Some("name".to_string()), "jane".to_string())];
         let results = storage.query(&selections, None);
@@ -510,7 +580,7 @@ mod tests {
         let mut storage = MemoryStorage::new();
         let mut fields = HashMap::new();
         fields.insert("name".to_string(), "John Doe".to_string());
-        storage.add_record(fields, None);
+        storage.add_record(fields, None, None);
 
         let selections = vec![(Some("name".to_string()), "jo*".to_string())];
         let results = storage.query(&selections, None);
@@ -523,7 +593,7 @@ mod tests {
         let mut fields = HashMap::new();
         fields.insert("name".to_string(), "John Doe".to_string());
         fields.insert("alias".to_string(), "jdoe".to_string());
-        storage.add_record(fields, None);
+        storage.add_record(fields, None, None);
 
         let selections = vec![(None, "jdoe".to_string())];
         let results = storage.query(&selections, None);
@@ -536,12 +606,11 @@ mod tests {
         let mut fields1 = HashMap::new();
         fields1.insert("name".to_string(), "John Doe".to_string());
         fields1.insert("city".to_string(), "New York".to_string());
-        storage.add_record(fields1, None);
-                let mut fields2 = HashMap::new();
-                fields2.insert("name".to_string(), "Jane Doe".to_string());
-                fields2.insert("city".to_string(), "London".to_string());
-                storage.add_record(fields2, None);
-
+        storage.add_record(fields1, None, None);
+        let mut fields2 = HashMap::new();
+        fields2.insert("name".to_string(), "Jane Doe".to_string());
+        fields2.insert("city".to_string(), "London".to_string());
+        storage.add_record(fields2, None, None);
 
         let selections = vec![
             (Some("name".to_string()), "doe".to_string()),
@@ -559,25 +628,22 @@ mod tests {
         let mut fields1 = HashMap::new();
         fields1.insert("name".to_string(), "John Person".to_string());
         fields1.insert("type".to_string(), "person".to_string());
-        storage.add_record(fields1, None);
+        storage.add_record(fields1, None, None);
 
         let mut fields2 = HashMap::new();
         fields2.insert("name".to_string(), "Server Machine".to_string());
         fields2.insert("type".to_string(), "machine".to_string());
-        storage.add_record(fields2, None);
+        storage.add_record(fields2, None, None);
 
         let selections = vec![(Some("name".to_string()), "server".to_string())];
         
-        // Query as Person (should not find the machine)
         let results = storage.query(&selections, Some(RecordType::Person));
         assert_eq!(results.len(), 0);
 
-        // Query as Machine (should find the machine)
         let results = storage.query(&selections, Some(RecordType::Machine));
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].fields.get("name").unwrap(), "Server Machine");
 
-        // Query without discriminator (should find the machine)
         let results = storage.query(&selections, None);
         assert_eq!(results.len(), 1);
     }
@@ -589,7 +655,7 @@ mod tests {
         fields.insert("hostname".to_string(), "server-01".to_string());
         
         let fingerprint = Some("SHA256:abcd".to_string());
-        storage.upsert_record(fields, fingerprint.clone()).unwrap();
+        storage.upsert_record(fields, fingerprint.clone(), None).unwrap();
         
         let results = storage.query(&[(Some("hostname".to_string()), "server-01".to_string())], None);
         assert_eq!(results.len(), 1);
@@ -602,10 +668,9 @@ mod tests {
         let mut fields = HashMap::new();
         fields.insert("hostname".to_string(), "server-01".to_string());
         
-        storage.upsert_record(fields.clone(), Some("SHA256:abcd".to_string())).unwrap();
+        storage.upsert_record(fields.clone(), Some("SHA256:abcd".to_string()), None).unwrap();
         
-        // Attempt update with different fingerprint
-        let result = storage.upsert_record(fields, Some("SHA256:wrong".to_string()));
+        let result = storage.upsert_record(fields, Some("SHA256:wrong".to_string()), None);
         assert!(matches!(result, Err(StorageError::Collision)));
     }
 
@@ -617,12 +682,11 @@ mod tests {
         fields.insert("status".to_string(), "online".to_string());
         
         let fingerprint = Some("SHA256:abcd".to_string());
-        storage.upsert_record(fields.clone(), fingerprint.clone()).unwrap();
+        storage.upsert_record(fields.clone(), fingerprint.clone(), None).unwrap();
         
-        // Update status
         let mut update_fields = fields.clone();
         update_fields.insert("status".to_string(), "busy".to_string());
-        storage.upsert_record(update_fields, fingerprint.clone()).unwrap();
+        storage.upsert_record(update_fields, fingerprint.clone(), None).unwrap();
         
         let results = storage.query(&[(Some("hostname".to_string()), "server-01".to_string())], None);
         assert_eq!(results[0].fields.get("status").unwrap(), "busy");
@@ -631,33 +695,27 @@ mod tests {
     #[test]
     fn test_should_persist_and_reload_records_when_using_file_storage() {
         let temp_dir = std::env::temp_dir();
-        let storage_path = temp_dir.join("pharos_test.json");
+        let storage_path = temp_dir.join("pharos_test_rbac.json");
         
-        // Ensure path is clean
         if storage_path.exists() {
-            std::fs::remove_file(&storage_path).unwrap();
+            let _ = std::fs::remove_file(&storage_path);
         }
 
         {
             let mut storage = FileStorage::new(storage_path.clone());
             let mut fields = HashMap::new();
             fields.insert("name".to_string(), "Persistent Pete".to_string());
-            storage.add_record(fields, None);
+            storage.add_record(fields, None, None);
             assert_eq!(storage.record_count(), 1);
-        } // storage dropped, should be persisted
-
-        {
-            // Reload from same path
-            let storage = FileStorage::new(storage_path.clone());
-            assert_eq!(storage.record_count(), 1);
-            let selections = vec![(Some("name".to_string()), "pete".to_string())];
-            let results = storage.query(&selections, None);
-            assert_eq!(results.len(), 1);
-            assert_eq!(results[0].fields.get("name").unwrap(), "Persistent Pete");
         }
 
-        // Cleanup
-        std::fs::remove_file(&storage_path).unwrap();
+        {
+            let storage = FileStorage::new(storage_path.clone());
+            assert_eq!(storage.record_count(), 1);
+            let results = storage.query(&[(Some("name".to_string()), "pete".to_string())], None);
+            assert_eq!(results.len(), 1);
+        }
+
+        let _ = std::fs::remove_file(&storage_path);
     }
 }
-

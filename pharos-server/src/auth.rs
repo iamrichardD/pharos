@@ -49,6 +49,7 @@ struct Challenge {
 pub struct AuthManager {
     authorized_keys: Vec<PublicKey>,
     key_roles: HashMap<String, Vec<String>>, // Maps base64 public key to a list of roles
+    key_teams: HashMap<String, Vec<String>>, // Maps base64 public key to a list of teams
     challenges: RwLock<HashMap<String, Challenge>>,
 }
 
@@ -56,6 +57,7 @@ impl AuthManager {
     pub fn new(keys_dir: &Path) -> Self {
         let mut authorized_keys = Vec::new();
         let mut key_roles = HashMap::new();
+        let mut key_teams = HashMap::new();
 
         // Ensure keys directory exists
         if !keys_dir.exists() {
@@ -76,7 +78,7 @@ impl AuthManager {
                             match PublicKey::from_openssh(&content) {
                                 Ok(key) => {
                                     info!("Loaded authorized key from {:?}", path);
-                                    Self::register_key(&mut authorized_keys, &mut key_roles, &path, key);
+                                    Self::register_key(&mut authorized_keys, &mut key_roles, &mut key_teams, &path, key);
                                 }
                                 Err(e) => error!("Failed to parse public key {:?}: {}", path, e),
                             }
@@ -118,7 +120,7 @@ impl AuthManager {
                     } else {
                         info!("Initial public key saved to {:?}", admin_pub_path);
                         if let Ok(key) = PublicKey::from_openssh(&pub_openssh) {
-                            Self::register_key(&mut authorized_keys, &mut key_roles, &admin_pub_path, key);
+                            Self::register_key(&mut authorized_keys, &mut key_roles, &mut key_teams, &admin_pub_path, key);
                         }
                     }
                 }
@@ -129,24 +131,41 @@ impl AuthManager {
         Self { 
             authorized_keys, 
             key_roles,
+            key_teams,
             challenges: RwLock::new(HashMap::new()),
         }
     }
 
-    fn register_key(authorized_keys: &mut Vec<PublicKey>, key_roles: &mut HashMap<String, Vec<String>>, path: &Path, key: PublicKey) {
+    fn register_key(
+        authorized_keys: &mut Vec<PublicKey>, 
+        key_roles: &mut HashMap<String, Vec<String>>, 
+        key_teams: &mut HashMap<String, Vec<String>>,
+        path: &Path, 
+        key: PublicKey
+    ) {
         let key_b64 = STANDARD.encode(key.to_bytes().unwrap_or_default());
         authorized_keys.push(key);
 
-        // Extract roles from comment or filename
+        // Extract roles and teams from filename
         let mut roles = Vec::new();
+        let mut teams = Vec::new();
         if let Some(filename) = path.file_stem().and_then(|s| s.to_str()) {
             if filename.contains("admin") {
                 roles.push("admin".to_string());
             } else if filename.contains("user") {
                 roles.push("user".to_string());
             }
+
+            // Simple team detection: e.g. "devops_id_ed25519.pub"
+            if filename.contains("devops") {
+                teams.push("devops".to_string());
+            }
+            if filename.contains("security") {
+                teams.push("security".to_string());
+            }
         }
-        key_roles.insert(key_b64, roles);
+        key_roles.insert(key_b64.clone(), roles);
+        key_teams.insert(key_b64, teams);
     }
 
     pub fn generate_challenge(&self, alias: &str) -> String {
@@ -239,6 +258,14 @@ impl AuthManager {
     }
 
     pub fn get_roles(&self, public_key_b64: &str) -> Vec<String> {
+        self.get_key_metadata(public_key_b64, &self.key_roles)
+    }
+
+    pub fn get_teams(&self, public_key_b64: &str) -> Vec<String> {
+        self.get_key_metadata(public_key_b64, &self.key_teams)
+    }
+
+    fn get_key_metadata(&self, public_key_b64: &str, map: &HashMap<String, Vec<String>>) -> Vec<String> {
         let pub_key = match PublicKey::from_openssh(public_key_b64) {
             Ok(k) => k,
             Err(_) => {
@@ -253,7 +280,7 @@ impl AuthManager {
         };
 
         let key_b64 = STANDARD.encode(pub_key.to_bytes().unwrap_or_default());
-        self.key_roles.get(&key_b64).cloned().unwrap_or_default()
+        map.get(&key_b64).cloned().unwrap_or_default()
     }
 }
 
@@ -274,13 +301,22 @@ mod tests {
     }
 
     #[test]
-    fn test_should_fail_verification_when_challenge_expired() {
+    fn test_should_detect_teams_from_filename() {
         let dir = tempdir().unwrap();
-        let auth_manager = AuthManager::new(dir.path());
-        let alias = "test-user";
+        let pub_path = dir.path().join("devops_user_id_ed25519.pub");
         
-        let _challenge = auth_manager.generate_challenge(alias);
-        // We need a way to mock time or wait, but for TTL we'll just check if it's stored.
-        // Actually, let's implement the TTL logic and we can test it with a shorter duration in a internal mock.
+        // Generate a real key for testing
+        use ssh_key::PrivateKey;
+        let mut rng = rand::rngs::OsRng;
+        let priv_key = PrivateKey::random(&mut rng, ssh_key::Algorithm::Ed25519).unwrap();
+        let pub_openssh = priv_key.public_key().to_openssh().unwrap();
+        fs::write(&pub_path, pub_openssh.as_bytes()).unwrap();
+
+        let auth_manager = AuthManager::new(dir.path());
+        let teams = auth_manager.get_teams(&pub_openssh);
+        assert!(teams.contains(&"devops".to_string()));
+        
+        let roles = auth_manager.get_roles(&pub_openssh);
+        assert!(roles.contains(&"user".to_string()));
     }
 }

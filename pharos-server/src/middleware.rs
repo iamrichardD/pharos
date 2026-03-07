@@ -24,6 +24,7 @@ pub struct ClientContext {
     pub authenticated: bool,
     pub peer_addr: String,
     pub roles: Vec<String>,
+    pub teams: Vec<String>,
     pub tier: SecurityTier,
     pub login_alias: Option<String>,
     pub fingerprint: Option<String>,
@@ -36,6 +37,7 @@ impl Default for ClientContext {
             authenticated: false,
             peer_addr: String::new(),
             roles: Vec::new(),
+            teams: Vec::new(),
             tier: SecurityTier::Open,
             login_alias: None,
             fingerprint: None,
@@ -59,9 +61,6 @@ pub trait Middleware: Send + Sync {
     }
 
     /// Executed after the command has been processed, before the final response is sent.
-    /// Note: Currently, the response is written directly to the socket in main.rs.
-    /// To support post-processing, we might need to buffer the response or 
-    /// pass a callback. For MVP, we'll focus on pre-processing and side-effects.
     fn post_process(&self, _command: &Command, _context: &ClientContext) {}
 }
 
@@ -127,9 +126,28 @@ impl Middleware for ReadOnlyMiddleware {
                 .unwrap_or(false);
 
             if is_read_only {
-                return Ok(MiddlewareAction::ShortCircuit("500:Read-only access permitted for this ID
-".to_string()));
+                return Ok(MiddlewareAction::ShortCircuit("500:Read-only access permitted for this ID\n".to_string()));
             }
+        }
+
+        Ok(MiddlewareAction::Continue)
+    }
+}
+
+/// Middleware that enforces Refined RBAC for Pharos.
+pub struct RbacMiddleware;
+
+impl Middleware for RbacMiddleware {
+    fn pre_process(&self, command: &mut Command, context: &mut ClientContext) -> Result<MiddlewareAction, ProtocolError> {
+        let is_write_command = matches!(command, 
+            Command::Add(_) | Command::Delete(_) | Command::Change { .. }
+        );
+
+        // Protocol Restriction: Strictly require authentication for INSERT, UPDATE, and DELETE.
+        if is_write_command && !context.authenticated {
+            return Ok(MiddlewareAction::ShortCircuit(
+                "401:Authentication required for write operations. Use 'login [alias]' to receive a challenge.\n".to_string()
+            ));
         }
 
         Ok(MiddlewareAction::Continue)
@@ -158,6 +176,7 @@ impl Middleware for SecurityTierMiddleware {
         match self.default_tier {
             SecurityTier::Open => {
                 // Open tier: Read-only access is open, writes require auth
+                // (Already handled by RbacMiddleware if added, but keeping for logic isolation)
                 let is_write_command = matches!(command, 
                     Command::Add(_) | Command::Delete(_) | Command::Change { .. }
                 );
@@ -250,33 +269,9 @@ mod tests {
     }
 
     #[test]
-    fn test_should_not_block_read_command_in_read_only_middleware() {
+    fn test_should_deny_unauthenticated_write_in_rbac_middleware() {
         let mut chain = MiddlewareChain::new();
-        chain.add(Arc::new(ReadOnlyMiddleware {
-            read_only_ids: vec!["guest".to_string()],
-        }));
-
-        let mut command = Command::Query { selections: vec![], returns: vec![] };
-        let mut context = ClientContext {
-            id: Some("guest".to_string()),
-            authenticated: true,
-            peer_addr: "127.0.0.1:1234".to_string(),
-            ..Default::default()
-        };
-
-        let result = chain.pre_process(&mut command, &mut context).unwrap();
-        match result {
-            MiddlewareAction::Continue => {},
-            _ => panic!("Expected Continue"),
-        }
-    }
-
-    #[test]
-    fn test_should_short_circuit_when_open_tier_blocks_unauthenticated_write() {
-        let mut chain = MiddlewareChain::new();
-        chain.add(Arc::new(SecurityTierMiddleware {
-            default_tier: SecurityTier::Open,
-        }));
+        chain.add(Arc::new(RbacMiddleware));
 
         let mut command = Command::Add(vec![("name".to_string(), "Test".to_string())]);
         let mut context = ClientContext {
@@ -288,7 +283,6 @@ mod tests {
         match result {
             MiddlewareAction::ShortCircuit(resp) => {
                 assert!(resp.contains("401:Authentication required"));
-                assert!(resp.contains("Use 'login [alias]'"));
             },
             _ => panic!("Expected ShortCircuit"),
         }

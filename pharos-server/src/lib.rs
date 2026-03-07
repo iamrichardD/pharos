@@ -39,6 +39,7 @@ pub async fn handle_connection(mut socket: TcpStream, storage: Arc<RwLock<dyn St
         authenticated: false,
         peer_addr: peer_addr.clone(),
         roles: Vec::new(),
+        teams: Vec::new(),
         tier: crate::auth::SecurityTier::Open,
         login_alias: None,
         fingerprint: None,
@@ -48,8 +49,7 @@ pub async fn handle_connection(mut socket: TcpStream, storage: Arc<RwLock<dyn St
 
     // Send initial status message as per Ph protocol expectation
     // S: 200:Database ready
-    writer.write_all(b"200:Database ready
-").await?;
+    writer.write_all(b"200:Database ready\n").await?;
 
     loop {
         line.clear();
@@ -76,28 +76,23 @@ pub async fn handle_connection(mut socket: TcpStream, storage: Arc<RwLock<dyn St
                     Ok(MiddlewareAction::Continue) => {}
                     Err(e) => {
                         error!("Middleware error: {:?}", e);
-                        writer.write_all(b"599:Internal server error (middleware)
-").await?;
+                        writer.write_all(b"599:Internal server error (middleware)\n").await?;
                         continue;
                     }
                 }
 
                 match &command {
                     Command::Status => {
-                        writer.write_all(b"100:Pharos server active
-200:Ok
-").await?;
+                        writer.write_all(b"100:Pharos server active\n200:Ok\n").await?;
                     }
                     Command::Id(id) => {
                         context.id = Some(id.to_lowercase());
-                        writer.write_all(b"200:Ok
-").await?;
+                        writer.write_all(b"200:Ok\n").await?;
                     }
                     Command::Login(alias) => {
                         let challenge = auth_manager.generate_challenge(alias);
                         context.login_alias = Some(alias.clone());
-                        writer.write_all(format!("301:{}
-", challenge).as_bytes()).await?;
+                        writer.write_all(format!("301:{}\n", challenge).as_bytes()).await?;
                     }
                     Command::Auth { public_key, signature } => {
                         let challenge = context.login_alias.as_ref()
@@ -110,30 +105,25 @@ pub async fn handle_connection(mut socket: TcpStream, storage: Arc<RwLock<dyn St
                                 }
                                 context.authenticated = true;
                                 context.roles = auth_manager.get_roles(public_key);
+                                context.teams = auth_manager.get_teams(public_key);
                                 context.fingerprint = Some(fingerprint);
-                                writer.write_all(b"200:Ok
-").await?;
+                                writer.write_all(b"200:Ok\n").await?;
                             } else {
-                                writer.write_all(b"403:Forbidden
-").await?;
+                                writer.write_all(b"403:Forbidden\n").await?;
                             }
                         } else {
-                            writer.write_all(b"506:Request refused; must be logged in to execute (Challenge expired or not found)
-").await?;
+                            writer.write_all(b"506:Request refused; must be logged in to execute (Challenge expired or not found)\n").await?;
                         }
                     }
                     Command::AuthCheck { public_key, signature, challenge } => {
                         if auth_manager.verify(public_key, signature, challenge) {
-                            writer.write_all(b"200:Ok
-").await?;
+                            writer.write_all(b"200:Ok\n").await?;
                         } else {
-                            writer.write_all(b"403:Forbidden
-").await?;
+                            writer.write_all(b"403:Forbidden\n").await?;
                         }
                     }
                     Command::Quit => {
-                        writer.write_all(b"200:Bye!
-").await?;
+                        writer.write_all(b"200:Bye!\n").await?;
                         break;
                     }
                     Command::Add(fields) => {
@@ -142,25 +132,24 @@ pub async fn handle_connection(mut socket: TcpStream, storage: Arc<RwLock<dyn St
                             field_map.insert(k.clone(), v.clone());
                         }
                         
+                        let team = context.teams.first().cloned();
+
                         let result = {
                             let mut lock = storage.write().map_err(|_| anyhow::anyhow!("Storage lock poisoned"))?;
-                            lock.upsert_record(field_map, context.fingerprint.clone())
+                            lock.upsert_record(field_map, context.fingerprint.clone(), team)
                         };
 
                         match result {
                             Ok(_) => {
                                 let _ = crate::tui::EVENT_TX.send(format!("[{}] Added/Updated record", context.peer_addr));
-                                writer.write_all(b"200:Ok
-").await?;
+                                writer.write_all(b"200:Ok\n").await?;
                             }
-                            Err(crate::storage::StorageError::Collision) => {
-                                writer.write_all(b"409:Conflict: Record already bonded to a different identity
-").await?;
+                            Err(crate::storage::StorageError::Collision) | Err(crate::storage::StorageError::Unauthorized) => {
+                                writer.write_all(b"403:Forbidden: Unauthorized record modification\n").await?;
                             }
                             Err(e) => {
                                 error!("Storage error: {}", e);
-                                writer.write_all(b"500:Internal storage error
-").await?;
+                                writer.write_all(b"500:Internal storage error\n").await?;
                             }
                         }
                     }
@@ -181,14 +170,11 @@ pub async fn handle_connection(mut socket: TcpStream, storage: Arc<RwLock<dyn St
                         let _ = crate::tui::EVENT_TX.send(format!("[{}] Queried records, matches: {}", context.peer_addr, count));
 
                         if records.is_empty() {
-                            writer.write_all(b"501:No matches to query
-").await?;
+                            writer.write_all(b"501:No matches to query\n").await?;
                         } else {
-                            writer.write_all(format!("102:There were {} matches to your request.
-", count).as_bytes()).await?;
+                            writer.write_all(format!("102:There were {} matches to your request.\n", count).as_bytes()).await?;
                             for (i, record) in records.iter().enumerate() {
                                 let index = i + 1;
-                                // Sort keys for deterministic output in response lines
                                 let mut keys: Vec<&String> = if returns.is_empty() {
                                     record.fields.keys().collect()
                                 } else {
@@ -198,26 +184,38 @@ pub async fn handle_connection(mut socket: TcpStream, storage: Arc<RwLock<dyn St
 
                                 for field_name in keys {
                                     let field_val = record.fields.get(field_name).unwrap();
-                                    let line = format!("-200:{}:{}: {}
-", index, field_name, field_val);
+                                    let line = format!("-200:{}:{}: {}\n", index, field_name, field_val);
                                     writer.write_all(line.as_bytes()).await?;
                                 }
                             }
-                            writer.write_all(b"200:Ok
-").await?;
+                            writer.write_all(b"200:Ok\n").await?;
                         }
                     }
-                    Command::Delete(_) => {
-                        writer.write_all(b"598:Command not yet implemented
-").await?;
-                    }
-                    Command::Change { .. } => {
-                        writer.write_all(b"598:Command not yet implemented
-").await?;
+                    Command::Delete(selections) => {
+                        let result = {
+                            let mut lock = storage.write().map_err(|_| anyhow::anyhow!("Storage lock poisoned"))?;
+                            lock.delete_record(selections, context.fingerprint.clone(), &context.teams)
+                        };
+
+                        match result {
+                            Ok(count) => {
+                                if count > 0 {
+                                    writer.write_all(b"200:Ok\n").await?;
+                                } else {
+                                    writer.write_all(b"501:No matches to delete\n").await?;
+                                }
+                            }
+                            Err(crate::storage::StorageError::Unauthorized) => {
+                                writer.write_all(b"403:Forbidden: Unauthorized record deletion\n").await?;
+                            }
+                            Err(e) => {
+                                error!("Storage error: {}", e);
+                                writer.write_all(b"500:Internal storage error\n").await?;
+                            }
+                        }
                     }
                     _ => {
-                        writer.write_all(b"598:Command not yet implemented
-").await?;
+                        writer.write_all(b"598:Command not yet implemented\n").await?;
                     }
                 }
 
@@ -225,16 +223,13 @@ pub async fn handle_connection(mut socket: TcpStream, storage: Arc<RwLock<dyn St
                 middleware_chain.post_process(&command, &context);
             }
             Err(ProtocolError::UnknownCommand) => {
-                writer.write_all(b"598:Command unknown
-").await?;
+                writer.write_all(b"598:Command unknown\n").await?;
             }
             Err(ProtocolError::SyntaxError) => {
-                writer.write_all(b"599:Syntax error
-").await?;
+                writer.write_all(b"599:Syntax error\n").await?;
             }
             Err(ProtocolError::InvalidArgument) => {
-                writer.write_all(b"512:Illegal value
-").await?;
+                writer.write_all(b"512:Illegal value\n").await?;
             }
         }
     }

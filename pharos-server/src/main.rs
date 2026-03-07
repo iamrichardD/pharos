@@ -71,6 +71,8 @@ async fn main() -> anyhow::Result<()> {
         default_tier: security_tier,
     }));
 
+    middleware_chain.add(Arc::new(pharos_server::middleware::RbacMiddleware));
+
     middleware_chain.add(Arc::new(ReadOnlyMiddleware {
         read_only_ids: vec!["guest".to_string()],
     }));
