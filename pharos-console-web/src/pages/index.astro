@@ -9,7 +9,8 @@
  * The primary landing page for the Pharos Web Console. Provides entry 
  * points for MDB search, Pulse monitoring, and authentication.
  * * Traceability:
- * Related to Task 16.1 (Scaffolding) and Task 16.2 (Mobile-First MDB).
+ * Related to Task 16.1 (Scaffolding), Task 16.2 (Mobile-First MDB), 
+ * and Task 16.14 (Unified Gateway).
  * ======================================================================== */
 import ConsoleLayout from '../layouts/ConsoleLayout.astro';
 import SandboxTerminal from '../features/sandbox/SandboxTerminal.astro';
@@ -19,23 +20,36 @@ const session = Astro.locals.session;
 ---
 
 <ConsoleLayout title="Home">
-    <section class="space-y-4">
-        <h1 class="text-3xl font-extrabold text-slate-950 sm:text-4xl">
-            Manage your Home Lab & Enterprise Infrastructure
-        </h1>
-        <p class="text-lg text-slate-600 max-w-2xl">
-            A Human/AI/Mobile interface for the Pharos Protocol. Search machine records, monitor node presence, and manage infrastructure on the go.
-        </p>
+    <section class="space-y-6 sm:space-y-8 py-4 sm:py-8">
+        <div class="space-y-4">
+            <h1 class="text-3xl font-extrabold text-slate-950 sm:text-5xl tracking-tight">
+                Manage your Home Lab & Enterprise Infrastructure
+            </h1>
+            <p class="text-lg text-slate-600 max-w-2xl leading-relaxed">
+                A Human/AI/Mobile interface for the Pharos Protocol. Search machine records, monitor node presence, and manage infrastructure on the go.
+            </p>
+        </div>
+
+        {!session && (
+            <div class="flex flex-col sm:flex-row gap-4">
+                <a href="/login" class="px-8 py-4 bg-slate-900 text-white rounded-2xl font-bold shadow-lg shadow-slate-200 hover:-translate-y-0.5 transition-all text-center">
+                    Get Started
+                </a>
+                <a href="/docs" class="px-8 py-4 bg-white border border-slate-200 text-slate-950 rounded-2xl font-bold hover:bg-slate-50 transition-all text-center">
+                    Read Documentation
+                </a>
+            </div>
+        )}
     </section>
 
     {isSandbox && (
         <SandboxTerminal />
     )}
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 sm:mt-8">
         <!-- MDB Search Card -->
-        <a href="/mdb" class="group p-6 bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition-all hover:border-blue-400">
-            <div class="h-12 w-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-4 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+        <a href="/mdb" class="group p-6 bg-white border border-slate-200 rounded-3xl shadow-xs hover:shadow-md transition-all hover:border-blue-400">
+            <div class="h-12 w-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-blue-600 group-hover:text-white transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
@@ -45,8 +59,8 @@ const session = Astro.locals.session;
         </a>
 
         <!-- Pulse Monitor Card -->
-        <a href="/pulse" class="group p-6 bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition-all hover:border-green-400">
-            <div class="h-12 w-12 bg-green-50 text-green-600 rounded-xl flex items-center justify-center mb-4 group-hover:bg-green-600 group-hover:text-white transition-colors">
+        <a href="/pulse" class="group p-6 bg-white border border-slate-200 rounded-3xl shadow-xs hover:shadow-md transition-all hover:border-emerald-400">
+            <div class="h-12 w-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
@@ -56,40 +70,17 @@ const session = Astro.locals.session;
         </a>
     </div>
 
-    {!session && (
-        <section class="bg-slate-900 text-white rounded-3xl p-8 overflow-hidden relative">
-            <div class="relative z-10 space-y-4">
-                <h2 class="text-2xl font-bold text-center sm:text-left">Secure Access</h2>
-                <p class="text-slate-400 max-w-md text-center sm:text-left">
-                    Authorize this browser using your CLI SSH keys or your corporate identity provider (OIDC).
-                </p>
-                <div class="pt-4 flex flex-col sm:flex-row gap-3 justify-center sm:justify-start">
-                    <button id="connectCliBtn" class="px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-semibold transition-colors cursor-pointer">
-                        Connect CLI
-                    </button>
-                    <button id="ssoBtn" class="px-6 py-3 bg-white/10 hover:bg-white/20 rounded-xl font-semibold transition-colors cursor-pointer">
-                        Sign in with SSO (OIDC)
-                    </button>
+    {session && (
+        <section class="mt-8 p-6 bg-slate-50 border border-slate-200 rounded-3xl">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-sm font-bold text-slate-900">Session Active</h3>
+                    <p class="text-xs text-slate-500">Authorized as <span class="font-mono text-slate-700">{session.userId}</span></p>
                 </div>
+                <a href="/mdb/add" class="text-xs font-bold text-blue-600 hover:text-blue-500 underline underline-offset-4">
+                    Quick Add Record +
+                </a>
             </div>
-            <div class="absolute -right-20 -bottom-20 h-64 w-64 bg-blue-500/10 rounded-full blur-3xl"></div>
         </section>
     )}
 </ConsoleLayout>
-
-<script>
-    const connectCliBtn = document.getElementById('connectCliBtn');
-    const ssoBtn = document.getElementById('ssoBtn');
-
-    if (connectCliBtn) {
-        connectCliBtn.addEventListener('click', () => {
-            alert('CLI Handshake is coming soon! Please use standard login for now.');
-        });
-    }
-
-    if (ssoBtn) {
-        ssoBtn.addEventListener('click', () => {
-            alert('Enterprise OIDC integration (Azure/Okta) is currently being scaffolded! Please use standard login for now.');
-        });
-    }
-</script>

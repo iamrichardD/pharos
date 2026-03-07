@@ -6,6 +6,7 @@
 **Backlog:** 1.8 (DevSecOps Refinement), 1.9 (Automated DORA), 18.1 (Alternation)
 
 ## Recent Completions
+- [x] Task 16.14: Engineering: Implement Unified Auth Gateway. Consolidated Standard, CLI Handshake, and Enterprise login into a single tabbed UI (Issue #102).
 - [x] Task 16.13: Engineering: Refactor MDB Search UI to focus on Inventory vs. Metrics. Removed visual bar chart and renamed header to 'Search Results' (Issue #101).
 - [x] Task 16.12: Engineering: Snake-Case Harmonization for Pharos Web Console. Refactored MachineStatus and UI components to use snake_case properties (Issue #100).
 - [x] Task 14.11: Engineering: Refactor `pharos-pulse` to implement the "Baseline vs. Delta" inventory strategy. Collect hardware metadata (CPU cores/brand, serial, RAM) once at `ONLINE` and send minimal `HEARTBEAT` every 60 minutes. (Issue #99)

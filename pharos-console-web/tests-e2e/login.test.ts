@@ -15,8 +15,8 @@ test.describe('Authentication Flow', () => {
     await page.goto('/');
     await expect(page).toHaveURL(/\/$/);
     await expect(page.locator('text=Manage your Home Lab')).toBeVisible();
-    await expect(page.locator('text=Secure Access')).toBeVisible();
-    await expect(page.locator('#connectCliBtn')).toBeVisible();
+    await expect(page.locator('text=Get Started')).toBeVisible();
+    await expect(page.locator('text=Read Documentation')).toBeVisible();
   });
 
   test('should login successfully with admin/admin and redirect home', async ({ page }) => {
@@ -43,5 +43,23 @@ test.describe('Authentication Flow', () => {
 
     await expect(page.locator('#errorMessage')).toBeVisible();
     await expect(page.locator('#errorMessage')).toContainText('Invalid credentials');
+  });
+
+  test('should switch between authentication tabs correctly', async ({ page }) => {
+    await page.goto('/login');
+
+    // Default tab should be Home Lab (Standard)
+    await expect(page.locator('#standardPanel')).toBeVisible();
+    await expect(page.locator('#handshakePanel')).toBeHidden();
+
+    // Click DevSecOps tab
+    await page.click('button[data-tab="handshake"]');
+    await expect(page.locator('#handshakePanel')).toBeVisible();
+    await expect(page.locator('#standardPanel')).toBeHidden();
+
+    // Click Enterprise tab
+    await page.click('button[data-tab="enterprise"]');
+    await expect(page.locator('#enterprisePanel')).toBeVisible();
+    await expect(page.locator('#handshakePanel')).toBeHidden();
   });
 });

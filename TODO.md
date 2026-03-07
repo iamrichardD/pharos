@@ -134,6 +134,7 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Task 16.11 (Issue #98):** Engineering: Implement the high-density green bar chart visualization and pagination logic for MDB results. Handled 501 'No matches' normalization for consistent UI.
 - [x] **Task 16.12 (Issue #100):** Engineering: Implement "Snake-Case Harmonization" for the Pharos Web Console to ensure 100% protocol fidelity. Refactored MachineStatus and UI components to use snake_case properties.
 - [x] **Task 16.13 (Issue #101):** Engineering: Refactor MDB Search UI to focus on Inventory vs. Metrics. Removed visual bar chart and renamed header to 'Search Results' for improved clarity.
+- [x] **Task 16.14 (Issue #102):** Engineering: Implement Unified Auth Gateway for the Web Console. Consolidate Username/Password, CLI Handshake, and Enterprise SSO into a single tabbed interface to reduce vertical clutter and cognitive load.
 
 ## Phase 17: Pharos Sandbox & WebMCP Integration
 - [x] **Task 17.1 (Issue #71):** Engineering: Automate Container Image Publishing to GHCR. Created production `Containerfile`s and updated `ci.yml`.
