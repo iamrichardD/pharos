@@ -56,6 +56,7 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Debt #02 (Issue #84):** **Logic Duplication**. Move all authorization logic from `lib.rs` into `SecurityTierMiddleware`.
 - [x] **Debt #03 (Issue #85):** **Hardcoded Paths**. Transitioned SSH key paths to relative `PHAROS_KEYS_DIR`.
 - [x] **Bug #103 (Issue #103):** **MDB Search Redirect**. `/mdb` incorrectly redirects to `/login` despite Guest search support. (Remediation: Updated middleware publicRoutes and session-to-locals flow).
+- [ ] **Task 105 (Issue #105):** **Filter 'unknown' inventory fields**. `pharos-pulse` sends 'unknown' for missing hardware data, cluttering mdb output. (Remediation: Omit fields with 'unknown' value in `collect_inventory`).
 - [ ] **Task 17.6:** Engineering: Implement `/health` API on Warp metrics server.
 - [ ] **Task 17.7:** Advocacy: Document end-user decision paths in `docs/DECISIONS.md`.
 - [x] **Task 6.1 (Issue #20):** CI: Verify standardized headers fails on Windows runner (bash syntax in pwsh).

@@ -1,9 +1,9 @@
 # Pharos State & Progress
 
 ## Current Status
-**Phase:** 17 (Pharos Sandbox)
-**Active Task:** Task 17.5: Release: Prepare v1.3.0. (Issue #75)
-**Backlog:** 1.8 (DevSecOps Refinement), 1.9 (Automated DORA), 18.1 (Alternation)
+**Phase:** 17 (Pharos Sandbox) / Phase 2 (Core Server Refinement)
+**Active Task:** Task 105: Filter 'unknown' inventory fields in `pharos-pulse`. (Issue #105)
+**Backlog:** 17.5 (Release v1.3.0), 1.8 (DevSecOps Refinement), 18.1 (Alternation)
 
 ## Recent Completions
 - [x] Task 17.9: Pre-configure PHAROS_HOST in Sandbox. Updated `deploy/sandbox.yml` to include `PHAROS_HOST=pharos-server` in the `pharos-pulse` service, improving CLI DX by eliminating the need for manual overrides. Verified with `mdb status` (Issue #104).

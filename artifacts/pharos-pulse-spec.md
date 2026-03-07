@@ -144,6 +144,8 @@ Sent via JSON over a secure channel to the Pharos server (or via Ph protocol `ad
   },
   "timestamp": "string (ISO8601)"
 }
+
+**Note on Optional Fields**: If a field value cannot be retrieved (e.g., `serial_number` on a virtualized environment), the key MUST be omitted from the payload rather than sent with a placeholder like "unknown". This ensures a clean database and concise management output.
 ```
 
 ## 5. Security & Enrollment
