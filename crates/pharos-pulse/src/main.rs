@@ -11,6 +11,7 @@
  * heartbeats.
  * * Traceability:
  * Related to Task 14.11 (Issue #100), implements "Inventory-First" strategy.
+ * Implements Task 105 (Issue #105): Filter out "unknown" inventory fields.
  * ======================================================================== */
 
 use pharos_client::PharosClient;
@@ -105,6 +106,9 @@ fn collect_inventory() -> HashMap<String, String> {
     inv.insert("os_version".to_string(), System::os_version().unwrap_or_else(|| "unknown".to_string()));
     inv.insert("kernel_version".to_string(), System::kernel_version().unwrap_or_else(|| "unknown".to_string()));
     inv.insert("serial_number".to_string(), get_serial_number());
+
+    // Filter out fields with value "unknown" to minimize record size and noise
+    inv.retain(|_, v| v != "unknown");
 
     inv
 }
@@ -202,11 +206,15 @@ mod tests {
     #[test]
     fn test_should_collect_inventory_fields_when_invoked() {
         let inv = collect_inventory();
+        // Core fields should always be present
         assert!(inv.contains_key("type"));
         assert!(inv.contains_key("cpu_cores"));
         assert!(inv.contains_key("mem_total_kb"));
-        assert!(inv.contains_key("os_name"));
-        assert!(inv.contains_key("serial_number"));
+        
+        // Ensure no "unknown" values exist in the inventory
+        for (k, v) in &inv {
+            assert_ne!(v, "unknown", "Field '{}' should not have value 'unknown'", k);
+        }
     }
 
     #[test]

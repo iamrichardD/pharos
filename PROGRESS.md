@@ -2,10 +2,11 @@
 
 ## Current Status
 **Phase:** 17 (Pharos Sandbox) / Phase 2 (Core Server Refinement)
-**Active Task:** Task 105: Filter 'unknown' inventory fields in `pharos-pulse`. (Issue #105)
-**Backlog:** 17.5 (Release v1.3.0), 1.8 (DevSecOps Refinement), 18.1 (Alternation)
+**Active Task:** Task 17.5: Release v1.3.0.
+**Backlog:** 1.8 (DevSecOps Refinement), 18.1 (Alternation)
 
 ## Recent Completions
+- [x] Task 105: Filter 'unknown' inventory fields in `pharos-pulse`. Modified `collect_inventory` to omit keys with "unknown" values and updated unit tests. Verified with `mdb` in Podman debug environment (Issue #105).
 - [x] Task 17.9: Pre-configure PHAROS_HOST in Sandbox. Updated `deploy/sandbox.yml` to include `PHAROS_HOST=pharos-server` in the `pharos-pulse` service, improving CLI DX by eliminating the need for manual overrides. Verified with `mdb status` (Issue #104).
 - [x] Bug #103: Fixed MDB Search Redirect. Updated middleware to allow Guest access to `/mdb` and protected sensitive fields (Serial Number, Full Metadata) for unauthenticated users. Verified with new E2E tests (Issue #103).
 - [x] Task: Refined RBAC & Team-Based Authorization. Implemented protocol restrictions (Guest search, Auth write), One-to-Many team checks, and SSH Fingerprint bonding. Verified with `tests/rbac_integration.rs` (Issue #33).
