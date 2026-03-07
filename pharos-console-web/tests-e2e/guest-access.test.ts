@@ -6,7 +6,8 @@
  * License: AGPL-3.0 (See LICENSE file for details)
  * * Purpose (The "Why"):
  * Automated E2E verification of Guest (unauthenticated) access to MDB.
- * Ensures that public routes are accessible and sensitive data is hidden.
+ * Ensures that public routes are accessible and data is visible while 
+ * write-actions are restricted.
  * * Traceability:
  * Related to Bug #103.
  * ======================================================================== */
@@ -29,7 +30,7 @@ test.describe('Guest Access (Unauthenticated)', () => {
     await expect(page).toHaveURL(/\/login/);
   });
 
-  test('should show search results but hide Serial Number for guests', async ({ page }) => {
+  test('should show search results and include Serial Number for guests', async ({ page }) => {
     // Search for the node added by pulse in playwright config
     await page.goto('/mdb?q=e2e-pharos-main');
     
@@ -37,8 +38,8 @@ test.describe('Guest Access (Unauthenticated)', () => {
     // Ensure table eventually appears
     await expect(resultsTable).toBeVisible({ timeout: 10000 });
 
-    // Serial Number header should be hidden
-    await expect(page.locator('th:has-text("Serial Number")')).toBeHidden();
+    // Serial Number header should be visible (No masking per user preference)
+    await expect(page.locator('th:has-text("Serial Number")')).toBeVisible();
     
     // Action button "View Details" should be visible
     await expect(page.locator('text=View Details').first()).toBeVisible();
@@ -49,10 +50,10 @@ test.describe('Guest Access (Unauthenticated)', () => {
     // Should be on details page
     await expect(page).toHaveURL(/\/mdb\//);
     
-    // Serial Number on details page should be hidden
-    await expect(page.locator('text=Serial Number')).toBeHidden();
-    // Full Metadata table should be hidden
-    await expect(page.locator('text=Full Record Metadata')).toBeHidden();
+    // Serial Number on details page should be visible
+    await expect(page.locator('text=Serial Number')).toBeVisible();
+    // Full Metadata table should be visible
+    await expect(page.locator('text=Full Record Metadata')).toBeVisible();
   });
 });
 
@@ -75,22 +76,5 @@ test.describe('Authenticated MDB Access', () => {
     await page.goto('/mdb/add');
     await expect(page).toHaveURL(/\/mdb\/add$/);
     await expect(page.locator('h1')).toContainText('Add Machine Record');
-  });
-
-  test('should show Serial Number for authenticated users in results', async ({ page }) => {
-    await page.goto('/mdb?q=e2e-pharos-main');
-    
-    const resultsTable = page.locator('table');
-    await expect(resultsTable).toBeVisible({ timeout: 10000 });
-
-    // Serial Number header should be visible
-    await expect(page.locator('th:has-text("Serial Number")')).toBeVisible();
-    
-    // Navigate to details
-    await page.click('text=View Details');
-    
-    // Serial Number and Metadata should be visible on details page
-    await expect(page.locator('text=Serial Number')).toBeVisible();
-    await expect(page.locator('text=Full Record Metadata')).toBeVisible();
   });
 });

@@ -65,12 +65,10 @@ const session = Astro.locals.session;
                             <p class="text-slate-400 font-mono text-sm">{getFieldValue('ip') || 'Unknown IP'}</p>
                         </div>
                         
-                        {session && (
-                            <div class="flex flex-col md:items-end space-y-1">
-                                <span class="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Serial Number</span>
-                                <span class="text-xl font-mono text-emerald-400">{getFieldValue('serial_number') || 'UNSET'}</span>
-                            </div>
-                        )}
+                        <div class="flex flex-col md:items-end space-y-1">
+                            <span class="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Serial Number</span>
+                            <span class="text-xl font-mono text-emerald-400">{getFieldValue('serial_number') || 'UNSET'}</span>
+                        </div>
                     </div>
                     
                     {/* Background Decorative Element */}
@@ -126,22 +124,20 @@ const session = Astro.locals.session;
                     </div>
                 </div>
 
-                {/* Raw Attributes Table (For AI Agents & Power Users) - Protected */}
-                {session && (
-                    <div class="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
-                        <div class="px-6 py-4 bg-slate-50 border-b border-slate-200">
-                            <h3 class="text-sm font-bold text-slate-900 uppercase tracking-widest">Full Record Metadata</h3>
-                        </div>
-                        <div class="divide-y divide-slate-100">
-                            {record.fields.sort((a,b) => a.key.localeCompare(b.key)).map(field => (
-                                <div class="px-6 py-3 flex justify-between items-center text-sm">
-                                    <span class="text-slate-500 font-medium">{field.key}</span>
-                                    <span class="text-slate-900 font-mono bg-slate-50 px-2 py-0.5 rounded">{field.value}</span>
-                                </div>
-                            ))}
-                        </div>
+                {/* Raw Attributes Table (For AI Agents & Power Users) */}
+                <div class="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+                    <div class="px-6 py-4 bg-slate-50 border-b border-slate-200">
+                        <h3 class="text-sm font-bold text-slate-900 uppercase tracking-widest">Full Record Metadata</h3>
                     </div>
-                )}
+                    <div class="divide-y divide-slate-100">
+                        {record.fields.sort((a,b) => a.key.localeCompare(b.key)).map(field => (
+                            <div class="px-6 py-3 flex justify-between items-center text-sm">
+                                <span class="text-slate-500 font-medium">{field.key}</span>
+                                <span class="text-slate-900 font-mono bg-slate-50 px-2 py-0.5 rounded">{field.value}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
                 
                 <div class="text-center pt-4">
                     <button onclick="history.back()" class="text-slate-400 hover:text-slate-900 text-sm font-medium transition-colors">
