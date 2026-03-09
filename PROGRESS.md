@@ -2,7 +2,7 @@
 
 ## Current Status
 **Phase:** 17 (Pharos Sandbox) / Phase 2 (Core Server Refinement)
-**Active Task:** NONE
+**Active Task:** Task 17.11 (Issue #108) - Implement HTTP-to-HTTPS redirect on port 3000
 **Backlog:** 1.8 (DevSecOps Refinement), 18.1 (Alternation)
 
 ## Recent Completions
