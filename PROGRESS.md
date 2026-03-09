@@ -6,6 +6,8 @@
 **Backlog:** 1.8 (DevSecOps Refinement), 18.1 (Alternation)
 
 ## Recent Completions
+- [x] Bug #107: Sandbox certgen script permission denied. Fixed `scripts/gen-sandbox-certs.sh` execute bit and resolved a port conflict in `astro.config.mjs` (standalone -> middleware) which caused `EADDRINUSE` in the `pharos-web` container (Issue #107).
+- [x] Task 17.10: Engineering: Implement Mandatory Sandbox SSL with Ephemeral CA Bootstrap. Upgraded `pharos-server` to `tokio-rustls`, implemented `pharos-certgen` sidecar for dynamic PKI, and updated `pharos-client` to trust the internal CA via `PHAROS_CA_CERT`. Verified with full-stack SSL handshake in Podman (Issue #106).
 - [x] Task 105: Filter 'unknown' inventory fields in `pharos-pulse`. Modified `collect_inventory` to omit keys with "unknown" values and updated unit tests. Verified with `mdb` in Podman debug environment (Issue #105).
 - [x] Task 17.9: Pre-configure PHAROS_HOST in Sandbox. Updated `deploy/sandbox.yml` to include `PHAROS_HOST=pharos-server` in the `pharos-pulse` service, improving CLI DX by eliminating the need for manual overrides. Verified with `mdb status` (Issue #104).
 - [x] Bug #103: Fixed MDB Search Redirect. Updated middleware to allow Guest access to `/mdb` and protected sensitive fields (Serial Number, Full Metadata) for unauthenticated users. Verified with new E2E tests (Issue #103).

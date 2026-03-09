@@ -27,6 +27,15 @@ npm run build
 
 # --- 3. Web Console Verification (E2E) ---
 echo "--- [3/3] Web Console: Running Playwright E2E Tests ---"
+# Generate ephemeral certs for E2E backend
+mkdir -p /tmp/e2e-certs
+../scripts/gen-sandbox-certs.sh /tmp/e2e-certs
+cat /tmp/e2e-certs/root-ca.crt >> /tmp/e2e-certs/pharos-server.crt
+export PHAROS_TLS_CERT=/tmp/e2e-certs/pharos-server.crt
+export PHAROS_TLS_KEY=/tmp/e2e-certs/pharos-server.key
+export PHAROS_CA_CERT=/tmp/e2e-certs/root-ca.crt
+export NODE_EXTRA_CA_CERTS=/tmp/e2e-certs/root-ca.crt
+
 # Playwright config handles startup
 npm run test:e2e
 

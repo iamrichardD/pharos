@@ -12,6 +12,8 @@
  * Related to Task 16.2 (Mobile-First MDB) and Debt #01 (Issue #83).
  * ======================================================================== */
  import * as net from 'node:net';
+ import * as tls from 'node:tls';
+ import * as fs from 'node:fs';
  import * as crypto from 'node:crypto';
 
  export interface PharosRecord {
@@ -29,7 +31,19 @@
 
  export async function executePharosQuery(clientId: string, queryStr: string, host = '127.0.0.1', port = 2378): Promise<PharosResponse> {
     return new Promise((resolve, reject) => {
-        const client = new net.Socket();
+        const hostEnv = process.env.PHAROS_HOST || host;
+        const portEnv = parseInt(process.env.PHAROS_PORT || '', 10) || port;
+        const useTls = !!process.env.PHAROS_CA_CERT || !!process.env.PHAROS_TLS_CERT || process.env.PHAROS_SANDBOX === 'true';
+
+        let client: net.Socket;
+        if (useTls) {
+            client = tls.connect(portEnv, hostEnv, {
+                ca: process.env.PHAROS_CA_CERT ? fs.readFileSync(process.env.PHAROS_CA_CERT) : undefined,
+                rejectUnauthorized: !!process.env.PHAROS_CA_CERT
+            });
+        } else {
+            client = net.connect(portEnv, hostEnv);
+        }
         
         let buffer = '';
         let stage = 'banner';
@@ -192,10 +206,6 @@
             reject(err);
         });
 
-        const hostEnv = process.env.PHAROS_HOST || host;
-        const portEnv = parseInt(process.env.PHAROS_PORT || '', 10) || port;
-
-        client.connect(portEnv, hostEnv);
     });
 }
 
@@ -205,9 +215,19 @@
 export async function executeAuthCheck(publicKey: string, signature: string, challenge: string): Promise<boolean> {
     const host = process.env.PHAROS_HOST || '127.0.0.1';
     const port = parseInt(process.env.PHAROS_PORT || '2378', 10);
+    const useTls = !!process.env.PHAROS_CA_CERT || !!process.env.PHAROS_TLS_CERT || process.env.PHAROS_SANDBOX === 'true';
 
     return new Promise((resolve, reject) => {
-        const client = new net.Socket();
+        let client: net.Socket;
+        if (useTls) {
+            client = tls.connect(port, host, {
+                ca: process.env.PHAROS_CA_CERT ? fs.readFileSync(process.env.PHAROS_CA_CERT) : undefined,
+                rejectUnauthorized: !!process.env.PHAROS_CA_CERT
+            });
+        } else {
+            client = net.connect(port, host);
+        }
+        
         let buffer = '';
         let stage = 'banner';
 
@@ -256,8 +276,6 @@ export async function executeAuthCheck(publicKey: string, signature: string, cha
         client.on('close', () => {
             resolve(false);
         });
-
-        client.connect(port, host);
 
         // Timeout after 5 seconds
         setTimeout(() => {

@@ -30,6 +30,7 @@ sign_cert() {
     openssl req -new -key "$CERT_DIR/$name.key" -out "$CERT_DIR/$name.csr" -subj "/CN=$dns"
     
     cat > "$CERT_DIR/$name.ext" <<EOF
+[v3_req]
 authorityKeyIdentifier=keyid,issuer
 basicConstraints=CA:FALSE
 keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
@@ -42,7 +43,7 @@ IP.1 = 127.0.0.1
 EOF
 
     openssl x509 -req -in "$CERT_DIR/$name.csr" -CA "$CERT_DIR/root-ca.crt" -CAkey "$CERT_DIR/root-ca.key" \
-    -CAcreateserial -out "$CERT_DIR/$name.crt" -days 1 -sha256 -extfile "$CERT_DIR/$name.ext"
+    -CAcreateserial -out "$CERT_DIR/$name.crt" -days 1 -sha256 -extfile "$CERT_DIR/$name.ext" -extensions v3_req
     
     rm "$CERT_DIR/$name.csr" "$CERT_DIR/$name.ext"
 }

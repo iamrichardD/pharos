@@ -12,6 +12,7 @@
 
 import https from 'node:https';
 import fs from 'node:fs';
+import express from 'express';
 import { handler as ssrHandler } from './dist/server/entry.mjs';
 
 const PORT = process.env.PORT || 3000;
@@ -29,7 +30,11 @@ try {
     key: fs.readFileSync(KEY_PATH),
   };
 
-  const server = https.createServer(options, ssrHandler);
+  const app = express();
+  app.use(express.static('dist/client'));
+  app.use(ssrHandler);
+
+  const server = https.createServer(options, app);
 
   server.listen(PORT, '0.0.0.0', () => {
     console.log(`Pharos Web Console running on https://0.0.0.0:${PORT} (Direct HTTPS)`);
