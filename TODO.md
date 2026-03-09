@@ -60,6 +60,7 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Bug #107 (Issue #107):** **Sandbox certgen script permission denied**. The `pharos-certgen` container fails on startup with a 'Permission denied' error because `scripts/gen-sandbox-certs.sh` is missing the executable bit (+x).
 - [ ] **Task 17.6:** Engineering: Implement `/health` API on Warp metrics server.
 - [ ] **Task 17.11 (Issue #108):** Engineering: Implement HTTP-to-HTTPS redirect on port 3000. Redirect plain HTTP traffic to HTTPS on the same listener.
+- [x] **Task 17.12 (Issue #109):** Engineering: Include `pharos-scan` in the Pharos Toolbelt (bundled in Pulse image).
 - [ ] **Task 17.7:** Advocacy: Document end-user decision paths in `docs/DECISIONS.md`.
 - [x] **Task 6.1 (Issue #20):** CI: Verify standardized headers fails on Windows runner (bash syntax in pwsh).
 - [x] **Task 6.2 (Issue #21):** Build: `pharos-server` compilation failure due to dependencies and type inference.

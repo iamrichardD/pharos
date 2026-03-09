@@ -2,10 +2,12 @@
 
 ## Current Status
 **Phase:** 17 (Pharos Sandbox) / Phase 2 (Core Server Refinement)
-**Active Task:** Task 17.11 (Issue #108) - Implement HTTP-to-HTTPS redirect on port 3000
+**Active Task:** NONE
 **Backlog:** 1.8 (DevSecOps Refinement), 18.1 (Alternation)
 
 ## Recent Completions
+- [x] Task 17.12: Engineering: Bundled `pharos-scan` into the Pharos Toolbelt (Pulse container image). Updated `crates/pharos-pulse/Containerfile` to build and include the scanner binary, enabling network discovery directly from managed nodes via `podman exec`. (Issue #109)
+- [x] Task 17.11: Engineering: Implemented HTTP-to-HTTPS redirect on port 3000. Added a protocol-sniffing 'Universal Listener' to the Web Console to automatically redirect plain HTTP traffic while maintaining mandatory TLS. Added E2E verification tests. (Issue #108)
 - [x] Bug #107: Sandbox certgen script permission denied. Fixed `scripts/gen-sandbox-certs.sh` execute bit and resolved a port conflict in `astro.config.mjs` (standalone -> middleware) which caused `EADDRINUSE` in the `pharos-web` container (Issue #107).
 - [x] Task 17.10: Engineering: Implement Mandatory Sandbox SSL with Ephemeral CA Bootstrap. Upgraded `pharos-server` to `tokio-rustls`, implemented `pharos-certgen` sidecar for dynamic PKI, and updated `pharos-client` to trust the internal CA via `PHAROS_CA_CERT`. Verified with full-stack SSL handshake in Podman (Issue #106).
 - [x] Task 105: Filter 'unknown' inventory fields in `pharos-pulse`. Modified `collect_inventory` to omit keys with "unknown" values and updated unit tests. Verified with `mdb` in Podman debug environment (Issue #105).

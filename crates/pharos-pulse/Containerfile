@@ -30,7 +30,7 @@ COPY Cargo.toml Cargo.lock ./
 COPY . .
 
 # Build the pharos-pulse binary and toolbelt in release mode
-RUN cargo build --release --bin pharos-pulse --bin ph --bin mdb
+RUN cargo build --release --bin pharos-pulse --bin ph --bin mdb --bin pharos-scan
 
 # --- Runtime Stage ---
 FROM public.ecr.aws/docker/library/debian:trixie-slim AS runtime
@@ -47,6 +47,7 @@ RUN apt-get update && apt-get install -y \
 COPY --from=builder /app/target/release/pharos-pulse /usr/local/bin/pharos-pulse
 COPY --from=builder /app/target/release/ph /usr/local/bin/ph
 COPY --from=builder /app/target/release/mdb /usr/local/bin/mdb
+COPY --from=builder /app/target/release/pharos-scan /usr/local/bin/pharos-scan
 
 # Environment (Pulse expects PHAROS_SERVER env var)
 ENV PHAROS_SERVER=pharos-server:2378
