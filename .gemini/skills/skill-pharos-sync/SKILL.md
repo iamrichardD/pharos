@@ -22,8 +22,13 @@ During active development:
 
 ### 3. Task Closure (`sync-close`)
 When a task meets the "Definition of Done":
+- **Verification**: MUST perform **Production Verification**. Use `web_fetch` to confirm changes are live and functional on `https://iamrichardd.com/pharos/`.
 - **Summary**: Extract the "Fix Summary" and "Verification Prompt" from the implemented changes.
-- **GitHub**: Post a final comment on the GitHub issue containing the summary and the exact Podman command needed for verification.
+- **GitHub**: Post a final comment on the GitHub issue containing:
+  - **Fix Summary**: High-level description.
+  - **Security Review**: Explicit confirmation that the implementation adheres to `SECURITY.md`.
+  - **Production Verification**: Confirmation that the live site was inspected and is correct.
+  - **AI-Ready Verification Prompt**: The exact Podman command for local verification.
 - **Close**: Close the GitHub issue.
 - **TODO**: Mark the checkbox `[x]` in `@TODO.md`.
 

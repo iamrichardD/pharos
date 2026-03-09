@@ -9,9 +9,12 @@ This skill enforces the structural integrity and behavioral correctness of the p
 
 ## The Pre-Flight Mandate
 Before proposing a `git commit` message:
-- **Mandate**: The centralized `scripts/pre-flight.sh` script MUST pass successfully inside the `Containerfile.test` environment.
+1. **Validation**: The centralized `scripts/pre-flight.sh` script MUST pass successfully inside the `Containerfile.test` environment.
+2. **Commit Standard**: All commits MUST use a clear, descriptive prefix (`feat:`, `fix:`, `docs:`, or `debt:`) and reference the Project Task ID (e.g., `feat: implement login logic (Task 16.4)`).
+3. **Verification**: If the task involves a UI or public API change, perform **Production Verification** via `web_fetch` to ensure the live environment is correct.
+
 - **Action**: Run the pre-flight check using the Podman-wrapped command.
-- **Constraint**: The `git commit` tool is forbidden if this check fails. The agent must analyze the failure, fix the issue, and re-run the check until it passes.
+- **Constraint**: The `git commit` tool is forbidden if any check fails. The agent must analyze the failure, fix the issue, and re-run the checks.
 
 ### Pre-Flight Command
 
