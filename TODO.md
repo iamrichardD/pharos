@@ -95,6 +95,7 @@ A task is considered complete and may be marked `[x]` only when:
 ## Phase 10: Network Discovery & Automation
 - [x] **Task 10.1 (Issue #39):** Engineering: Refactor client logic into a shared `pharos-client` library with async support and SSH-auth.
 - [x] **Task 10.2 (Issue #40):** Engineering: Implement the `pharos-scan` engine (mDNS, ARP, and Port Fingerprinting).
+- [ ] **Task 10.3 (Issue #110):** Engineering: Implement Subnet Scanning in `pharos-scan`. Support CIDR range discovery (Ping sweep/TCP probe).
 - [x] **Task 10.3 (Issue #41):** Engineering: Implement the interactive TUI and provisioning workflow for `pharos-scan`.
 - [x] **Task 10.4 (Issue #42):** Release: Prepare v1.2.0 release including the new network scanner tool.
 

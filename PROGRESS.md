@@ -3,7 +3,7 @@
 ## Current Status
 **Phase:** 17 (Pharos Sandbox) / Phase 2 (Core Server Refinement)
 **Active Task:** NONE
-**Backlog:** 1.8 (DevSecOps Refinement), 18.1 (Alternation)
+**Backlog:** 1.8 (DevSecOps Refinement), 10.3 (Subnet Scanning), 18.1 (Alternation)
 
 ## Recent Completions
 - [x] Task 17.12: Engineering: Bundled `pharos-scan` into the Pharos Toolbelt (Pulse container image). Updated `crates/pharos-pulse/Containerfile` to build and include the scanner binary, enabling network discovery directly from managed nodes via `podman exec`. (Issue #109)
