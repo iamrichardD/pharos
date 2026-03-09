@@ -2,7 +2,7 @@
 
 ## Current Status
 **Phase:** 17 (Pharos Sandbox) / Phase 2 (Core Server Refinement)
-**Active Task:** Task 17.5: Release v1.3.0.
+**Active Task:** NONE
 **Backlog:** 1.8 (DevSecOps Refinement), 18.1 (Alternation)
 
 ## Recent Completions
