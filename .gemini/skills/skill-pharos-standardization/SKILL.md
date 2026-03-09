@@ -24,7 +24,9 @@ When creating or modifying a file:
 ### 2. Header Auditing (`std-audit`)
 Before any commit:
 - **Mandate**: Verify that all files staged for commit contain the prologue.
+- **Mandate**: Perform a "Quality Audit" on new code to ensure compliance with the "The Why" and "Test Rationale" mandates in `GEMINI.md`.
 - **Action**: Run a workspace-wide grep to identify missing or malformed headers.
+- **Action**: Manually review new functions and tests for architectural rationale comments.
 
 ### 3. Vertical Slice Alignment (`std-vsa`)
 When implementing features:
