@@ -26,6 +26,26 @@ use std::time::Duration;
 use std::path::PathBuf;
 use std::env;
 use std::path::Path;
+use tokio_rustls::rustls::{ServerConfig, pki_types::CertificateDer, pki_types::PrivateKeyDer};
+use tokio_rustls::TlsAcceptor;
+use std::fs::File;
+use std::io::BufReader;
+
+fn load_certs(path: &Path) -> anyhow::Result<Vec<CertificateDer<'static>>> {
+    let file = File::open(path)?;
+    let mut reader = BufReader::new(file);
+    let certs = rustls_pemfile::certs(&mut reader)
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(certs)
+}
+
+fn load_key(path: &Path) -> anyhow::Result<PrivateKeyDer<'static>> {
+    let file = File::open(path)?;
+    let mut reader = BufReader::new(file);
+    let key = rustls_pemfile::private_key(&mut reader)?
+        .ok_or_else(|| anyhow::anyhow!("No private key found in {:?}", path))?;
+    Ok(key)
+}
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -36,6 +56,20 @@ async fn main() -> anyhow::Result<()> {
     if !use_tui {
         tracing_subscriber::fmt::init();
     }
+
+    // --- Mandatory TLS Configuration ---
+    let cert_path = env::var("PHAROS_TLS_CERT").map_err(|_| anyhow::anyhow!("PHAROS_TLS_CERT environment variable is required for mandatory SSL"))?;
+    let key_path = env::var("PHAROS_TLS_KEY").map_err(|_| anyhow::anyhow!("PHAROS_TLS_KEY environment variable is required for mandatory SSL"))?;
+
+    info!("Loading TLS certificates from {} and {}", cert_path, key_path);
+    let certs = load_certs(Path::new(&cert_path))?;
+    let key = load_key(Path::new(&key_path))?;
+
+    let config = ServerConfig::builder()
+        .with_no_client_auth()
+        .with_single_cert(certs, key)
+        .map_err(|e| anyhow::anyhow!("Failed to create TLS config: {}", e))?;
+    let acceptor = TlsAcceptor::from(Arc::new(config));
 
     // Determine storage backend based on environment variables
     let storage: Arc<RwLock<dyn Storage>> = if let Ok(url) = env::var("PHAROS_LDAP_URL") {
@@ -124,7 +158,7 @@ async fn main() -> anyhow::Result<()> {
 
     let addr = env::var("PHAROS_ADDR").unwrap_or_else(|_| "0.0.0.0:2378".to_string());
     let listener = TcpListener::bind(&addr).await?;
-    info!("Pharos Server listening on {}", addr);
+    info!("Pharos Server listening on {} (SSL Mandatory)", addr);
 
     // Prepare shutdown signal
     let shutdown = async {
@@ -138,13 +172,21 @@ async fn main() -> anyhow::Result<()> {
         tokio::select! {
             _ = async {
                 loop {
-                    if let Ok((socket, _)) = listener.accept().await {
+                    if let Ok((socket, peer_addr)) = listener.accept().await {
                         let storage_ref: Arc<RwLock<dyn Storage>> = Arc::clone(&storage);
                         let auth_ref = Arc::clone(&auth_manager);
                         let middleware_ref = Arc::clone(&middleware_chain);
+                        let acceptor = acceptor.clone();
                         tokio::spawn(async move {
-                            if let Err(_e) = handle_connection(socket, storage_ref, auth_ref, middleware_ref).await {
-                                // Suppress error log since TUI uses stdout
+                            match acceptor.accept(socket).await {
+                                Ok(tls_stream) => {
+                                    if let Err(_e) = handle_connection(tls_stream, peer_addr.to_string(), storage_ref, auth_ref, middleware_ref).await {
+                                        // Suppress error log since TUI uses stdout
+                                    }
+                                }
+                                Err(e) => {
+                                    error!("TLS acceptance error from {}: {:?}", peer_addr, e);
+                                }
                             }
                         });
                     }
@@ -161,13 +203,21 @@ async fn main() -> anyhow::Result<()> {
         tokio::select! {
             _ = async {
                 loop {
-                    let (socket, _) = listener.accept().await?;
+                    let (socket, peer_addr) = listener.accept().await?;
                     let storage_ref: Arc<RwLock<dyn Storage>> = Arc::clone(&storage);
                     let auth_ref = Arc::clone(&auth_manager);
                     let middleware_ref = Arc::clone(&middleware_chain);
+                    let acceptor = acceptor.clone();
                     tokio::spawn(async move {
-                        if let Err(e) = handle_connection(socket, storage_ref, auth_ref, middleware_ref).await {
-                            error!("Error handling connection: {:?}", e);
+                        match acceptor.accept(socket).await {
+                            Ok(tls_stream) => {
+                                if let Err(e) = handle_connection(tls_stream, peer_addr.to_string(), storage_ref, auth_ref, middleware_ref).await {
+                                    error!("Error handling connection from {}: {:?}", peer_addr, e);
+                                }
+                            }
+                            Err(e) => {
+                                error!("TLS acceptance error from {}: {:?}", peer_addr, e);
+                            }
                         }
                     });
                 }

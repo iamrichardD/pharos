@@ -21,6 +21,10 @@ use std::path::Path;
 use std::fs;
 use std::env;
 use anyhow::{Result, Context, anyhow};
+use std::sync::Arc;
+use tokio_rustls::rustls::{ClientConfig, RootCertStore, pki_types::ServerName};
+use tokio_rustls::TlsConnector;
+use tokio_rustls::client::TlsStream;
 
 /// Represents a field in a record returned by the Pharos server.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -54,16 +58,57 @@ pub enum PharosResponse {
 }
 
 pub struct PharosClient {
-    stream: BufReader<TcpStream>,
+    stream: BufReader<TlsStream<TcpStream>>,
     client_id: String,
 }
 
 impl PharosClient {
     /// Connects to a Pharos server at the given address.
     pub async fn connect(addr: &str, client_id: &str) -> Result<Self> {
-        let stream = TcpStream::connect(addr).await
+        let tcp_stream = TcpStream::connect(addr).await
             .with_context(|| format!("Failed to connect to Pharos server at {}", addr))?;
-        let mut reader = BufReader::new(stream);
+
+        // --- TLS Configuration ---
+        let mut root_store = RootCertStore::empty();
+        
+        // Add native roots if available (rustls-native-certs 0.8 returns CertificateResult)
+        let native_certs = rustls_native_certs::load_native_certs();
+        for cert in native_certs.certs {
+            root_store.add(cert)?;
+        }
+        if !native_certs.errors.is_empty() {
+            log::warn!("Errors loading some native certificates: {:?}", native_certs.errors);
+        }
+
+        // Add custom CA if PHAROS_CA_CERT is set
+        if let Ok(ca_path) = env::var("PHAROS_CA_CERT") {
+            let file = fs::File::open(&ca_path)
+                .with_context(|| format!("Failed to open CA cert at {}", ca_path))?;
+            let mut reader = std::io::BufReader::new(file);
+            for cert in rustls_pemfile::certs(&mut reader) {
+                root_store.add(cert?)?;
+            }
+        }
+
+        // Add webpki roots as a fallback
+        root_store.extend(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());
+
+        let config = ClientConfig::builder()
+            .with_root_certificates(root_store)
+            .with_no_client_auth();
+        
+        let connector = TlsConnector::from(Arc::new(config));
+        
+        // Use the hostname part of the address for SNI
+        let domain = addr.split(':').next().unwrap_or("localhost");
+        let server_name = ServerName::try_from(domain)
+            .map_err(|_| anyhow!("Invalid server name: {}", domain))?
+            .to_owned();
+
+        let tls_stream = connector.connect(server_name, tcp_stream).await
+            .context("TLS handshake failed")?;
+
+        let mut reader = BufReader::new(tls_stream);
 
         // Read banner
         let mut banner = String::new();

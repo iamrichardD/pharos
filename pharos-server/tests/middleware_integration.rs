@@ -32,7 +32,7 @@ async fn setup_test_server(middleware_chain: MiddlewareChain) -> (std::net::Sock
     let server_storage = Arc::clone(&storage);
     tokio::spawn(async move {
         let (socket, _) = listener.accept().await.unwrap();
-        handle_connection(socket, server_storage, auth_manager, middleware_chain).await.unwrap();
+        handle_connection(socket, "127.0.0.1:1234".to_string(), server_storage, auth_manager, middleware_chain).await.unwrap();
     });
 
     (addr, storage)
@@ -110,7 +110,7 @@ async fn test_should_block_write_when_guest_id_provided() {
 
     tokio::spawn(async move {
         let (socket, _) = listener.accept().await.unwrap();
-        handle_connection(socket, storage, auth_manager, middleware_chain).await.unwrap();
+        handle_connection(socket, "127.0.0.1:1234".to_string(), storage, auth_manager, middleware_chain).await.unwrap();
     });
 
     let mut stream = TcpStream::connect(addr).await.unwrap();
@@ -154,7 +154,7 @@ async fn test_should_allow_write_when_other_id_provided() {
 
     tokio::spawn(async move {
         let (socket, _) = listener.accept().await.unwrap();
-        handle_connection(socket, storage, auth_manager, middleware_chain).await.unwrap();
+        handle_connection(socket, "127.0.0.1:1234".to_string(), storage, auth_manager, middleware_chain).await.unwrap();
     });
 
     let mut stream = TcpStream::connect(addr).await.unwrap();
@@ -204,7 +204,7 @@ async fn test_should_verify_auth_check_command() {
     let server_storage = Arc::clone(&storage);
     tokio::spawn(async move {
         let (socket, _) = listener.accept().await.unwrap();
-        handle_connection(socket, server_storage, auth_manager, middleware_chain).await.unwrap();
+        handle_connection(socket, "127.0.0.1:1234".to_string(), server_storage, auth_manager, middleware_chain).await.unwrap();
     });
     
     // 3. Connect and send auth-check

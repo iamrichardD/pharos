@@ -71,7 +71,7 @@ async fn setup_rbac_server(keys_dir: &std::path::Path) -> (std::net::SocketAddr,
                 let a = Arc::clone(&auth_manager);
                 let m = Arc::clone(&middleware_chain);
                 tokio::spawn(async move {
-                    let _ = handle_connection(socket, s, a, m).await;
+                    let _ = handle_connection(socket, "127.0.0.1:1234".to_string(), s, a, m).await;
                 });
             }
         }

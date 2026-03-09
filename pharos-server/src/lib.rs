@@ -18,8 +18,7 @@ pub mod auth;
 pub mod middleware;
 pub mod tui;
 
-use tokio::net::{TcpStream};
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader, AsyncRead, AsyncWrite};
 use tracing::{info, error, instrument};
 use crate::protocol::{Command, parse_command, ProtocolError};
 use crate::storage::{Storage};
@@ -28,9 +27,10 @@ use crate::middleware::{MiddlewareChain, ClientContext, MiddlewareAction};
 use std::sync::{Arc, RwLock};
 
 #[instrument(skip(socket, storage, auth_manager, middleware_chain))]
-pub async fn handle_connection(mut socket: TcpStream, storage: Arc<RwLock<dyn Storage>>, auth_manager: Arc<AuthManager>, middleware_chain: Arc<MiddlewareChain>) -> anyhow::Result<()> {
-    let peer_addr = socket.peer_addr()?.to_string();
-    let (reader, mut writer) = socket.split();
+pub async fn handle_connection<S>(mut socket: S, peer_addr: String, storage: Arc<RwLock<dyn Storage>>, auth_manager: Arc<AuthManager>, middleware_chain: Arc<MiddlewareChain>) -> anyhow::Result<()> 
+where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
+{
+    let (reader, mut writer) = tokio::io::split(socket);
     let mut reader = BufReader::new(reader);
     let mut line = String::new();
 

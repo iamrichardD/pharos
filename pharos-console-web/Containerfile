@@ -25,6 +25,7 @@ RUN apt-get update && apt-get install -y tini && rm -rf /var/lib/apt/lists/*
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package.json ./package.json
+COPY --from=build /app/server.mjs ./server.mjs
 
 ENV HOST=0.0.0.0
 ENV PORT=3000
@@ -32,4 +33,4 @@ EXPOSE 3000
 
 # Start with tini for proper signal handling in Node.js
 ENTRYPOINT ["/usr/bin/tini", "--"]
-CMD ["node", "./dist/server/entry.mjs"]
+CMD ["node", "./server.mjs"]
