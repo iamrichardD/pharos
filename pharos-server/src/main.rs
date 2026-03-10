@@ -47,6 +47,20 @@ fn load_key(path: &Path) -> anyhow::Result<PrivateKeyDer<'static>> {
     Ok(key)
 }
 
+use std::time::Instant;
+
+async fn wait_for_files(paths: &[&Path], timeout: Duration) -> anyhow::Result<()> {
+    let start = Instant::now();
+    while start.elapsed() < timeout {
+        let all_exist = paths.iter().all(|p| p.exists());
+        if all_exist {
+            return Ok(());
+        }
+        tokio::time::sleep(Duration::from_millis(500)).await;
+    }
+    anyhow::bail!("Timeout waiting for files: {:?}", paths)
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let args: Vec<String> = env::args().collect();
@@ -58,12 +72,21 @@ async fn main() -> anyhow::Result<()> {
     }
 
     // --- Mandatory TLS Configuration ---
-    let cert_path = env::var("PHAROS_TLS_CERT").map_err(|_| anyhow::anyhow!("PHAROS_TLS_CERT environment variable is required for mandatory SSL"))?;
-    let key_path = env::var("PHAROS_TLS_KEY").map_err(|_| anyhow::anyhow!("PHAROS_TLS_KEY environment variable is required for mandatory SSL"))?;
+    let cert_path_str = env::var("PHAROS_TLS_CERT").map_err(|_| anyhow::anyhow!("PHAROS_TLS_CERT environment variable is required for mandatory SSL"))?;
+    let key_path_str = env::var("PHAROS_TLS_KEY").map_err(|_| anyhow::anyhow!("PHAROS_TLS_KEY environment variable is required for mandatory SSL"))?;
 
-    info!("Loading TLS certificates from {} and {}", cert_path, key_path);
-    let certs = load_certs(Path::new(&cert_path))?;
-    let key = load_key(Path::new(&key_path))?;
+    let cert_path = Path::new(&cert_path_str);
+    let key_path = Path::new(&key_path_str);
+
+    // Wait for certificates to appear (up to 30 seconds)
+    // This is critical for the Sandbox environment where certs are generated on-the-fly.
+    info!("Waiting for TLS certificates to be available...");
+    wait_for_files(&[cert_path, key_path], Duration::from_secs(30)).await?;
+
+    info!("Loading TLS certificates from {:?} and {:?}", cert_path, key_path);
+    let certs = load_certs(cert_path)?;
+    let key = load_key(key_path)?;
+
 
     let config = ServerConfig::builder()
         .with_no_client_auth()

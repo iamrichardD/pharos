@@ -81,9 +81,21 @@ impl PharosClient {
         }
 
         // Add custom CA if PHAROS_CA_CERT is set
-        if let Ok(ca_path) = env::var("PHAROS_CA_CERT") {
-            let file = fs::File::open(&ca_path)
-                .with_context(|| format!("Failed to open CA cert at {}", ca_path))?;
+        if let Ok(ca_path_str) = env::var("PHAROS_CA_CERT") {
+            let ca_path = Path::new(&ca_path_str);
+            let start = std::time::Instant::now();
+            let timeout = std::time::Duration::from_secs(30);
+            
+            while !ca_path.exists() && start.elapsed() < timeout {
+                tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+            }
+
+            if !ca_path.exists() {
+                return Err(anyhow!("Timeout waiting for CA cert at {:?}", ca_path));
+            }
+
+            let file = fs::File::open(ca_path)
+                .with_context(|| format!("Failed to open CA cert at {:?}", ca_path))?;
             let mut reader = std::io::BufReader::new(file);
             for cert in rustls_pemfile::certs(&mut reader) {
                 root_store.add(cert?)?;
