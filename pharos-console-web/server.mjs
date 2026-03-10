@@ -53,6 +53,12 @@ async function startServer() {
     };
 
     const app = express();
+    
+    // Explicitly handle docs redirect at the Express level
+    app.get(['/docs', '/docs/'], (req, res) => {
+      res.redirect(302, 'https://iamrichardd.com/pharos/docs/');
+    });
+
     app.use(express.static('dist/client'));
     app.use(ssrHandler);
 

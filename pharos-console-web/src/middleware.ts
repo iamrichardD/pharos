@@ -17,6 +17,11 @@ import { AUTH_COOKIE_NAME } from './features/auth/auth-config';
 export const onRequest = defineMiddleware(async (context, next) => {
     const { url, cookies, redirect } = context;
 
+    // Handle documentation redirect
+    if (url.pathname === '/docs' || url.pathname === '/docs/') {
+        return redirect('https://iamrichardd.com/pharos/docs/');
+    }
+
     // Verify session
     const session = await getSession(cookies.get(AUTH_COOKIE_NAME)?.value);
     
