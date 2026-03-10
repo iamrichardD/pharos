@@ -172,8 +172,17 @@ async fn main() -> anyhow::Result<()> {
             }
 
             // Health Monitor Threshold Warnings
-            // CPU > 90% or Memory > 1GB (Arbitrary for MVP demonstration)
-            check_health_thresholds(90.0, 1024 * 1024 * 1024);
+            let cpu_threshold = env::var("PHAROS_CPU_THRESHOLD")
+                .ok()
+                .and_then(|v| v.parse::<f64>().ok())
+                .unwrap_or(90.0);
+            let mem_threshold = env::var("PHAROS_MEM_THRESHOLD_GB")
+                .ok()
+                .and_then(|v| v.parse::<u64>().ok())
+                .map(|gb| gb * 1024 * 1024 * 1024)
+                .unwrap_or(1024 * 1024 * 1024); // Default 1GB
+
+            check_health_thresholds(cpu_threshold, mem_threshold);
 
             tokio::time::sleep(Duration::from_secs(5)).await;
         }
@@ -208,7 +217,11 @@ async fn main() -> anyhow::Result<()> {
                                     }
                                 }
                                 Err(e) => {
-                                    error!("TLS acceptance error from {}: {:?}", peer_addr, e);
+                                    if e.kind() == std::io::ErrorKind::UnexpectedEof {
+                                        tracing::debug!("TLS handshake EOF from {} (Likely health check)", peer_addr);
+                                    } else {
+                                        error!("TLS acceptance error from {}: {:?}", peer_addr, e);
+                                    }
                                 }
                             }
                         });
@@ -239,7 +252,11 @@ async fn main() -> anyhow::Result<()> {
                                 }
                             }
                             Err(e) => {
-                                error!("TLS acceptance error from {}: {:?}", peer_addr, e);
+                                if e.kind() == std::io::ErrorKind::UnexpectedEof {
+                                    tracing::debug!("TLS handshake EOF from {} (Likely health check)", peer_addr);
+                                } else {
+                                    error!("TLS acceptance error from {}: {:?}", peer_addr, e);
+                                }
                             }
                         }
                     });

@@ -30,6 +30,7 @@ services:
       - RUST_LOG=info
       - PHAROS_TLS_CERT=/etc/pharos/certs/pharos-server.crt
       - PHAROS_TLS_KEY=/etc/pharos/certs/pharos-server.key
+      - PHAROS_MEM_THRESHOLD_GB=16
     ports:
       - "2378:2378"
     volumes:
