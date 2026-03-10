@@ -79,7 +79,7 @@ async function startServer() {
         
         // Hand off the connection to the appropriate server
         targetServer.emit('connection', socket);
-        socket.resume();
+        process.nextTick(() => socket.resume());
       });
 
       socket.on('error', (err) => {
