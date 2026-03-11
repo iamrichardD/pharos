@@ -6,10 +6,10 @@
  * Author: Richard D. (https://github.com/iamrichardd)
  * License: AGPL-3.0 (See LICENSE file for details)
  * * Purpose (The "Why"):
- * Provides the consistent mobile-first layout wrapper for all Console pages,
+ * Provides a consistent mobile-first layout wrapper for all Console pages,
  * ensuring shared navigation and global styles are applied uniformly.
  * * Traceability:
- * Related to Task 16.2 (Mobile-First MDB).
+ * Related to Task 16.2 (Mobile-First MDB) and Bug #115 (Issue #114).
  /* ======================================================================== */
  import '../styles/global.css';
  import { getSession } from '../features/auth/session-logic';
@@ -17,7 +17,6 @@
  import { ClientRouter } from 'astro:transitions';
 
  interface Props {
-
 	title: string;
 }
 
@@ -47,7 +46,7 @@ const session = await getSession(Astro.cookies.get(AUTH_COOKIE_NAME)?.value);
                     {session ? (
                         <div class="flex items-center space-x-3 pl-2 border-l border-slate-200">
                             <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">{session.userId}</span>
-                            <button id="logoutBtn" class="text-xs font-medium text-red-600 hover:text-red-500 transition-colors">Logout</button>
+                            <button id="logoutBtn" class="text-xs font-medium text-red-600 hover:text-red-500 transition-colors cursor-pointer">Logout</button>
                         </div>
                     ) : (
                         <a href="/login" class="px-4 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-lg hover:bg-slate-800 transition-colors">Sign In</a>
@@ -64,13 +63,15 @@ const session = await getSession(Astro.cookies.get(AUTH_COOKIE_NAME)?.value);
             import { actions } from 'astro:actions';
             import { navigate } from 'astro:transitions/client';
 
-            const logoutBtn = document.querySelector('#logoutBtn');
-            if (logoutBtn) {
-                logoutBtn.addEventListener('click', async () => {
-                    await actions.logout();
-                    navigate('/login');
-                });
-            }
+            document.addEventListener('astro:page-load', () => {
+                const logoutBtn = document.querySelector('#logoutBtn');
+                if (logoutBtn) {
+                    logoutBtn.addEventListener('click', async () => {
+                        await actions.logout();
+                        navigate('/login');
+                    });
+                }
+            });
         </script>
 
 		<main class="flex-grow w-full max-w-4xl mx-auto px-4 py-6 sm:py-8 space-y-6 sm:space-y-8">

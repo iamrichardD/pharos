@@ -8,7 +8,7 @@
  * Defines Astro Actions for server-side operations. Uses feature-specific
  * logic from the Vertical Slices.
  * * Traceability:
- * Related to Task 16.6 (Issue #69).
+ * Related to Task 16.6 (Issue #69) and Bug #115 (Issue #114).
  * ======================================================================== */
 import { defineAction } from 'astro:actions';
 import { z } from 'astro:schema';
@@ -25,7 +25,7 @@ export const server = {
             query: z.string().min(1, 'Query is required')
         }),
         handler: async (input) => {
-            if (process.env.PHAROS_SANDBOX === 'true') {
+            if (process.env.PHAROS_SANDBOX !== 'true') {
                 throw new Error('Sandbox mode is not enabled');
             }
             try {

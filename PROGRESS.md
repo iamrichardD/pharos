@@ -1,11 +1,12 @@
 # Pharos State & Progress
 
 ## Current Status
-**Phase:** 17 (Pharos Sandbox) / Phase 2 (Core Server Refinement)
+**Phase:** 16 (Pharos Web Console)
 **Active Task:** NONE
 **Backlog:** 1.8 (DevSecOps Refinement), 10.5 (Subnet Scanning), 18.1 (Alternation)
 
 ## Recent Completions
+- [x] Bug #115: Fixed logout failure after mandatory password change. Resolved issue where the logout button in `ConsoleLayout.astro` lost its event listener due to Astro View Transitions (ClientRouter). Wrapped the listener in `astro:page-load` and added `cursor-pointer` for UX. Also corrected a logic error in `actions/index.ts` where `sandboxQuery` incorrectly threw an error when `PHAROS_SANDBOX` was enabled. Verified with a new E2E regression test and full-suite pass in Podman. (Issue #114)
 - [x] Bug #114: Fixed login failure after initial password change. Implemented dynamic secure cookie flagging based on request protocol and switched to SameSite=Lax for compatibility. (Issue #113)
 - [x] Task 16.15: Engineering: Implement Mandatory Password Rotation on First Login. Created a secure, file-based `password-store.ts` using `scrypt` hashing. Updated JWT session logic and middleware to enforce password updates for sessions using default credentials. Created `/change-password` UI and integrated with Astro Actions. Updated `ARCHITECTURE.md` and `DECISIONS.md`. (Issue #113)
 - [x] Bug #111: Race condition in Sandbox startup for Pharos Server and Web Console. Added robust `wait_for_files` logic in `pharos-server` (Rust) and `pharos-console-web` (Node.js) to poll for the existence of TLS certificates at startup. This ensures the services wait for the `pharos-certgen` sidecar to complete before attempting to load certificates. (Issue #111)

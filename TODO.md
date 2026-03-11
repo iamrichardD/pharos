@@ -54,6 +54,7 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Bug #93 (Issue #93):** **Sandbox Key Access**. \`pharos-pulse\` cannot sign challenges due to missing keys. (Remediation: Shared volume + key discovery).
 - [x] **Debt #01 (Issue #83):** **Auth Bridge Gap**. Web Console now supports automated SSH-challenge signing.
 - [x] **Bug #114 (Issue #113):** **Login failure after first password change**. Secure cookies were being incorrectly dropped in HTTPS sandbox environments. (Remediation: Dynamic secure flag and SameSite=Lax).
+- [x] **Bug #115 (Issue #114):** **Logout broken after mandatory password change**. Hover cursor is not a pointer and clicking logout does nothing. (Remediation: astro:page-load listener and cursor-pointer).
 
 - [x] **Debt #02 (Issue #84):** **Logic Duplication**. Move all authorization logic from `lib.rs` into `SecurityTierMiddleware`.
 - [x] **Debt #03 (Issue #85):** **Hardcoded Paths**. Transitioned SSH key paths to relative `PHAROS_KEYS_DIR`.
