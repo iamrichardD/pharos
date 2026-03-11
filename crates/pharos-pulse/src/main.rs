@@ -24,33 +24,44 @@ use std::collections::HashMap;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    println!("Starting pharos-pulse agent...");
+    println!("Starting pharos-pulse agent v1.3.1...");
 
-    #[cfg(unix)]
-    let mut sigterm = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())?;
-    
     let server_addr = env::var("PHAROS_SERVER").unwrap_or_else(|_| "127.0.0.1:2378".to_string());
     let machine_name = env::var("PHAROS_MACHINE_NAME").unwrap_or_else(|_| {
         sysinfo::System::host_name().unwrap_or_else(|| "unknown-host".to_string())
     });
 
+    // We initialize signals early and use a unified shutdown future.
+    let shutdown = async {
+        #[cfg(unix)]
+        {
+            let mut sigterm = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+                .expect("Failed to register SIGTERM handler");
+            let mut sigint = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::interrupt())
+                .expect("Failed to register SIGINT handler");
+            tokio::select! {
+                _ = sigterm.recv() => println!("SIGTERM received"),
+                _ = sigint.recv() => println!("SIGINT received"),
+                _ = tokio::signal::ctrl_c() => println!("CTRL+C received"),
+            }
+        }
+        #[cfg(not(unix))]
+        {
+            tokio::signal::ctrl_c().await.expect("Failed to listen for ctrl-c");
+            println!("CTRL+C received");
+        }
+    };
+    tokio::pin!(shutdown);
+
+    println!("Pharos Server Address: {}", server_addr);
+    println!("Machine Name: {}", machine_name);
+
     tokio::select! {
-        _ = wait_for_server(&server_addr) => {},
-        _ = tokio::signal::ctrl_c() => {
-            println!("SIGINT received during startup, shutting down...");
-            return Ok(());
+        _ = wait_for_server(&server_addr) => {
+            println!("Connectivity to server established.");
         },
-        _ = async {
-            #[cfg(unix)]
-            {
-                sigterm.recv().await;
-            }
-            #[cfg(not(unix))]
-            {
-                std::future::pending::<()>().await;
-            }
-        } => {
-            println!("SIGTERM received during startup, shutting down...");
+        _ = &mut shutdown => {
+            println!("Shutdown signal received during startup, exiting gracefully...");
             return Ok(());
         }
     }
@@ -81,27 +92,21 @@ async fn main() -> Result<()> {
                 }
             }
         } => {},
-        _ = tokio::signal::ctrl_c() => {
-            println!("SIGINT received, shutting down...");
+        _ = &mut shutdown => {
+            println!("Shutdown signal received, initiating graceful exit...");
         },
-        _ = async {
-            #[cfg(unix)]
-            {
-                sigterm.recv().await;
-                println!("SIGTERM received, shutting down...");
-            }
-            #[cfg(not(unix))]
-            {
-                // On non-unix, we just wait forever for other signals
-                std::future::pending::<()>().await;
-            }
-        } => {},
     }
 
     // 3. Graceful Exit (OFFLINE)
-    println!("Sending offline signal...");
-    if let Err(e) = send_presence(&server_addr, &machine_name, "offline", None).await {
-        eprintln!("Failed to send offline signal: {:?}", e);
+    println!("Initiating graceful shutdown (sending OFFLINE signal)...");
+    
+    // We wrap the offline signal in a short timeout (5s) to ensure we don't block
+    // the container shutdown for too long if the server is already going down.
+    let shutdown_timeout = Duration::from_secs(5);
+    match tokio::time::timeout(shutdown_timeout, send_presence(&server_addr, &machine_name, "offline", None)).await {
+        Ok(Ok(_)) => println!("Offline signal sent successfully."),
+        Ok(Err(e)) => eprintln!("Failed to send offline signal: {:?}", e),
+        Err(_) => eprintln!("Timed out sending offline signal after {:?}", shutdown_timeout),
     }
 
     println!("pharos-pulse agent shutdown complete.");
