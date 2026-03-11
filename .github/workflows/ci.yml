@@ -86,7 +86,7 @@ jobs:
 
       - name: Extract metadata (tags, labels)
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v5 # Refresh to pick up Node 24 support
         with:
           images: ${{ env.REGISTRY }}/${{ steps.prep.outputs.owner_lc }}/${{ matrix.component.name }}
           tags: |
