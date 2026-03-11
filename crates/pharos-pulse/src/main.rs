@@ -25,13 +25,35 @@ use std::collections::HashMap;
 #[tokio::main]
 async fn main() -> Result<()> {
     println!("Starting pharos-pulse agent...");
+
+    #[cfg(unix)]
+    let mut sigterm = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())?;
     
     let server_addr = env::var("PHAROS_SERVER").unwrap_or_else(|_| "127.0.0.1:2378".to_string());
     let machine_name = env::var("PHAROS_MACHINE_NAME").unwrap_or_else(|_| {
         sysinfo::System::host_name().unwrap_or_else(|| "unknown-host".to_string())
     });
 
-    wait_for_server(&server_addr).await;
+    tokio::select! {
+        _ = wait_for_server(&server_addr) => {},
+        _ = tokio::signal::ctrl_c() => {
+            println!("SIGINT received during startup, shutting down...");
+            return Ok(());
+        },
+        _ = async {
+            #[cfg(unix)]
+            {
+                sigterm.recv().await;
+            }
+            #[cfg(not(unix))]
+            {
+                std::future::pending::<()>().await;
+            }
+        } => {
+            println!("SIGTERM received during startup, shutting down...");
+            return Ok(());
+        }
+    }
 
     // 1. Baseline (ONLINE)
     println!("Collecting baseline inventory...");
@@ -46,9 +68,6 @@ async fn main() -> Result<()> {
     let mut heartbeat_interval = interval(Duration::from_secs(3600));
     // First tick finishes immediately, we already sent baseline, so skip first tick
     heartbeat_interval.tick().await; 
-
-    #[cfg(unix)]
-    let mut sigterm = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())?;
 
     println!("Entering heartbeat loop (60 minute intervals)...");
 

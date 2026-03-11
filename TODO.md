@@ -55,6 +55,7 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Debt #01 (Issue #83):** **Auth Bridge Gap**. Web Console now supports automated SSH-challenge signing.
 - [x] **Bug #114 (Issue #113):** **Login failure after first password change**. Secure cookies were being incorrectly dropped in HTTPS sandbox environments. (Remediation: Dynamic secure flag and SameSite=Lax).
 - [x] **Bug #115 (Issue #114):** **Logout broken after mandatory password change**. Hover cursor is not a pointer and clicking logout does nothing. (Remediation: astro:page-load listener and cursor-pointer).
+- [x] **Bug #116 (Issue #116):** **Pulse SIGTERM Failure**. \`pharos-pulse\` fails to respond to SIGTERM during startup or heartbeat, causing Podman to SIGKILL after 10s. (Remediation: Move signal handlers to start of \`main\` and select during \`wait_for_server\`).
 - [x] **Debt #05 (Issue #115):** **GitHub Actions Modernization**. Update workflows to support Node.js 24 and remove deprecation warnings. (HIGH PRIORITY)
 
 - [x] **Debt #02 (Issue #84):** **Logic Duplication**. Move all authorization logic from `lib.rs` into `SecurityTierMiddleware`.
