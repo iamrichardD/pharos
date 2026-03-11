@@ -152,76 +152,82 @@ const commandHint = isSandbox
     import { actions } from 'astro:actions';
     import { navigate } from 'astro:transitions/client';
 
-    const loginForm = document.querySelector('#loginForm') as HTMLFormElement;
-    const handshakeForm = document.querySelector('#handshakeForm') as HTMLFormElement;
-    const ssoBtn = document.querySelector('#ssoBtn') as HTMLButtonElement;
-    const errorMsg = document.querySelector('#errorMessage') as HTMLParagraphElement;
-    const tabBtns = document.querySelectorAll('.tab-btn');
-    const tabPanels = document.querySelectorAll('.tab-panel');
+    document.addEventListener('astro:page-load', () => {
+        const loginForm = document.querySelector('#loginForm') as HTMLFormElement;
+        const handshakeForm = document.querySelector('#handshakeForm') as HTMLFormElement;
+        const ssoBtn = document.querySelector('#ssoBtn') as HTMLButtonElement;
+        const errorMsg = document.querySelector('#errorMessage') as HTMLParagraphElement;
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabPanels = document.querySelectorAll('.tab-panel');
 
-    // Tab Logic
-    tabBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const target = btn.getAttribute('data-tab');
-            
-            // Update buttons
-            tabBtns.forEach(b => {
-                b.classList.remove('bg-white', 'shadow-sm', 'text-slate-950');
-                b.classList.add('text-slate-500');
+        // Tab Logic
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const target = btn.getAttribute('data-tab');
+                
+                // Update buttons
+                tabBtns.forEach(b => {
+                    b.classList.remove('bg-white', 'shadow-sm', 'text-slate-950');
+                    b.classList.add('text-slate-500');
+                });
+                btn.classList.add('bg-white', 'shadow-sm', 'text-slate-950');
+                btn.classList.remove('text-slate-500');
+
+                // Update panels
+                tabPanels.forEach(p => p.classList.add('hidden'));
+                document.getElementById(`${target}Panel`)?.classList.remove('hidden');
+                
+                // Clear errors on tab change
+                if (errorMsg) errorMsg.classList.add('hidden');
             });
-            btn.classList.add('bg-white', 'shadow-sm', 'text-slate-950');
-            btn.classList.remove('text-slate-500');
-
-            // Update panels
-            tabPanels.forEach(p => p.classList.add('hidden'));
-            document.getElementById(`${target}Panel`)?.classList.remove('hidden');
-            
-            // Clear errors on tab change
-            if (errorMsg) errorMsg.classList.add('hidden');
         });
-    });
 
-    if (loginForm) {
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            errorMsg.classList.add('hidden');
-            
-            const formData = new FormData(loginForm);
-            const { data, error } = await actions.login(formData);
+        if (loginForm) {
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                if (errorMsg) errorMsg.classList.add('hidden');
+                
+                const formData = new FormData(loginForm);
+                const { data, error } = await actions.login(formData);
 
-            if (error) {
-                errorMsg.textContent = error.message || 'Authentication failed';
-                errorMsg.classList.remove('hidden');
-            } else {
-                if (data?.mustChangePassword) {
-                    navigate('/change-password');
+                if (error) {
+                    if (errorMsg) {
+                        errorMsg.textContent = error.message || 'Authentication failed';
+                        errorMsg.classList.remove('hidden');
+                    }
+                } else {
+                    if (data?.mustChangePassword) {
+                        navigate('/change-password');
+                    } else {
+                        navigate('/');
+                    }
+                }
+            });
+        }
+
+        if (handshakeForm) {
+            handshakeForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                if (errorMsg) errorMsg.classList.add('hidden');
+                
+                const formData = new FormData(handshakeForm);
+                const { error } = await actions.handshakeLogin(formData);
+
+                if (error) {
+                    if (errorMsg) {
+                        errorMsg.textContent = error.message || 'Handshake verification failed';
+                        errorMsg.classList.remove('hidden');
+                    }
                 } else {
                     navigate('/');
                 }
-            }
-        });
-    }
+            });
+        }
 
-    if (handshakeForm) {
-        handshakeForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            errorMsg.classList.add('hidden');
-            
-            const formData = new FormData(handshakeForm);
-            const { error } = await actions.handshakeLogin(formData);
-
-            if (error) {
-                errorMsg.textContent = error.message || 'Handshake verification failed';
-                errorMsg.classList.remove('hidden');
-            } else {
-                navigate('/');
-            }
-        });
-    }
-
-    if (ssoBtn) {
-        ssoBtn.addEventListener('click', () => {
-            alert('Enterprise OIDC integration (Azure/Okta) is currently being scaffolded! Please use standard login for now.');
-        });
-    }
+        if (ssoBtn) {
+            ssoBtn.addEventListener('click', () => {
+                alert('Enterprise OIDC integration (Azure/Okta) is currently being scaffolded! Please use standard login for now.');
+            });
+        }
+    });
 </script>

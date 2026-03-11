@@ -11,14 +11,32 @@
  * Related to Bug #82 (Issue #82).
  * ======================================================================== */
 import { test, expect } from '@playwright/test';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+
+const storePath = path.join(process.cwd(), 'data/auth_store.json');
+
+test.beforeEach(async () => {
+  if (fs.existsSync(storePath)) {
+    fs.unlinkSync(storePath);
+  }
+});
 
 test.describe('Sandbox Mode Backend Interaction', () => {
   test.beforeEach(async ({ page }) => {
-    // Login first
+    // 1. Login first
     await page.goto('/login');
     await page.fill('input[name="username"]', 'admin');
     await page.fill('input[name="password"]', 'admin');
     await page.click('button[type="submit"]');
+    
+    // 2. Handle mandatory password change
+    await expect(page).toHaveURL(/\/change-password/);
+    await page.fill('input[name="password"]', 'NewSecurePassword123!');
+    await page.fill('input[name="confirmPassword"]', 'NewSecurePassword123!');
+    await page.click('button[type="submit"]');
+    
+    // 3. Should be on home page
     await expect(page).toHaveURL(/\/$/);
   });
 

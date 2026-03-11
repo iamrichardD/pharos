@@ -9,8 +9,18 @@
  * Ensures redirects and cookie handling work correctly.
  * ======================================================================== */
 import { test, expect } from '@playwright/test';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 
 test.describe('Authentication Flow', () => {
+  const storePath = path.join(process.cwd(), 'data/auth_store.json');
+
+  test.beforeEach(async () => {
+    if (fs.existsSync(storePath)) {
+      fs.unlinkSync(storePath);
+    }
+  });
+
   test('should allow unauthenticated users to see the landing page on root', async ({ page }) => {
     await page.goto('/');
     await expect(page).toHaveURL(/\/$/);
@@ -19,7 +29,7 @@ test.describe('Authentication Flow', () => {
     await expect(page.locator('text=Read Documentation')).toBeVisible();
   });
 
-  test('should login successfully with admin/admin and redirect home', async ({ page }) => {
+  test('should login successfully with admin/admin and handle mandatory password change', async ({ page }) => {
     await page.goto('/login');
     
     // Fill the form
@@ -27,6 +37,15 @@ test.describe('Authentication Flow', () => {
     await page.fill('input[name="password"]', 'admin');
     
     // Click Sign In
+    await page.click('button[type="submit"]');
+
+    // Should be redirected to /change-password
+    await expect(page).toHaveURL(/\/change-password/);
+    await expect(page.locator('text=Secure Your Lab')).toBeVisible();
+
+    // Change password to continue
+    await page.fill('input[name="password"]', 'NewSecurePassword123!');
+    await page.fill('input[name="confirmPassword"]', 'NewSecurePassword123!');
     await page.click('button[type="submit"]');
 
     // Should redirect to home (/) and show the logout button

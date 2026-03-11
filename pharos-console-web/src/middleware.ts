@@ -30,6 +30,11 @@ export const onRequest = defineMiddleware(async (context, next) => {
         context.locals.session = session;
     }
 
+    // Enforce password change if flagged
+    if (session?.mustChangePassword && url.pathname !== '/change-password' && !url.pathname.startsWith('/_actions')) {
+        return redirect('/change-password');
+    }
+
     // Public routes that don't require authentication
     // Note: /_actions must be allowed so that the login action can be called
     const publicRoutes = ['/login', '/_actions', '/mdb'];
@@ -42,11 +47,6 @@ export const onRequest = defineMiddleware(async (context, next) => {
     if (!session) {
         // Redirect to login if unauthenticated on a protected route
         return redirect('/login');
-    }
-
-    // Enforce password change if flagged
-    if (session.mustChangePassword && url.pathname !== '/change-password') {
-        return redirect('/change-password');
     }
 
     return next();
