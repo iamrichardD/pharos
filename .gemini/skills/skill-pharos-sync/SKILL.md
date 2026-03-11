@@ -1,11 +1,20 @@
 ---
 name: skill-pharos-sync
-description: Synchronize Pharos project state between @TODO.md, @PROGRESS.md, and GitHub Issues. Use this skill when starting new tasks, completing work, or performing end-of-session state reconciliation to ensure DORA metric integrity and traceability.
+description: Synchronize Pharos project state between @TODO.md, @PROGRESS.md, and GitHub Issues. Use this skill when starting new tasks, completing work, or performing end-of-session state reconciliation. Also use this skill as a GATEKEEPER when a prompt starts with "bug report", "feature request", or "feature update request" to enforce documentation before implementation.
 ---
 
 # Pharos Synchronization Protocol
 
 This skill enforces the "Single Source of Truth" for the Pharos project by reconciling the local tracking files with the GitHub issue tracker.
+
+## 🛑 STRICT MANDATE: THE GATEKEEPER
+When a user starts a prompt with **"bug report"**, **"feature request"**, or **"feature update request"**, you MUST follow the **Document then Stop** workflow:
+1. **Document**: 
+    - **Check Existing**: Search GitHub Issues and local tracking files for a related open issue.
+    - **Scope Expansion**: If a related issue exists, document the new findings or requirements as a detailed comment on the existing issue to expand its scope.
+    - **New Task**: If no related issue exists, execute the `sync-init` workflow (Create GH Issue, update `@TODO.md` and `@PROGRESS.md`).
+2. **Summarize**: Provide a concise summary of the documented task (or scope expansion) and the verification strategy.
+3. **STOP**: Do NOT proceed to implementation. Inform the user that the task is documented and you are stopping to allow for a clean session transition.
 
 ## Core Workflows
 
