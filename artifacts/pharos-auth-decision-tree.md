@@ -17,7 +17,7 @@
 
 ## 1. Authentication Postures
 
-Pharos adapts to the deployment environment to provide either frictionless "Zero-Host" handshakes or hardened Enterprise SSO with High Availability support.
+Pharos adapts to the deployment environment to provide frictionless "Standard" login for Home Labbers, "DevSecOps" handshakes for power users, or hardened Enterprise SSO.
 
 ### 1.1 Decision Tree (Mermaid)
 
@@ -29,11 +29,21 @@ flowchart TD
     Discovery -->|mDNS| PulseDiscovery[Pulse: Find _pharos._tcp.local]
     PulseDiscovery --> PulseAuth
     
-    Posture -->|Human: Home Lab| Handshake[CLI-to-Web Handshake]
+    Posture -->|Standard: Home Lab| Standard[Username/Password]
+    Posture -->|Handshake: DevSecOps| Handshake[CLI-to-Web Handshake]
     Posture -->|Human: Enterprise| OIDC[OAuth 2.0 / OIDC]
     Posture -->|Machine: Pulse| PulseAuth[Pulse Identity Handshake]
 
-    subgraph HomeLab ["Home Lab (CLI Handshake)"]
+    subgraph HomeLab ["Standard (Home Lab)"]
+        Standard --> CheckFirst{First Login?}
+        CheckFirst -->|Yes| Rotate[Force Password Rotation]
+        Rotate --> SaveHash[Store Scrypt Hash in auth_store.json]
+        CheckFirst -->|No| VerifyPass[Verify against auth_store.json]
+        SaveHash --> VerifyPass
+        VerifyPass --> VerifyStandard[Generate Session JWT]
+    end
+
+    subgraph DevSecOps ["DevSecOps (CLI Handshake)"]
         Handshake --> Challenge[Console displays 5m Server Challenge]
         Challenge --> Sign[User: mdb auth sign 'challenge']
         Sign --> VerifyHome[Server verifies Signature against keys/]
@@ -55,7 +65,8 @@ flowchart TD
         Reclaim -->|No| Conflict[Error 409: Manual Reset Required]
     end
 
-    VerifyHome --> Success{Authorized?}
+    VerifyStandard --> Success{Authorized?}
+    VerifyHome --> Success
     VerifyEnt --> Success
     Online --> Success
     UpdateKey --> Success
@@ -72,7 +83,7 @@ Pharos uses a **Team-Based Ownership** model to ensure security across multiple 
 ### 2.1 Multi-Tenant Roles
 | Role | Permissions | Membership Source |
 | :--- | :--- | :--- |
-| **Admin** | Full read/write on ALL records. | `authorized_keys/admin.pub` OR LDAP Group |
+| **Admin** | Full read/write on ALL records. | `auth_store.json` OR `authorized_keys/admin.pub` OR LDAP Group |
 | **Member** | Write access to records matching `OwnerTeam`. | `roles.yaml` OR LDAP Group Membership |
 | **Machine** | Write access ONLY to its own record (Fingerprint Match). | `pulse_id` (SSH Key) |
 | **Guest** | Read-only access to public fields. | Default (No Auth) |

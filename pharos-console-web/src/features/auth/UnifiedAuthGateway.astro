@@ -187,13 +187,17 @@ const commandHint = isSandbox
             errorMsg.classList.add('hidden');
             
             const formData = new FormData(loginForm);
-            const { error } = await actions.login(formData);
+            const { data, error } = await actions.login(formData);
 
             if (error) {
                 errorMsg.textContent = error.message || 'Authentication failed';
                 errorMsg.classList.remove('hidden');
             } else {
-                navigate('/');
+                if (data?.mustChangePassword) {
+                    navigate('/change-password');
+                } else {
+                    navigate('/');
+                }
             }
         });
     }

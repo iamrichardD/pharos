@@ -59,7 +59,14 @@ flowchart TD
     Role -- None --> Execute
 ```
 
-## 4. Troubleshooting Connectivity
+## 4. Mandatory Password Rotation (Home Lab)
+To balance "Frictionless Setup" with "Day 1 Security," Pharos enforces a mandatory password update policy for the Web Console.
+
+- **IF** The user logs in with the default password (`admin:admin`) **THEN** The session is flagged with `mustChangePassword: true`.
+- **IF** The session is flagged **THEN** Middleware intercepts all requests and redirects the user to `/change-password`.
+- **IF** The user submits a new password **THEN** The hash is saved to `data/auth_store.json` and the flag is cleared.
+
+## 5. Troubleshooting Connectivity
 If a connection fails, follow this decision path:
 
 1.  **Check the Port:** The Pharos protocol defaults to **2378** (TCP).

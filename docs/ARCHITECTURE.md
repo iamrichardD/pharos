@@ -130,7 +130,13 @@ The backend engine handling connection lifecycle, protocol parsing, and storage 
 - **`mdb`:** Optimized for machine/infrastructure asset management.
 - Both support automatic authentication via local SSH private keys.
 
-### 3. Storage Tiering
+### 3. Home Lab Password Store (`src/features/auth/password-store.ts`)
+A secure, file-based persistence layer for the Web Console's admin password.
+- **Security:** Uses `scrypt` hashing with unique salts for every password update.
+- **Persistence:** Stores hashes in `data/auth_store.json` to ensure credentials survive container restarts.
+- **Policy:** Enforces mandatory password rotation upon the first login with default credentials.
+
+### 4. Storage Tiering
 - **Development:** Zero-configuration in-memory storage.
 - **Home Lab:** File-level, restart-survivable JSON storage (optimized for LXC).
 - **Enterprise:** LDAP-backed storage utilizing standard schemas (`inetOrgPerson`, `ipHost`).

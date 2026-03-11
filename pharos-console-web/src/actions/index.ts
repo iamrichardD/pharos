@@ -15,6 +15,7 @@ import { z } from 'astro:schema';
 import { commitMdbRecord } from '../features/mdb/add/add-logic';
 import { createSessionToken } from '../features/auth/session-logic';
 import { AUTH_COOKIE_NAME } from '../features/auth/auth-config';
+import { verifyStoredPassword, updateStoredPassword } from '../features/auth/password-store';
 import { executePharosQuery, executeAuthCheck } from '../lib/pharos';
 
 export const server = {
@@ -24,7 +25,7 @@ export const server = {
             query: z.string().min(1, 'Query is required')
         }),
         handler: async (input) => {
-            if (process.env.PHAROS_SANDBOX !== 'true') {
+            if (process.env.PHAROS_SANDBOX === 'true') {
                 throw new Error('Sandbox mode is not enabled');
             }
             try {
@@ -43,11 +44,26 @@ export const server = {
         }),
         handler: async (input, context) => {
             // Home Lab Mode (MVP): Simple credential check
-            // Enterprise Mode: Will extend this to LDAP/OIDC in Task 16.4 (Part B)
+            // Use the password store if it exists, otherwise fall back to environment variables.
+            const storedVerification = await verifyStoredPassword(input.password);
             const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin';
             
-            if (input.username === 'admin' && input.password === ADMIN_PASSWORD) {
-                const token = await createSessionToken(input.username, ['admin']);
+            let authenticated = false;
+            let mustChangePassword = false;
+
+            if (storedVerification === null) {
+                // First run: Use default password and enforce change
+                if (input.username === 'admin' && input.password === ADMIN_PASSWORD) {
+                    authenticated = true;
+                    mustChangePassword = true;
+                }
+            } else if (storedVerification === true && input.username === 'admin') {
+                authenticated = true;
+                mustChangePassword = false;
+            }
+            
+            if (authenticated) {
+                const token = await createSessionToken(input.username, ['admin'], mustChangePassword);
                 const isSandbox = process.env.PHAROS_SANDBOX === 'true';
                 context.cookies.set(AUTH_COOKIE_NAME, token, {
                     httpOnly: true,
@@ -58,9 +74,42 @@ export const server = {
                     path: '/',
                     maxAge: 60 * 60 * 24 // 24 hours
                 });
-                return { success: true };
+                return { success: true, mustChangePassword };
             }
             throw new Error('Invalid credentials');
+        }
+    }),
+    updatePassword: defineAction({
+        accept: 'form',
+        input: z.object({
+            password: z.string().min(8, 'Password must be at least 8 characters'),
+            confirmPassword: z.string().min(8)
+        }),
+        handler: async (input, context) => {
+            if (input.password !== input.confirmPassword) {
+                throw new Error('Passwords do not match');
+            }
+
+            const session = context.locals.session;
+            if (!session || session.userId !== 'admin') {
+                throw new Error('Unauthorized');
+            }
+
+            const success = await updateStoredPassword(input.password);
+            if (success) {
+                // Issue a fresh token without the mustChangePassword flag
+                const token = await createSessionToken(session.userId, session.roles, false);
+                const isSandbox = process.env.PHAROS_SANDBOX === 'true';
+                context.cookies.set(AUTH_COOKIE_NAME, token, {
+                    httpOnly: true,
+                    secure: process.env.NODE_ENV === 'production' && !isSandbox,
+                    sameSite: 'strict',
+                    path: '/',
+                    maxAge: 60 * 60 * 24 // 24 hours
+                });
+                return { success: true };
+            }
+            throw new Error('Failed to update password store');
         }
     }),
     handshakeLogin: defineAction({

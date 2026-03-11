@@ -16,6 +16,7 @@ import { SignJWT, jwtVerify, type JWTPayload } from 'jose';
 export interface UserSession extends JWTPayload {
     userId: string;
     roles: string[];
+    mustChangePassword?: boolean;
 }
 
 /**

@@ -11,6 +11,8 @@ This skill enforces the "Single Source of Truth" for the Pharos project by recon
 
 ### 1. Task Initialization (`sync-init`)
 When starting a new task from the backlog:
+- **Pre-check Mandate**: Search BOTH `@TODO.md` and `@PROGRESS.md` for the proposed **Task ID** (e.g., `16.4`) and **Issue ID** (e.g., `#66`) to ensure they are not already in use.
+- **ID Assignment**: If a task is new and not in the backlog, assign the next available incremental ID for that phase (e.g., if Phase 16 ends at `16.14`, use `16.15`).
 - **Mandate**: Use `gh issue create` with the prefix `Task X.Y: [Title]` or `Bug #Z: [Title]`.
 - **Update**: Immediately add the resulting `(Issue #ID)` to the corresponding line in `@TODO.md`.
 - **Assignment**: Ensure the issue is assigned to the current agent and tagged with the correct `phase-X` label.

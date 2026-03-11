@@ -44,5 +44,10 @@ export const onRequest = defineMiddleware(async (context, next) => {
         return redirect('/login');
     }
 
+    // Enforce password change if flagged
+    if (session.mustChangePassword && url.pathname !== '/change-password') {
+        return redirect('/change-password');
+    }
+
     return next();
 });

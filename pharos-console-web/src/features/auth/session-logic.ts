@@ -16,10 +16,11 @@ import { JWT_SECRET, SESSION_EXPIRATION } from './auth-config';
 /**
  * Creates a new session token for the given user.
  */
-export async function createSessionToken(userId: string, roles: string[]): Promise<string> {
+export async function createSessionToken(userId: string, roles: string[], mustChangePassword = false): Promise<string> {
     const payload: UserSession = {
         userId,
         roles,
+        mustChangePassword,
         sub: userId, // JWT standard subject
     };
     return await signToken(payload, JWT_SECRET, SESSION_EXPIRATION);
