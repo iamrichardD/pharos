@@ -64,13 +64,13 @@ export const server = {
             
             if (authenticated) {
                 const token = await createSessionToken(input.username, ['admin'], mustChangePassword);
-                const isSandbox = process.env.PHAROS_SANDBOX === 'true';
+                
                 context.cookies.set(AUTH_COOKIE_NAME, token, {
                     httpOnly: true,
-                    // Only use secure cookies if in production and NOT in sandbox mode,
-                    // as sandbox mode is typically accessed via http://localhost.
-                    secure: process.env.NODE_ENV === 'production' && !isSandbox,
-                    sameSite: 'strict',
+                    // Use secure cookies if the request is over HTTPS.
+                    // This is essential for the Sandbox and Production TLS environments.
+                    secure: context.url.protocol === 'https:',
+                    sameSite: 'lax',
                     path: '/',
                     maxAge: 60 * 60 * 24 // 24 hours
                 });
@@ -99,11 +99,11 @@ export const server = {
             if (success) {
                 // Issue a fresh token without the mustChangePassword flag
                 const token = await createSessionToken(session.userId, session.roles, false);
-                const isSandbox = process.env.PHAROS_SANDBOX === 'true';
                 context.cookies.set(AUTH_COOKIE_NAME, token, {
                     httpOnly: true,
-                    secure: process.env.NODE_ENV === 'production' && !isSandbox,
-                    sameSite: 'strict',
+                    // Use secure cookies if the request is over HTTPS.
+                    secure: context.url.protocol === 'https:',
+                    sameSite: 'lax',
                     path: '/',
                     maxAge: 60 * 60 * 24 // 24 hours
                 });
@@ -127,12 +127,12 @@ export const server = {
                     // Extract user ID from public key (simplified: last part of comment if exists)
                     const userId = input.publicKey.split(' ').pop() || 'cli-user';
                     const token = await createSessionToken(userId, ['admin']);
-                    const isSandbox = process.env.PHAROS_SANDBOX === 'true';
                     
                     context.cookies.set(AUTH_COOKIE_NAME, token, {
                         httpOnly: true,
-                        secure: process.env.NODE_ENV === 'production' && !isSandbox,
-                        sameSite: 'strict',
+                        // Use secure cookies if the request is over HTTPS.
+                        secure: context.url.protocol === 'https:',
+                        sameSite: 'lax',
                         path: '/',
                         maxAge: 60 * 60 * 24 // 24 hours
                     });

@@ -18,9 +18,12 @@ import { promisify } from 'node:util';
 
 const scrypt = promisify(crypto.scrypt);
 
-// Use a persistent directory for Home Lab mode.
-// In containerized environments, this should be a volume-backed path.
-const AUTH_STORE_PATH = process.env.AUTH_STORE_PATH || path.join(process.cwd(), 'data/auth_store.json');
+/**
+ * Returns the path to the password store.
+ */
+function getStorePath(): string {
+    return process.env.AUTH_STORE_PATH || path.join(process.cwd(), 'data/auth_store.json');
+}
 
 interface AuthData {
     hash: string;
@@ -34,12 +37,13 @@ interface AuthData {
  * is still in its default "first-run" state.
  */
 export async function verifyStoredPassword(password: string): Promise<boolean | null> {
-    if (!fs.existsSync(AUTH_STORE_PATH)) {
+    const storePath = getStorePath();
+    if (!fs.existsSync(storePath)) {
         return null;
     }
 
     try {
-        const data: AuthData = JSON.parse(fs.readFileSync(AUTH_STORE_PATH, 'utf-8'));
+        const data: AuthData = JSON.parse(fs.readFileSync(storePath, 'utf-8'));
         const derivedKey = await scrypt(password, data.salt, 64) as Buffer;
         return crypto.timingSafeEqual(Buffer.from(data.hash, 'hex'), derivedKey);
     } catch (err) {
@@ -62,11 +66,12 @@ export async function updateStoredPassword(password: string): Promise<boolean> {
     };
 
     try {
-        const dir = path.dirname(AUTH_STORE_PATH);
+        const storePath = getStorePath();
+        const dir = path.dirname(storePath);
         if (!fs.existsSync(dir)) {
             fs.mkdirSync(dir, { recursive: true });
         }
-        fs.writeFileSync(AUTH_STORE_PATH, JSON.stringify(data), 'utf-8');
+        fs.writeFileSync(storePath, JSON.stringify(data), 'utf-8');
         return true;
     } catch (err) {
         console.error('Failed to update password store:', err);
