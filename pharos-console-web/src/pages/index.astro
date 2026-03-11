@@ -57,30 +57,5 @@ const session = Astro.locals.session;
             <h2 class="text-xl font-bold text-slate-950 mb-1">Search MDB</h2>
             <p class="text-slate-600 text-sm">Find IP addresses, MACs, and device metadata across your network.</p>
         </a>
-
-        <!-- Pulse Monitor Card -->
-        <a href="/pulse" class="group p-6 bg-white border border-slate-200 rounded-3xl shadow-xs hover:shadow-md transition-all hover:border-emerald-400">
-            <div class="h-12 w-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-            </div>
-            <h2 class="text-xl font-bold text-slate-950 mb-1">Pulse Monitor</h2>
-            <p class="text-slate-600 text-sm">Real-time presence status (ONLINE/OFFLINE) for all configured nodes.</p>
-        </a>
     </div>
-
-    {session && (
-        <section class="mt-8 p-6 bg-slate-50 border border-slate-200 rounded-3xl">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h3 class="text-sm font-bold text-slate-900">Session Active</h3>
-                    <p class="text-xs text-slate-500">Authorized as <span class="font-mono text-slate-700">{session.userId}</span></p>
-                </div>
-                <a href="/mdb/add" class="text-xs font-bold text-blue-600 hover:text-blue-500 underline underline-offset-4">
-                    Quick Add Record +
-                </a>
-            </div>
-        </section>
-    )}
 </ConsoleLayout>

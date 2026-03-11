@@ -147,6 +147,7 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Task 16.13 (Issue #101):** Engineering: Refactor MDB Search UI to focus on Inventory vs. Metrics. Removed visual bar chart and renamed header to 'Search Results' for improved clarity.
 - [x] **Task 16.14 (Issue #102):** Engineering: Implement Unified Auth Gateway for the Web Console. Consolidate Username/Password, CLI Handshake, and Enterprise SSO into a single tabbed interface to reduce vertical clutter and cognitive load.
 - [x] **Task 16.15 (Issue #113):** Engineering: Implement Mandatory Password Rotation on First Login. Create a secure, file-based `password-store.ts` using `scrypt` hashing and enforce updates for default credentials. (Issue #113)
+- [ ] **Task 16.16 (Issue #118):** Engineering: Refine Web Console UI (Remove Pulse, Streamline Session Info, Relocate Quick Add, Remove Help). (Issue #118)
 
 ## Phase 17: Pharos Sandbox & WebMCP Integration
 - [x] **Task 17.1 (Issue #71):** Engineering: Automate Container Image Publishing to GHCR. Created production `Containerfile`s and updated `ci.yml`.

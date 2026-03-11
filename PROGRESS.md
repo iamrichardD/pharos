@@ -1,8 +1,8 @@
 # Pharos State & Progress
 
 ## Current Status
-**Phase:** 20 (Pulse / Resilience)
-**Active Task:** None
+**Phase:** 16 (Pharos Web Console)
+**Active Task:** Task 16.16 (Issue #118): Refine Web Console UI
 **Backlog:** 1.8 (DevSecOps Refinement), 10.5 (Subnet Scanning), 18.1 (Alternation)
 
 ## Recent Completions

@@ -30,9 +30,9 @@ test.describe('Guest Access (Unauthenticated)', () => {
     await expect(page.locator('h1')).toContainText('Search MDB');
   });
 
-  test('should hide "Add Record +" button for guests on /mdb', async ({ page }) => {
+  test('should hide "Add Record" button for guests on /mdb', async ({ page }) => {
     await page.goto('/mdb');
-    await expect(page.locator('text=Add Record +')).toBeHidden();
+    await expect(page.locator('text=Add Record')).toBeHidden();
   });
 
   test('should redirect unauthenticated users from /mdb/add to /login', async ({ page }) => {
@@ -85,9 +85,9 @@ test.describe('Authenticated MDB Access', () => {
     await expect(page).toHaveURL(/\/$/);
   });
 
-  test('should show "Add Record +" button for authenticated users on /mdb', async ({ page }) => {
+  test('should show "Add Record" button for authenticated users on /mdb', async ({ page }) => {
     await page.goto('/mdb');
-    await expect(page.locator('text=Add Record +')).toBeVisible();
+    await expect(page.locator('text=Add Record')).toBeVisible();
   });
 
   test('should allow authenticated users to access /mdb/add', async ({ page }) => {

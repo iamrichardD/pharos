@@ -41,20 +41,18 @@ const session = await getSession(Astro.cookies.get(AUTH_COOKIE_NAME)?.value);
 				</a>
 				<nav class="flex items-center space-x-4">
                     <a href="/mdb" class="text-sm font-medium text-slate-600 hover:text-emerald-600 transition-colors hidden sm:block">Search MDB</a>
-                    <a href="/pulse" class="text-sm font-medium text-slate-600 hover:text-emerald-600 transition-colors hidden sm:block">Pulse Monitor</a>
-					
+                    
                     {session ? (
-                        <div class="flex items-center space-x-3 pl-2 border-l border-slate-200">
-                            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">{session.userId}</span>
-                            <button id="logoutBtn" class="text-xs font-medium text-red-600 hover:text-red-500 transition-colors cursor-pointer">Logout</button>
-                        </div>
+                        <>
+                            <a href="/mdb/add" class="text-sm font-medium text-slate-600 hover:text-emerald-600 transition-colors hidden sm:block">Add Record</a>
+                            <div class="flex items-center space-x-3 pl-2 border-l border-slate-200">
+                                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">{session.userId}</span>
+                                <button id="logoutBtn" class="text-xs font-medium text-red-600 hover:text-red-500 transition-colors cursor-pointer">Logout</button>
+                            </div>
+                        </>
                     ) : (
                         <a href="/login" class="px-4 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-lg hover:bg-slate-800 transition-colors">Sign In</a>
                     )}
-
-					<div class="h-8 w-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center cursor-help" title="Help">
-						<span class="text-xs font-medium text-slate-500">?</span>
-					</div>
 				</nav>
 			</div>
 		</header>

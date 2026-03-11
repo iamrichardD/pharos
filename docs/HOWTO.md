@@ -36,7 +36,7 @@ Write operations require an authorized SSH key (using `~/.ssh/id_ed25519` by def
 
 The **Pharos Console** is the dynamic interface for your infrastructure.
 
-*   **Pulse Monitor**: Real-time visualization of node health (CPU/Memory).
+*   **MDB Search**: High-performance inventory querying.
 *   **Key Management**: Enroll and revoke SSH keys for write access.
 *   **WebMCP**: Securely grant AI agents (like Gemini or Claude) access to manage your lab with human-in-the-loop safety.
 
