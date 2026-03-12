@@ -29,10 +29,16 @@
     code?: number;
  }
 
- export async function executePharosQuery(clientId: string, queryStr: string, host = '127.0.0.1', port = 2378): Promise<PharosResponse> {
+ export async function executePharosQuery(clientId: string, queryStr: string, host?: string, port?: number): Promise<PharosResponse> {
+    const hostEnv = host || process.env.PHAROS_HOST || '127.0.0.1';
+    const portEnv = port || parseInt(process.env.PHAROS_PORT || '2378', 10);
+    
+    // Diagnostic logging for Bug #122 - will appear in container logs
+    if (process.env.NODE_ENV !== 'test') {
+        console.log(`[PharosClient] Connecting to ${hostEnv}:${portEnv} (Query: ${queryStr.substring(0, 20)}...)`);
+    }
+
     return new Promise((resolve, reject) => {
-        const hostEnv = process.env.PHAROS_HOST || host;
-        const portEnv = parseInt(process.env.PHAROS_PORT || '', 10) || port;
         const useTls = !!process.env.PHAROS_CA_CERT || !!process.env.PHAROS_TLS_CERT || process.env.PHAROS_SANDBOX === 'true';
 
         let client: net.Socket;
