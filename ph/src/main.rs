@@ -44,12 +44,16 @@ async fn main() -> Result<()> {
         }
     }
     
-    let host = env::var("PHAROS_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
-    let port = env::var("PHAROS_PORT").unwrap_or_else(|_| "2378".to_string());
-    let addr = format!("{}:{}", host, port);
+    let addr = if let Ok(server) = env::var("PHAROS_SERVER") {
+        server
+    } else {
+        let host = env::var("PHAROS_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
+        let port = env::var("PHAROS_PORT").unwrap_or_else(|_| "2378".to_string());
+        format!("{}:{}", host, port)
+    };
 
     let mut client = PharosClient::connect(&addr, "ph").await
-        .context("Failed to connect to Pharos server")?;
+        .with_context(|| format!("Failed to connect to Pharos server at {}", addr))?;
 
     // Determine command type
     let is_query = lower_cmd.starts_with("query ") || lower_cmd.starts_with("ph ");

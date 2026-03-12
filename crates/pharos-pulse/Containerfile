@@ -51,6 +51,7 @@ COPY --from=builder /app/target/release/pharos-scan /usr/local/bin/pharos-scan
 
 # Environment (Pulse expects PHAROS_SERVER env var)
 ENV PHAROS_SERVER=pharos-server:2378
+ENV PHAROS_HOST=pharos-server
 
 # Start the agent with tini for proper signal reaping
 ENTRYPOINT ["/usr/bin/tini", "--", "pharos-pulse"]
