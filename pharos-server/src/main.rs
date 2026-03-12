@@ -154,17 +154,21 @@ async fn main() -> anyhow::Result<()> {
     let storage_for_monitor: Arc<RwLock<dyn Storage>> = Arc::clone(&storage);
     tokio::spawn(async move {
         let mut sys = System::new_all();
+        let pid = sysinfo::Pid::from_u32(std::process::id());
+        
         loop {
-            // Update system info
+            // Update system and process info
             sys.refresh_all();
             
             // Record CPU Usage (average over all CPUs)
             let cpu_load: f32 = sys.cpus().iter().map(|cpu: &sysinfo::Cpu| cpu.cpu_usage()).sum::<f32>() / sys.cpus().len() as f32;
             CPU_USAGE.set(cpu_load as f64);
 
-            // Record Memory Usage
-            let used_mem = sys.used_memory();
-            MEMORY_USAGE_BYTES.set(used_mem as i64);
+            // Record Process Memory Usage (RSS)
+            if let Some(process) = sys.process(pid) {
+                let used_mem = process.memory();
+                MEMORY_USAGE_BYTES.set(used_mem as i64);
+            }
 
             // Record Storage Count
             if let Ok(lock) = storage_for_monitor.read() {
@@ -248,6 +252,12 @@ async fn main() -> anyhow::Result<()> {
                         match acceptor.accept(socket).await {
                             Ok(tls_stream) => {
                                 if let Err(e) = handle_connection(tls_stream, peer_addr.to_string(), storage_ref, auth_ref, middleware_ref).await {
+                                    if let Some(io_err) = e.downcast_ref::<std::io::Error>() {
+                                        if io_err.kind() == std::io::ErrorKind::UnexpectedEof {
+                                            tracing::debug!("Connection from {} closed improperly (EOF)", peer_addr);
+                                            return;
+                                        }
+                                    }
                                     error!("Error handling connection from {}: {:?}", peer_addr, e);
                                 }
                             }

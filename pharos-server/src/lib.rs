@@ -27,7 +27,7 @@ use crate::middleware::{MiddlewareChain, ClientContext, MiddlewareAction};
 use std::sync::{Arc, RwLock};
 
 #[instrument(skip(socket, storage, auth_manager, middleware_chain))]
-pub async fn handle_connection<S>(mut socket: S, peer_addr: String, storage: Arc<RwLock<dyn Storage>>, auth_manager: Arc<AuthManager>, middleware_chain: Arc<MiddlewareChain>) -> anyhow::Result<()> 
+pub async fn handle_connection<S>(socket: S, peer_addr: String, storage: Arc<RwLock<dyn Storage>>, auth_manager: Arc<AuthManager>, middleware_chain: Arc<MiddlewareChain>) -> anyhow::Result<()> 
 where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
 {
     let (reader, mut writer) = tokio::io::split(socket);

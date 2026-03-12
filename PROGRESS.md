@@ -2,10 +2,12 @@
 
 ## Current Status
 **Phase:** 16 (Pharos Web Console)
-**Active Task:** Task 16.16 (Issue #118): Refine Web Console UI
+**Active Task:** None
 **Backlog:** 1.8 (DevSecOps Refinement), 10.5 (Subnet Scanning), 18.1 (Alternation)
 
 ## Recent Completions
+- [x] Bug #120: Resolve memory usage health alert threshold regression in `pharos-server`. Fixed regression where the server was reporting system-wide memory instead of process-specific memory (RSS). Updated `main.rs` to track the current PID and collect its Resident Set Size using `sysinfo`. Verified that reported memory dropped from ~14GB (host total) to ~18MB (process actual). (Issue #120)
+- [x] Bug #119: Handle TLS `unexpected-eof` gracefully in `pharos-server`. Fixed issue where improper TLS shutdowns (e.g., from health checks) were logged as high-level `ERROR`s. Implemented graceful handling by downcasting `anyhow::Error` to `std::io::Error` and matching `UnexpectedEof`, now logged at `DEBUG` level. Verified with a custom TLS reproduction script and full test suite pass. (Issue #119)
 - [x] Bug #117: Resolved login lockout regression after password change. Fixed middleware redirect loop for Astro Actions and event listener loss during View Transitions. Synchronized E2E test suite with mandatory rotation flow. (Issue #117)
 - [x] Bug #116: Fixed `pharos-pulse` SIGTERM handling failure.
  Moved signal initialization to the start of `main` and wrapped the blocking `wait_for_server` call in a `tokio::select!` block, allowing the agent to exit gracefully during startup or heartbeat when receiving SIGTERM from Podman. Verified via Sandbox Podman Compose lifecycle. (Issue #116)
