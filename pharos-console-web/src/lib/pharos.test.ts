@@ -112,7 +112,7 @@ describe('executePharosQuery', () => {
         vi.unstubAllEnvs();
     });
 
-    it('test_should_resolve_keys_from_files_during_authentication', async () => {
+    it('test_should_resolve_keys_from_files_during_authentication_handshake', async () => {
         vi.stubEnv('PHAROS_PRIVATE_KEY', '/path/to/private.key');
         vi.stubEnv('PHAROS_PUBLIC_KEY', '/path/to/public.pub');
 
@@ -133,17 +133,28 @@ describe('executePharosQuery', () => {
         dataHandler(Buffer.from('Pharos Protocol v1.0\n'));
         // 2. ID OK
         dataHandler(Buffer.from('200:ID:Accepted\n'));
-        // 3. Receive 401 Challenge
-        dataHandler(Buffer.from('401:Authentication required. Challenge: abcdef123456\n'));
+        // 3. Receive original query
+        expect(mockSocket.write).toHaveBeenCalledWith('add test=val\r\n');
+        
+        // 4. Server requires auth (401)
+        dataHandler(Buffer.from('401:Authentication required\n'));
+        expect(mockSocket.write).toHaveBeenCalledWith('login test-client\r\n');
+
+        // 5. Server sends challenge (301)
+        dataHandler(Buffer.from('301:abcdef123456\n'));
 
         expect(fs.readFileSync).toHaveBeenCalledWith('/path/to/private.key', 'utf8');
         expect(fs.readFileSync).toHaveBeenCalledWith('/path/to/public.pub', 'utf8');
         expect(crypto.sign).toHaveBeenCalled();
-        expect(mockSocket.write).toHaveBeenCalledWith(expect.stringContaining('auth ssh-ed25519 AAAAC3...'));
+        expect(mockSocket.write).toHaveBeenCalledWith(expect.stringContaining('auth "ssh-ed25519 AAAAC3..."'));
 
-        // 4. Auth OK
+        // 6. Auth OK
         dataHandler(Buffer.from('200:Auth:Accepted\n'));
-        // 5. Query OK
+        
+        // 7. Client should retry original query
+        expect(mockSocket.write).toHaveBeenLastCalledWith('add test=val\r\n');
+
+        // 8. Query OK
         dataHandler(Buffer.from('200:Ok\n'));
         dataHandler(Buffer.from('\n'));
 

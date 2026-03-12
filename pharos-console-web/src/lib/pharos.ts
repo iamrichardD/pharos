@@ -88,6 +88,50 @@
                 return;
             }
 
+            if (stage === 'login') {
+                if (line.startsWith('301')) {
+                    // 301:<challenge>
+                    const challenge = line.split(':')[1]?.trim();
+                    
+                    let privKey = process.env.PHAROS_PRIVATE_KEY;
+                    let pubKey = process.env.PHAROS_PUBLIC_KEY;
+
+                    // Resolve from files if paths provided
+                    if (privKey && fs.existsSync(privKey)) {
+                        privKey = fs.readFileSync(privKey, 'utf8');
+                    }
+                    if (pubKey && fs.existsSync(pubKey)) {
+                        pubKey = fs.readFileSync(pubKey, 'utf8');
+                    }
+
+                    if (challenge && privKey && pubKey) {
+                        try {
+                            const privateKey = privKey.includes('PRIVATE KEY') 
+                                ? privKey 
+                                : Buffer.from(privKey, 'base64').toString();
+                            
+                            const signature = crypto.sign(null, Buffer.from(challenge), privateKey);
+                            const signatureBase64 = signature.toString('base64');
+                            
+                            stage = 'auth';
+                            // Wrap public key in quotes to handle potential spaces/comments
+                            client.write(`auth "${pubKey.trim()}" "${signatureBase64}"\r\n`);
+                            return;
+                        } catch (err: any) {
+                            cleanup();
+                            resolve({ type: 'error', code: 500, message: `Signing failed: ${err.message}` });
+                            return;
+                        }
+                    }
+                    cleanup();
+                    resolve({ type: 'error', code: 401, message: 'Authentication required but keys/challenge missing' });
+                } else {
+                    cleanup();
+                    resolve({ type: 'error', code: 403, message: `Login failed: ${line}` });
+                }
+                return;
+            }
+
             if (stage === 'auth') {
                 if (line.startsWith('200')) {
                     stage = 'query';
@@ -100,6 +144,10 @@
             }
 
             if (stage === 'query') {
+                const parts = line.split(':');
+                const code = parseInt(parts[0], 10);
+                const message = parts.slice(1).join(':').trim();
+
                 if (line === '') {
                     // end of response
                     if (currentRecord) {
@@ -115,13 +163,6 @@
                     return;
                 }
 
-                const parts = line.split(':');
-                if (parts.length < 2) return;
-                
-                const codeStr = parts[0];
-                const code = parseInt(codeStr, 10);
-                const message = parts.slice(1).join(':').trim();
-
                 if (code === 200) {
                     if (currentRecord) {
                         records.push(currentRecord);
@@ -134,42 +175,10 @@
                         resolve({ type: 'ok', message });
                     }
                 } else if (code === 401) {
-                    // 401:Authentication required. Challenge: <hex>
-                    const challengeMatch = message.match(/Challenge:\s*([0-9a-fA-F]+)/);
-                    
-                    let privKey = process.env.PHAROS_PRIVATE_KEY;
-                    let pubKey = process.env.PHAROS_PUBLIC_KEY;
-
-                    // Resolve from files if paths provided
-                    if (privKey && fs.existsSync(privKey)) {
-                        privKey = fs.readFileSync(privKey, 'utf8');
-                    }
-                    if (pubKey && fs.existsSync(pubKey)) {
-                        pubKey = fs.readFileSync(pubKey, 'utf8');
-                    }
-
-                    if (challengeMatch && privKey && pubKey) {
-                        try {
-                            const challenge = challengeMatch[1];
-                            const privateKey = privKey.includes('PRIVATE KEY') 
-                                ? privKey 
-                                : Buffer.from(privKey, 'base64').toString();
-                            
-                            const signature = crypto.sign(null, Buffer.from(challenge), privateKey);
-                            const signatureBase64 = signature.toString('base64');
-                            
-                            stage = 'auth';
-                            client.write(`auth ${pubKey} ${signatureBase64}\r\n`);
-                            return;
-                        } catch (err: any) {
-                            cleanup();
-                            resolve({ type: 'error', code: 500, message: `Signing failed: ${err.message}` });
-                            return;
-                        }
-                    }
-                    
-                    cleanup();
-                    resolve({ type: 'error', code: 401, message: 'Authentication required but no keys provided' });
+                    // 401:Authentication required.
+                    // Start handshake: send login
+                    stage = 'login';
+                    client.write(`login ${clientId}\r\n`);
                 } else if (code === 102) {
                     const matchParts = message.split(/\s+/);
                     if (matchParts.length >= 3) {
