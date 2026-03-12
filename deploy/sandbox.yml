@@ -31,6 +31,7 @@ services:
       - PHAROS_TLS_CERT=/etc/pharos/certs/pharos-server.crt
       - PHAROS_TLS_KEY=/etc/pharos/certs/pharos-server.key
       - PHAROS_MEM_THRESHOLD_GB=16
+      - PHAROS_KEYS_DIR=/var/lib/pharos/keys
     ports:
       - "2378:2378"
     volumes:
@@ -59,6 +60,7 @@ services:
       - PHAROS_HOST=pharos-server
       - PHAROS_MACHINE_NAME=pharos-main
       - PHAROS_CA_CERT=/etc/pharos/certs/root-ca.crt
+      - PHAROS_PRIVATE_KEY=/root/.ssh/admin_id_ed25519
     volumes:
       - pharos-keys:/root/.ssh:ro
       - pharos-pki:/etc/pharos/certs:ro

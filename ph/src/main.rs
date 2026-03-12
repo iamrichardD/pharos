@@ -31,7 +31,7 @@ async fn main() -> Result<()> {
     // Handle 'auth sign' locally without server connection
     if lower_cmd.starts_with("auth sign ") {
         let challenge = &query_string[10..];
-        match PharosClient::sign_message(challenge) {
+        match PharosClient::sign_message_async(challenge).await {
             Ok((pub_key, sig)) => {
                 println!("Public Key: {}", pub_key);
                 println!("Signature:  {}", sig);

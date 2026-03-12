@@ -159,7 +159,7 @@ impl PharosClient {
         
         if resp.starts_with("301:") {
             let challenge = &resp[4..];
-            let (pub_key_ssh, sig_b64) = Self::sign_message(challenge)?;
+            let (pub_key_ssh, sig_b64) = Self::sign_message_async(challenge).await?;
             
             self.send_line(&format!("auth \"{}\" \"{}\"", pub_key_ssh, sig_b64)).await?;
             let auth_resp = self.read_line().await?;
@@ -291,9 +291,9 @@ impl PharosClient {
 
     /// Signs a message using the configured SSH private key.
     /// Returns (Public Key SSH string, Signature Base64 string).
-    pub fn sign_message(message: &str) -> Result<(String, String)> {
+    pub async fn sign_message_async(message: &str) -> Result<(String, String)> {
         let home = env::var("HOME").unwrap_or_else(|_| "/root".to_string());
-        let priv_key_path = env::var("PHAROS_PRIVATE_KEY").unwrap_or_else(|_| {
+        let priv_key_path_str = env::var("PHAROS_PRIVATE_KEY").unwrap_or_else(|_| {
             let p = format!("{}/.ssh/id_ed25519", home);
             if Path::new(&p).exists() {
                 p
@@ -303,12 +303,22 @@ impl PharosClient {
             }
         });
 
-        if !Path::new(&priv_key_path).exists() {
-            return Err(anyhow!("Private key not found at {}. Use PHAROS_PRIVATE_KEY to specify it.", priv_key_path));
+        let priv_key_path = Path::new(&priv_key_path_str);
+        
+        // Wait for private key to appear (up to 30 seconds)
+        // This is critical for Sandbox where pharos-server generates it.
+        let start = std::time::Instant::now();
+        let timeout = std::time::Duration::from_secs(30);
+        while !priv_key_path.exists() && start.elapsed() < timeout {
+            tokio::time::sleep(std::time::Duration::from_millis(500)).await;
         }
 
-        let key_content = fs::read_to_string(&priv_key_path)
-            .with_context(|| format!("Failed to read private key at {}", priv_key_path))?;
+        if !priv_key_path.exists() {
+            return Err(anyhow!("Private key not found at {:?}. Use PHAROS_PRIVATE_KEY to specify it.", priv_key_path));
+        }
+
+        let key_content = fs::read_to_string(priv_key_path)
+            .with_context(|| format!("Failed to read private key at {:?}", priv_key_path))?;
         let priv_key = PrivateKey::from_openssh(&key_content)
             .map_err(|e| anyhow!("Failed to parse SSH private key: {}", e))?;
         
