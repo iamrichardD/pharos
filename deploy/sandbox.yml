@@ -85,11 +85,14 @@ services:
       - PHAROS_TLS_KEY=/etc/pharos/certs/pharos-web.key
       - PHAROS_CA_CERT=/etc/pharos/certs/root-ca.crt
       - NODE_EXTRA_CA_CERTS=/etc/pharos/certs/root-ca.crt
+      - PHAROS_PRIVATE_KEY=/etc/pharos/keys/admin_id_ed25519
+      - PHAROS_PUBLIC_KEY=/etc/pharos/keys/admin_id_ed25519.pub
     depends_on:
       pharos-server:
         condition: service_healthy
     volumes:
       - pharos-pki:/etc/pharos/certs:ro
+      - pharos-keys:/etc/pharos/keys:ro
     networks:
       - pharos-net
     security_opt:

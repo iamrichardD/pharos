@@ -178,4 +178,5 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Bug #120 (Issue #120):** Engineering: Resolve memory usage health alert threshold regression in `pharos-server`.
 - [x] **Bug #122 (Issue #122):** Engineering: Resolve `ECONNREFUSED` and TLS `BadSignature` in Sandbox.
 - [x] **Bug #123 (Issue #123):** Engineering: Resolve `ECONNREFUSED` in `mdb` CLI (ignores PHAROS_HOST).
+- [ ] **Bug #124 (Issue #124):** Engineering: Resolve Authentication Required error when adding records in Web Console.
 - [x] **Task 20.4 (Issue #97):** Engineering: Update \`deploy/sandbox.yml\` and \`Containerfile\`s for bootstrapped \`pharos-main\` registration.

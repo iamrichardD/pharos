@@ -136,21 +136,30 @@
                 } else if (code === 401) {
                     // 401:Authentication required. Challenge: <hex>
                     const challengeMatch = message.match(/Challenge:\s*([0-9a-fA-F]+)/);
-                    const privKeyEnv = process.env.PHAROS_PRIVATE_KEY;
-                    const pubKeyEnv = process.env.PHAROS_PUBLIC_KEY;
+                    
+                    let privKey = process.env.PHAROS_PRIVATE_KEY;
+                    let pubKey = process.env.PHAROS_PUBLIC_KEY;
 
-                    if (challengeMatch && privKeyEnv && pubKeyEnv) {
+                    // Resolve from files if paths provided
+                    if (privKey && fs.existsSync(privKey)) {
+                        privKey = fs.readFileSync(privKey, 'utf8');
+                    }
+                    if (pubKey && fs.existsSync(pubKey)) {
+                        pubKey = fs.readFileSync(pubKey, 'utf8');
+                    }
+
+                    if (challengeMatch && privKey && pubKey) {
                         try {
                             const challenge = challengeMatch[1];
-                            const privateKey = privKeyEnv.includes('PRIVATE KEY') 
-                                ? privKeyEnv 
-                                : Buffer.from(privKeyEnv, 'base64').toString();
+                            const privateKey = privKey.includes('PRIVATE KEY') 
+                                ? privKey 
+                                : Buffer.from(privKey, 'base64').toString();
                             
                             const signature = crypto.sign(null, Buffer.from(challenge), privateKey);
                             const signatureBase64 = signature.toString('base64');
                             
                             stage = 'auth';
-                            client.write(`auth ${pubKeyEnv} ${signatureBase64}\r\n`);
+                            client.write(`auth ${pubKey} ${signatureBase64}\r\n`);
                             return;
                         } catch (err: any) {
                             cleanup();
