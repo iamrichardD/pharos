@@ -29,7 +29,9 @@ export const server = {
                 throw new Error('Sandbox mode is not enabled');
             }
             try {
-                const res = await executePharosQuery('sandbox-term', input.query);
+                const host = process.env.PHAROS_HOST;
+                const port = process.env.PHAROS_PORT ? parseInt(process.env.PHAROS_PORT, 10) : undefined;
+                const res = await executePharosQuery('sandbox-term', input.query, host, port);
                 return { success: true, result: res };
             } catch (e: any) {
                 throw new Error(e.message || 'Sandbox query failed');
@@ -121,7 +123,9 @@ export const server = {
         }),
         handler: async (input, context) => {
             try {
-                const isValid = await executeAuthCheck(input.publicKey, input.signature, input.challenge);
+                const host = process.env.PHAROS_HOST;
+                const port = process.env.PHAROS_PORT ? parseInt(process.env.PHAROS_PORT, 10) : undefined;
+                const isValid = await executeAuthCheck(input.publicKey, input.signature, input.challenge, host, port);
                 
                 if (isValid) {
                     // Extract user ID from public key (simplified: last part of comment if exists)
@@ -165,7 +169,9 @@ export const server = {
                 return { staged: true, data: input };
             } else if (input.actionType === 'commit') {
                 try {
-                    const res = await commitMdbRecord(input);
+                    const host = process.env.PHAROS_HOST;
+                    const port = process.env.PHAROS_PORT ? parseInt(process.env.PHAROS_PORT, 10) : undefined;
+                    const res = await commitMdbRecord(input, host, port);
                     if (res.type === 'error') {
                         throw new Error(res.message || 'Failed to add record');
                     }

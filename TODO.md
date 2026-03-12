@@ -176,4 +176,5 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Bug #117 (Issue #117):** Engineering: Resolve login lockout regression after password change. Fixed middleware redirect loop for actions and event listener loss during View Transitions.
 - [x] **Bug #119 (Issue #119):** Engineering: Handle TLS `unexpected-eof` gracefully in `pharos-server`.
 - [x] **Bug #120 (Issue #120):** Engineering: Resolve memory usage health alert threshold regression in `pharos-server`.
+- [x] **Bug #122 (Issue #122):** Engineering: Resolve `ECONNREFUSED` on MDB Add in Web Console.
 - [x] **Task 20.4 (Issue #97):** Engineering: Update \`deploy/sandbox.yml\` and \`Containerfile\`s for bootstrapped \`pharos-main\` registration.

@@ -33,8 +33,17 @@ describe('searchMdb', () => {
 
         const result = await searchMdb('  return all  ');
         
-        expect(pharosClient.executePharosQuery).toHaveBeenCalledWith('web-mdb-search', 'return all');
+        expect(pharosClient.executePharosQuery).toHaveBeenCalledWith('web-mdb-search', 'return all', undefined, undefined);
         expect(result).toEqual(mockResponse);
+    });
+
+    it('test_should_honor_explicit_host_and_port', async () => {
+        const mockResponse: pharosClient.PharosResponse = { type: 'matches', count: 1, records: [] };
+        vi.mocked(pharosClient.executePharosQuery).mockResolvedValue(mockResponse);
+
+        await searchMdb('all', 1, 25, 'custom-host', 1234);
+        
+        expect(pharosClient.executePharosQuery).toHaveBeenCalledWith('web-mdb-search', 'all', 'custom-host', 1234);
     });
 
     it('test_should_slice_records_for_pagination_page_1', async () => {

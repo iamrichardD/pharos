@@ -23,7 +23,7 @@ export interface MdbAddInput {
  * Commits a new machine record to the Pharos server.
  * Security Review: Inputs are escaped via protocol syntax (double-quote escaping).
  */
-export async function commitMdbRecord(input: MdbAddInput): Promise<PharosResponse> {
+export async function commitMdbRecord(input: MdbAddInput, host?: string, port?: number): Promise<PharosResponse> {
     const esc = (s?: string) => s ? s.replace(/"/g, '\\"') : '';
     
     let queryStr = `add type="machine" hostname="${esc(input.hostname)}" ip="${esc(input.ip)}"`;
@@ -31,5 +31,5 @@ export async function commitMdbRecord(input: MdbAddInput): Promise<PharosRespons
     if (input.os) queryStr += ` os="${esc(input.os)}"`;
     if (input.alias) queryStr += ` alias="${esc(input.alias)}"`;
 
-    return executePharosQuery('web-console-add', queryStr);
+    return executePharosQuery('web-console-add', queryStr, host, port);
 }

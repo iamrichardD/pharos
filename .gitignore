@@ -16,3 +16,4 @@ keys/
 /keys_auto/
 /.gemini/*
 !/.gemini/skills/
+/certs/

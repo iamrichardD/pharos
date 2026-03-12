@@ -28,7 +28,9 @@ describe('commitMdbRecord', () => {
         
         expect(pharosClient.executePharosQuery).toHaveBeenCalledWith(
             'web-console-add', 
-            'add type="machine" hostname="node-01" ip="1.2.3.4"'
+            'add type="machine" hostname="node-01" ip="1.2.3.4"',
+            undefined,
+            undefined
         );
     });
 
@@ -46,7 +48,9 @@ describe('commitMdbRecord', () => {
         
         expect(pharosClient.executePharosQuery).toHaveBeenCalledWith(
             'web-console-add', 
-            'add type="machine" hostname="node-01" ip="1.2.3.4" mac="00:11:22" os="Ubuntu" alias="primary"'
+            'add type="machine" hostname="node-01" ip="1.2.3.4" mac="00:11:22" os="Ubuntu" alias="primary"',
+            undefined,
+            undefined
         );
     });
 
@@ -61,7 +65,23 @@ describe('commitMdbRecord', () => {
         
         expect(pharosClient.executePharosQuery).toHaveBeenCalledWith(
             'web-console-add', 
-            'add type="machine" hostname="node\\" delete all \\"" ip="1.2.3.4"'
+            'add type="machine" hostname="node\\" delete all \\"" ip="1.2.3.4"',
+            undefined,
+            undefined
+        );
+    });
+
+    it('test_should_honor_explicit_host_and_port', async () => {
+        const mockResponse: pharosClient.PharosResponse = { type: 'ok', message: 'Ok' };
+        vi.mocked(pharosClient.executePharosQuery).mockResolvedValue(mockResponse);
+
+        await commitMdbRecord({ hostname: 'node-01', ip: '1.2.3.4' }, 'custom-host', 1234);
+        
+        expect(pharosClient.executePharosQuery).toHaveBeenCalledWith(
+            'web-console-add', 
+            expect.stringContaining('hostname="node-01"'),
+            'custom-host',
+            1234
         );
     });
 });

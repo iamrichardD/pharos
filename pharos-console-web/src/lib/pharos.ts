@@ -212,9 +212,9 @@
 /**
  * Executes a stateless authentication check against the Pharos server.
  */
-export async function executeAuthCheck(publicKey: string, signature: string, challenge: string): Promise<boolean> {
-    const host = process.env.PHAROS_HOST || '127.0.0.1';
-    const port = parseInt(process.env.PHAROS_PORT || '2378', 10);
+export async function executeAuthCheck(publicKey: string, signature: string, challenge: string, hostParam?: string, portParam?: number): Promise<boolean> {
+    const host = hostParam || process.env.PHAROS_HOST || '127.0.0.1';
+    const port = portParam || parseInt(process.env.PHAROS_PORT || '2378', 10);
     const useTls = !!process.env.PHAROS_CA_CERT || !!process.env.PHAROS_TLS_CERT || process.env.PHAROS_SANDBOX === 'true';
 
     return new Promise((resolve, reject) => {
