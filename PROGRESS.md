@@ -6,6 +6,7 @@
 **Backlog:** 1.8 (DevSecOps Refinement), 10.5 (Subnet Scanning), 18.1 (Alternation)
 
 ## Recent Completions
+- [x] Task 16.17: Engineering: Consolidate MDB Search entry point. Removed duplicate 'Search MDB' card from the home page and made the header link visible on all screen sizes to streamline the UI. Verified with manual responsive layout checks. (Issue #121)
 - [x] Bug #120: Resolve memory usage health alert threshold regression in `pharos-server`. Fixed regression where the server was reporting system-wide memory instead of process-specific memory (RSS). Updated `main.rs` to track the current PID and collect its Resident Set Size using `sysinfo`. Verified that reported memory dropped from ~14GB (host total) to ~18MB (process actual). (Issue #120)
 - [x] Bug #119: Handle TLS `unexpected-eof` gracefully in `pharos-server`. Fixed issue where improper TLS shutdowns (e.g., from health checks) were logged as high-level `ERROR`s. Implemented graceful handling by downcasting `anyhow::Error` to `std::io::Error` and matching `UnexpectedEof`, now logged at `DEBUG` level. Verified with a custom TLS reproduction script and full test suite pass. (Issue #119)
 - [x] Bug #117: Resolved login lockout regression after password change. Fixed middleware redirect loop for Astro Actions and event listener loss during View Transitions. Synchronized E2E test suite with mandatory rotation flow. (Issue #117)
