@@ -26,8 +26,8 @@ let error: string | null = null;
 
 if (query.trim() !== '') {
     try {
-        const host = process.env.PHAROS_HOST;
-        const port = process.env.PHAROS_PORT ? parseInt(process.env.PHAROS_PORT, 10) : undefined;
+        const host = process.env.PHAROS_HOST || 'pharos-server'; // Sandbox default
+        const port = process.env.PHAROS_PORT ? parseInt(process.env.PHAROS_PORT, 10) : 2378;
         result = await searchMdb(query, page, pageSize, host, port);
     } catch (e: any) {
         error = e.message || 'Failed to connect to Pharos server';

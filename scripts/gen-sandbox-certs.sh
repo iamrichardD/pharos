@@ -16,14 +16,24 @@ set -e
 CERT_DIR=${1:-./certs}
 mkdir -p "$CERT_DIR"
 
-echo "Creating Ephemeral Sandbox Root CA..."
-openssl genrsa -out "$CERT_DIR/root-ca.key" 4096
-openssl req -x509 -new -nodes -key "$CERT_DIR/root-ca.key" -sha256 -days 1 -out "$CERT_DIR/root-ca.crt" -subj "/C=US/ST=Sandbox/L=Pharos/O=Pharos Ecosystem/CN=Pharos Sandbox Root CA"
+if [ -f "$CERT_DIR/root-ca.crt" ]; then
+    echo "Existing Sandbox Root CA found. Skipping generation to maintain signature integrity."
+else
+    echo "Creating Ephemeral Sandbox Root CA..."
+    openssl genrsa -out "$CERT_DIR/root-ca.key" 4096
+    openssl req -x509 -new -nodes -key "$CERT_DIR/root-ca.key" -sha256 -days 1 -out "$CERT_DIR/root-ca.crt" -subj "/C=US/ST=Sandbox/L=Pharos/O=Pharos Ecosystem/CN=Pharos Sandbox Root CA"
+fi
 
 # --- Function to sign a certificate ---
 sign_cert() {
     local name=$1
     local dns=$2
+
+    if [ -f "$CERT_DIR/$name.crt" ]; then
+        echo "Existing certificate for $name found. Skipping."
+        return
+    fi
+
     echo "Generating certificate for $name ($dns)..."
     
     openssl genrsa -out "$CERT_DIR/$name.key" 2048
