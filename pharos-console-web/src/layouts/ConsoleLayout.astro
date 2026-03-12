@@ -39,19 +39,19 @@ const session = await getSession(Astro.cookies.get(AUTH_COOKIE_NAME)?.value);
 				<a href="/" class="flex items-center space-x-2 hover:opacity-80 transition-opacity">
 					<span class="text-2xl font-bold tracking-tight text-slate-950">Pharos<span class="text-emerald-600">Console</span></span>
 				</a>
-				<nav class="flex items-center space-x-4">
-                    <a href="/mdb" class="text-sm font-medium text-slate-600 hover:text-emerald-600 transition-colors hidden sm:block">Search MDB</a>
+				<nav class="flex items-center space-x-3 sm:space-x-4">
+                    <a href="/mdb" class="text-sm font-medium text-slate-600 hover:text-emerald-600 transition-colors">Search MDB</a>
                     
                     {session ? (
                         <>
                             <a href="/mdb/add" class="text-sm font-medium text-slate-600 hover:text-emerald-600 transition-colors hidden sm:block">Add Record</a>
-                            <div class="flex items-center space-x-3 pl-2 border-l border-slate-200">
-                                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">{session.userId}</span>
-                                <button id="logoutBtn" class="text-xs font-medium text-red-600 hover:text-red-500 transition-colors cursor-pointer">Logout</button>
+                            <div class="flex items-center space-x-2 sm:space-x-3 pl-2 border-l border-slate-200">
+                                <span class="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">{session.userId}</span>
+                                <button id="logoutBtn" class="text-[10px] sm:text-xs font-medium text-red-600 hover:text-red-500 transition-colors cursor-pointer">Logout</button>
                             </div>
                         </>
                     ) : (
-                        <a href="/login" class="px-4 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-lg hover:bg-slate-800 transition-colors">Sign In</a>
+                        <a href="/login" class="px-3 sm:px-4 py-1 sm:py-1.5 bg-slate-900 text-white text-[10px] sm:text-xs font-bold rounded-lg hover:bg-slate-800 transition-colors">Sign In</a>
                     )}
 				</nav>
 			</div>
