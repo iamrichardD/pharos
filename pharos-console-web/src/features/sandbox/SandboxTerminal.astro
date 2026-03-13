@@ -42,7 +42,7 @@ import { actions } from 'astro:actions';
         name="query" 
         id="query-input"
         class="flex-1 bg-transparent text-slate-100 outline-none p-2 font-mono" 
-        placeholder="Try 'mdb status=online'"
+        placeholder="Try 'status=online'"
         autocomplete="off" 
         spellcheck="false"
       />
@@ -55,6 +55,7 @@ import { actions } from 'astro:actions';
 
 <script>
   import { actions } from 'astro:actions';
+  import { formatPharosRecord } from '../../lib/pharos';
 
   const form = document.getElementById('sandbox-form') as HTMLFormElement;
   const input = document.getElementById('query-input') as HTMLInputElement;
@@ -93,9 +94,9 @@ import { actions } from 'astro:actions';
              responseLine.className = 'mt-1 mb-3 whitespace-pre-wrap text-red-400';
              responseLine.textContent = data.result.message || 'Protocol Error';
           } else {
-             // For simple display, just stringify the records
+             // For simple display, format the records in mdb CLI style
              if (data.result.records && data.result.records.length > 0) {
-                 responseLine.textContent = data.result.records.map((r: any) => JSON.stringify(r)).join('\\n');
+                 responseLine.textContent = data.result.records.map((r: any) => formatPharosRecord(r)).join('\n\n');
              } else {
                  responseLine.textContent = 'No records found (200 OK)';
              }

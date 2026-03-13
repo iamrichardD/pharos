@@ -29,6 +29,17 @@
     code?: number;
  }
 
+ /**
+  * Formats a PharosRecord into a human-readable string matching the 'mdb' CLI style.
+  * * Rationale: Ensures consistent UX between the CLI and the Web Sandbox Terminal.
+  * * Style: "{:>15}: {}" (15-character right-aligned keys).
+  */
+ export function formatPharosRecord(record: PharosRecord): string {
+    return record.fields
+        .map(field => `${field.key.padStart(15, ' ')}: ${field.value}`)
+        .join('\n');
+ }
+
  export async function executePharosQuery(clientId: string, queryStr: string, host?: string, port?: number): Promise<PharosResponse> {
     const hostEnv = host || process.env.PHAROS_HOST || '127.0.0.1';
     const portEnv = port || parseInt(process.env.PHAROS_PORT || '2378', 10);

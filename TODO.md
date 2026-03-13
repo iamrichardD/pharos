@@ -161,6 +161,7 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] Task 17.8 (Issue #92): Engineering: Implement the 'Pharos Toolbelt' (bundle ph/mdb in Pulse) and the 'Sandbox-Aware' CLI Handshake UI in the Web Console. (Display 'podman exec' when PHAROS_SANDBOX=true).
 - [x] Task 17.9 (Issue #104): Engineering: Pre-configure PHAROS_HOST=pharos-server in the Sandbox Pulse container for improved CLI DX.
 - [x] Task 17.10 (Issue #128): Advocacy: Improve Sandbox Terminal placeholder text to emphasize MDB status queries.
+- [x] Task 17.11 (Issue #129): Engineering: Format Sandbox Terminal output to match `mdb` CLI style.
 
 ## Phase 18: Enterprise Workflows (Alternation & Coalescing) - PROPOSED
 - [ ] **Task 18.1 (#TBD):** Engineering: Implement Choice-Based Selection `[f1|f2]=val` (OR search) in `protocol.rs`.

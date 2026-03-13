@@ -12,7 +12,7 @@
  * ======================================================================== */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { executePharosQuery } from './pharos';
+import { executePharosQuery, formatPharosRecord } from './pharos';
 import * as net from 'node:net';
 import * as fs from 'node:fs';
 import * as crypto from 'node:crypto';
@@ -26,12 +26,14 @@ vi.mock('node:crypto', () => ({
     sign: vi.fn(),
 }));
 
+vi.mocked(crypto.sign).mockReturnValue(Buffer.from('mock-signature') as any);
+
 const mockSocket = {
     write: vi.fn(),
     on: vi.fn(),
     destroy: vi.fn(),
     emit: vi.fn(),
-};
+} as any;
 
 vi.mock('node:net', () => ({
     connect: vi.fn(() => mockSocket),
@@ -47,7 +49,7 @@ describe('executePharosQuery', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         // Reset handlers for each test
-        mockSocket.on.mockImplementation((event, handler) => {
+        mockSocket.on.mockImplementation((event: string, handler: any) => {
             mockSocket[event + 'Handler'] = handler;
         });
     });
@@ -122,7 +124,6 @@ describe('executePharosQuery', () => {
             if (path === '/path/to/public.pub') return 'ssh-ed25519 AAAAC3...';
             return '';
         });
-        vi.mocked(crypto.sign).mockReturnValue(Buffer.from('signed-challenge'));
 
         const queryPromise = executePharosQuery('test-client', 'add test=val');
         
@@ -162,5 +163,24 @@ describe('executePharosQuery', () => {
         expect(result.type).toBe('ok');
 
         vi.unstubAllEnvs();
+    });
+
+    it('test_should_format_record_with_15_char_padding', () => {
+        /**
+         * Rationale: Ensures that the Web Sandbox Terminal output matches the mdb CLI's
+         * {:>15}: {} format, providing a consistent experience for technical users.
+         */
+        const record = {
+            id: 1,
+            fields: [
+                { key: 'hostname', value: 'pharos-main' },
+                { key: 'os', value: 'Debian' }
+            ]
+        };
+        const formatted = formatPharosRecord(record);
+        const lines = formatted.split('\n');
+        
+        expect(lines[0]).toBe('       hostname: pharos-main');
+        expect(lines[1]).toBe('             os: Debian');
     });
 });

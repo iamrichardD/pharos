@@ -9,6 +9,7 @@
 
 ## Recent Completions
 - [x] Task 17.10: Advocacy: Improved Sandbox Terminal placeholder text to emphasize MDB status queries. (Issue #128)
+- [x] Task 17.11: Engineering: Format Sandbox Terminal output to match `mdb` CLI style. (Issue #129)
 - [x] Bug #127: Resolved Sandbox Terminal Query failure. Standardized client ID to \`web-sandbox-mdb\` to ensure machine record defaults on server. (Issue #127)
 - [x] Bug #126: Resolved Pulse Baseline Presence failure in Sandbox. Standardized private key paths to \`/etc/pharos/keys\` (matching Web Console) and improved \`pharos-client\` with a 60s wait loop, debug logging, and fallback path discovery. (Issue #126)
 - [x] Task 20.5: Engineering: Implemented `deploy/sandbox.local.yml` and `deploy/README.md`. Enabled "Live Sandbox" experience for developers by using local build contexts, allowing Human-in-the-Loop verification of on-host source code without pushing to GitHub. (Issue #125)
