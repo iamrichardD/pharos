@@ -6,7 +6,8 @@
 **Backlog:** 1.8 (DevSecOps Refinement), 10.5 (Subnet Scanning), 18.1 (Alternation)
 
 ## Recent Completions
-- [ ] Bug #124: Engineering: Investigating persistent authentication failure on record addition in Web Console. (REOPENED)
+- [x] Task 20.5: Engineering: Implemented `deploy/sandbox.local.yml` and `deploy/README.md`. Enabled "Live Sandbox" experience for developers by using local build contexts, allowing Human-in-the-Loop verification of on-host source code without pushing to GitHub. (Issue #125)
+- [x] Bug #124: Resolved persistent authentication failure on record addition in Web Console. Implemented full 401 login/auth handshake in the Node.js client library and fixed key resolution from mounted Sandbox volumes. (Issue #124)
 - [x] Bug #123: Resolved `mdb` CLI connection failure and registration race conditions in Sandbox. Implemented robust address resolution in CLIs, standardized `PHAROS_KEYS_DIR` in `deploy/sandbox.yml`, and added async private key polling in `PharosClient` to eliminate startup race conditions. (Issue #123)
 - [x] Bug #122: Resolved persistent `ECONNREFUSED` and TLS `BadSignature` in Sandbox. (Issue #122)
 - [x] Task 16.17: Engineering: Consolidate MDB Search entry point. Removed duplicate 'Search MDB' card from the home page and made the header link visible on all screen sizes to streamline the UI. Verified with manual responsive layout checks. (Issue #121)

@@ -1,0 +1,118 @@
+# ========================================================================
+# Project: pharos
+# Component: Pharos Sandbox (Development / Local Build)
+# File: deploy/sandbox.local.yml
+# Author: Richard D. (https://github.com/iamrichardd)
+# License: AGPL-3.0 (See LICENSE file for details)
+# * Purpose (The "Why"):
+# This file provides a "Live Sandbox" experience for developers. Unlike
+# the standard sandbox.yml (which pulls stable images from GHCR), this
+# version builds the containers from your on-host source code.
+# Use this to verify bug fixes and new features before committing.
+# * Traceability:
+# Related to Phase 17 (Task 17.2).
+# ========================================================================
+
+services:
+  pharos-certgen:
+    image: public.ecr.aws/docker/library/alpine:latest
+    container_name: pharos-certgen
+    volumes:
+      - pharos-pki:/certs
+      - ../scripts:/scripts:ro
+    command: /bin/sh -c "apk add --no-cache openssl bash && /scripts/gen-sandbox-certs.sh /certs"
+    security_opt:
+      - seccomp:unconfined
+
+  pharos-server:
+    build:
+      context: ../
+      dockerfile: pharos-server/Containerfile
+    container_name: pharos-server
+    environment:
+      - RUST_LOG=info
+      - PHAROS_TLS_CERT=/etc/pharos/certs/pharos-server.crt
+      - PHAROS_TLS_KEY=/etc/pharos/certs/pharos-server.key
+      - PHAROS_MEM_THRESHOLD_GB=16
+      - PHAROS_KEYS_DIR=/var/lib/pharos/keys
+    ports:
+      - "2378:2378"
+    volumes:
+      - pharos-keys:/var/lib/pharos/keys
+      - pharos-pki:/etc/pharos/certs:ro
+    tmpfs:
+      - /var/lib/pharos/storage
+    depends_on:
+      pharos-certgen:
+        condition: service_completed_successfully
+    networks:
+      - pharos-net
+    security_opt:
+      - seccomp:unconfined
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 1 bash -c '</dev/tcp/localhost/2378' || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  pharos-pulse:
+    build:
+      context: ../
+      dockerfile: crates/pharos-pulse/Containerfile
+    container_name: pharos-pulse
+    environment:
+      - PHAROS_SERVER=pharos-server:2378
+      - PHAROS_HOST=pharos-server
+      - PHAROS_MACHINE_NAME=pharos-main
+      - PHAROS_CA_CERT=/etc/pharos/certs/root-ca.crt
+      - PHAROS_PRIVATE_KEY=/root/.ssh/admin_id_ed25519
+    volumes:
+      - pharos-keys:/root/.ssh:ro
+      - pharos-pki:/etc/pharos/certs:ro
+    depends_on:
+      pharos-server:
+        condition: service_healthy
+    networks:
+      - pharos-net
+    security_opt:
+      - seccomp:unconfined
+
+  pharos-web:
+    build:
+      context: ../pharos-console-web
+      dockerfile: Containerfile
+    container_name: pharos-web
+    ports:
+      - "3000:3000"
+    environment:
+      - PHAROS_SERVER_URL=https://pharos-server:2378
+      - PHAROS_HOST=pharos-server
+      - PHAROS_SANDBOX=true
+      - PHAROS_TLS_CERT=/etc/pharos/certs/pharos-web.crt
+      - PHAROS_TLS_KEY=/etc/pharos/certs/pharos-web.key
+      - PHAROS_CA_CERT=/etc/pharos/certs/root-ca.crt
+      - NODE_EXTRA_CA_CERTS=/etc/pharos/certs/root-ca.crt
+      - PHAROS_PRIVATE_KEY=/etc/pharos/keys/admin_id_ed25519
+      - PHAROS_PUBLIC_KEY=/etc/pharos/keys/admin_id_ed25519.pub
+    depends_on:
+      pharos-server:
+        condition: service_healthy
+    volumes:
+      - pharos-pki:/etc/pharos/certs:ro
+      - pharos-keys:/etc/pharos/keys:ro
+    networks:
+      - pharos-net
+    security_opt:
+      - seccomp:unconfined
+
+networks:
+  pharos-net:
+    driver: bridge
+
+volumes:
+  pharos-keys:
+    driver: local
+  pharos-pki:
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
