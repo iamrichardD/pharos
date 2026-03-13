@@ -31,7 +31,7 @@ export const server = {
             try {
                 const host = process.env.PHAROS_HOST || 'pharos-server';
                 const port = process.env.PHAROS_PORT ? parseInt(process.env.PHAROS_PORT, 10) : 2378;
-                const res = await executePharosQuery('sandbox-term', input.query, host, port);
+                const res = await executePharosQuery('web-sandbox-mdb', input.query, host, port);
                 return { success: true, result: res };
             } catch (e: any) {
                 throw new Error(e.message || 'Sandbox query failed');
