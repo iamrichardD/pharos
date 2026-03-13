@@ -3,6 +3,12 @@ website/dist/
 website/node_modules/
 website/.astro/
 
+# Pharos Web Console: Local Data Store
+pharos-console-web/data/
+pharos-console-web/dist/
+pharos-console-web/node_modules/
+pharos-console-web/.astro/
+
 # Security: Never commit SSH keys or private keys
 *.pem
 *.key
