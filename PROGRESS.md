@@ -5,9 +5,11 @@
 **Active Task:** None
 **Backlog:** 1.8 (DevSecOps Refinement), 10.5 (Subnet Scanning), 18.1 (Alternation)
 **Blocked/Investigating:**
-- [ ] **Bug #127 (Issue #127):** Sandbox Terminal Query Failure. Query \`hostname=pharos-main\` returns no result on home page terminal, but works in Search MDB.
+- None
 
 ## Recent Completions
+- [x] Task 17.10: Advocacy: Improved Sandbox Terminal placeholder text to emphasize MDB status queries. (Issue #128)
+- [x] Bug #127: Resolved Sandbox Terminal Query failure. Standardized client ID to \`web-sandbox-mdb\` to ensure machine record defaults on server. (Issue #127)
 - [x] Bug #126: Resolved Pulse Baseline Presence failure in Sandbox. Standardized private key paths to \`/etc/pharos/keys\` (matching Web Console) and improved \`pharos-client\` with a 60s wait loop, debug logging, and fallback path discovery. (Issue #126)
 - [x] Task 20.5: Engineering: Implemented `deploy/sandbox.local.yml` and `deploy/README.md`. Enabled "Live Sandbox" experience for developers by using local build contexts, allowing Human-in-the-Loop verification of on-host source code without pushing to GitHub. (Issue #125)
 - [x] Bug #124: Resolved persistent authentication failure on record addition in Web Console. Implemented full 401 login/auth handshake in the Node.js client library and fixed key resolution from mounted Sandbox volumes. (Issue #124)

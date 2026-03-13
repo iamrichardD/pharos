@@ -160,8 +160,9 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] Task 17.5 (Issue #75): Release: Prepare v1.3.0 release including the integrated Pharos Sandbox.
 - [x] Task 17.8 (Issue #92): Engineering: Implement the 'Pharos Toolbelt' (bundle ph/mdb in Pulse) and the 'Sandbox-Aware' CLI Handshake UI in the Web Console. (Display 'podman exec' when PHAROS_SANDBOX=true).
 - [x] Task 17.9 (Issue #104): Engineering: Pre-configure PHAROS_HOST=pharos-server in the Sandbox Pulse container for improved CLI DX.
+- [x] Task 17.10 (Issue #128): Advocacy: Improve Sandbox Terminal placeholder text to emphasize MDB status queries.
 
-## Phase 18: Enterprise Workflows (Alternation & Coalescing)
+## Phase 18: Enterprise Workflows (Alternation & Coalescing) - PROPOSED
 - [ ] **Task 18.1 (#TBD):** Engineering: Implement Choice-Based Selection `[f1|f2]=val` (OR search) in `protocol.rs`.
 - [ ] **Task 18.2 (#TBD):** Engineering: Implement Return Coalescing `return [f1|f2]` (First-match) in `pharos-server`.
 - [ ] **Task 18.3 (#TBD):** Engineering: Implement `mapping.yaml` global alias support.
