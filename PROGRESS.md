@@ -6,6 +6,7 @@
 **Backlog:** 1.8 (DevSecOps Refinement), 10.5 (Subnet Scanning), 18.1 (Alternation)
 
 ## Recent Completions
+- [x] Bug #126: Resolved Pulse Baseline Presence failure in Sandbox. Standardized private key paths to `/etc/pharos/keys` (matching Web Console) and improved `pharos-client` with a 60s wait loop, debug logging, and fallback path discovery. (Issue #126)
 - [x] Task 20.5: Engineering: Implemented `deploy/sandbox.local.yml` and `deploy/README.md`. Enabled "Live Sandbox" experience for developers by using local build contexts, allowing Human-in-the-Loop verification of on-host source code without pushing to GitHub. (Issue #125)
 - [x] Bug #124: Resolved persistent authentication failure on record addition in Web Console. Implemented full 401 login/auth handshake in the Node.js client library and fixed key resolution from mounted Sandbox volumes. (Issue #124)
 - [x] Bug #123: Resolved `mdb` CLI connection failure and registration race conditions in Sandbox. Implemented robust address resolution in CLIs, standardized `PHAROS_KEYS_DIR` in `deploy/sandbox.yml`, and added async private key polling in `PharosClient` to eliminate startup race conditions. (Issue #123)

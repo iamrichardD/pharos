@@ -21,9 +21,17 @@ podman-compose -f deploy/sandbox.yml down
 
 **Usage:**
 ```bash
-# Build and start the ecosystem from local source
-podman-compose -f deploy/sandbox.local.yml up --build --force-recreate -d
+# IMPORTANT: If you have a previous sandbox running, down it first:
+podman-compose -f deploy/sandbox.local.yml down
 
+# Build and start the ecosystem from local source
+# Note: If podman-compose build fails due to seccomp (bdflush), build manually:
+# podman build --security-opt seccomp=unconfined -f pharos-server/Containerfile -t deploy_pharos-server .
+# podman build --security-opt seccomp=unconfined -f crates/pharos-pulse/Containerfile -t deploy_pharos-pulse .
+# podman build --security-opt seccomp=unconfined -f pharos-console-web/Containerfile -t deploy_pharos-web pharos-console-web
+
+podman-compose -f deploy/sandbox.local.yml up --build --force-recreate -d
+```
 # Verify a fix (example: query the mdb CLI inside the pulse container)
 podman exec -it pharos-pulse mdb hostname="pharos-main"
 

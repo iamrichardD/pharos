@@ -60,9 +60,9 @@ services:
       - PHAROS_HOST=pharos-server
       - PHAROS_MACHINE_NAME=pharos-main
       - PHAROS_CA_CERT=/etc/pharos/certs/root-ca.crt
-      - PHAROS_PRIVATE_KEY=/root/.ssh/admin_id_ed25519
+      - PHAROS_PRIVATE_KEY=/etc/pharos/keys/admin_id_ed25519
     volumes:
-      - pharos-keys:/root/.ssh:ro
+      - pharos-keys:/etc/pharos/keys:ro
       - pharos-pki:/etc/pharos/certs:ro
     depends_on:
       pharos-server:

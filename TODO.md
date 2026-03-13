@@ -57,6 +57,7 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Bug #115 (Issue #114):** **Logout broken after mandatory password change**. Hover cursor is not a pointer and clicking logout does nothing. (Remediation: astro:page-load listener and cursor-pointer).
 - [x] **Bug #116 (Issue #116):** **Pulse SIGTERM Failure**. \`pharos-pulse\` fails to respond to SIGTERM during startup or heartbeat, causing Podman to SIGKILL after 10s. (Remediation: Move signal handlers to start of \`main\` and select during \`wait_for_server\`).
 - [x] **Debt #05 (Issue #115):** **GitHub Actions Modernization**. Update workflows to support Node.js 24 and remove deprecation warnings. (HIGH PRIORITY)
+- [x] **Bug #126 (Issue #126):** **Pulse Baseline Presence Failure**. \`pharos-pulse\` fails to send baseline presence due to missing private key in Sandbox. (Remediation: Standardized paths to /etc/pharos/keys and improved client discovery loop).
 
 - [x] **Debt #02 (Issue #84):** **Logic Duplication**. Move all authorization logic from `lib.rs` into `SecurityTierMiddleware`.
 - [x] **Debt #03 (Issue #85):** **Hardcoded Paths**. Transitioned SSH key paths to relative `PHAROS_KEYS_DIR`.

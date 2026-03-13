@@ -305,36 +305,49 @@ impl PharosClient {
 
         let priv_key_path = Path::new(&priv_key_path_str);
         
-        // Wait for private key to appear (up to 30 seconds)
+        // Wait for private key to appear (up to 60 seconds)
         // This is critical for Sandbox where pharos-server generates it.
         let start = std::time::Instant::now();
-        let timeout = std::time::Duration::from_secs(30);
+        let timeout = std::time::Duration::from_secs(60);
+        
+        if !priv_key_path.exists() {
+            log::info!("Waiting for private key at {:?} (timeout: 60s)...", priv_key_path);
+        }
+
         while !priv_key_path.exists() && start.elapsed() < timeout {
-            tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+            tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
         }
 
         if !priv_key_path.exists() {
-            return Err(anyhow!("Private key not found at {:?}. Use PHAROS_PRIVATE_KEY to specify it.", priv_key_path));
+            // Check fallback path /etc/pharos/keys/ if the primary path failed
+            let fallback_path = Path::new("/etc/pharos/keys/admin_id_ed25519");
+            if fallback_path.exists() {
+                log::info!("Primary key not found, but found fallback at {:?}", fallback_path);
+                return Self::sign_with_key_path(fallback_path, message).await;
+            }
+            return Err(anyhow!("Private key not found at {:?} after 60s. Ensure PHAROS_PRIVATE_KEY is set correctly.", priv_key_path));
         }
 
-        let key_content = fs::read_to_string(priv_key_path)
-            .with_context(|| format!("Failed to read private key at {:?}", priv_key_path))?;
+        Self::sign_with_key_path(priv_key_path, message).await
+    }
+
+    async fn sign_with_key_path(path: &Path, message: &str) -> Result<(String, String)> {
+        let key_content = fs::read_to_string(path)
+            .with_context(|| format!("Failed to read private key at {:?}", path))?;
         let priv_key = PrivateKey::from_openssh(&key_content)
             .map_err(|e| anyhow!("Failed to parse SSH private key: {}", e))?;
         
         // Use raw key data signing to match the server's raw verification logic.
-        // The server expects a raw signature of the challenge bytes.
         let sig_bytes = match priv_key.key_data() {
             ssh_key::private::KeypairData::Ed25519(kp) => {
                 use ed25519_dalek::{Signer, SigningKey};
                 let signing_key = SigningKey::from_bytes(&kp.private.to_bytes());
                 signing_key.sign(message.as_bytes()).to_vec()
             }
-            _ => return Err(anyhow!("Unsupported key type for raw signing. Only Ed25519 is supported in this version.")),
+            _ => return Err(anyhow!("Unsupported key type for raw signing. Only Ed25519 is supported.")),
         };
 
         let sig_b64 = STANDARD.encode(&sig_bytes);
-        
         let pub_key_ssh = priv_key.public_key().to_openssh()
             .map_err(|e| anyhow!("Failed to export public key: {}", e))?;
         
