@@ -42,3 +42,51 @@ const { query } = Astro.props;
         Search
     </button>
 </form>
+
+<div class="flex flex-wrap items-center gap-2 mt-3">
+    <span class="text-xs font-bold text-slate-400 uppercase tracking-widest mr-1">Examples:</span>
+    {[
+        { label: 'All Records', query: 'return all' },
+        { label: 'Online Only', query: 'status=up' },
+        { label: 'By Hostname', query: 'hostname=pharos-*' },
+        { label: 'By OS', query: 'os_family=linux' }
+    ].map((example) => (
+        <button
+            type="button"
+            class="example-btn px-2.5 py-1 text-xs font-medium bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 hover:text-slate-900 transition-colors border border-slate-200"
+            data-query={example.query}
+        >
+            {example.label}
+        </button>
+    ))}
+</div>
+
+<div id="cli-hint" class="mt-4 p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between group">
+    <div class="flex items-center space-x-2 text-xs text-slate-500">
+        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+        <span><strong>Power User Hint:</strong> Use the CLI toolbelt for faster queries:</span>
+        <code class="bg-slate-200 px-1.5 py-0.5 rounded text-slate-700 font-mono">mdb "{query || 'return all'}"</code>
+    </div>
+    <a href="https://iamrichardd.com/pharos/docs/cli-clients" target="_blank" class="text-[10px] font-bold text-emerald-600 hover:text-emerald-500 uppercase tracking-wider group-hover:translate-x-0.5 transition-transform">
+        CLI Docs &rarr;
+    </a>
+</div>
+
+<script>
+    document.addEventListener('astro:page-load', () => {
+        const searchInput = document.querySelector('#search') as HTMLInputElement;
+        const exampleBtns = document.querySelectorAll('.example-btn');
+
+        exampleBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const query = btn.getAttribute('data-query');
+                if (query && searchInput) {
+                    searchInput.value = query;
+                    searchInput.focus();
+                    // Optionally auto-submit:
+                    // searchInput.closest('form')?.submit();
+                }
+            });
+        });
+    });
+</script>

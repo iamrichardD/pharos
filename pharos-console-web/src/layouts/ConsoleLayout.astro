@@ -41,6 +41,7 @@ const session = await getSession(Astro.cookies.get(AUTH_COOKIE_NAME)?.value);
 				</a>
 				<nav class="flex items-center space-x-3 sm:space-x-4">
                     <a href="/mdb" class="text-sm font-medium text-slate-600 hover:text-emerald-600 transition-colors">Search MDB</a>
+                    <a href="/add-node" class="text-sm font-medium text-slate-600 hover:text-emerald-600 transition-colors">Add Node</a>
                     
                     {session ? (
                         <>
