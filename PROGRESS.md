@@ -1,13 +1,15 @@
 # Pharos State & Progress
 
 ## Current Status
-**Phase:** 21 (Installation UX & Toolbelt Refinement)
-**Active Task:** None
-**Backlog:** 1.8 (DevSecOps Refinement), 10.5 (Subnet Scanning)
+**Phase:** 22 (WebMCP Strategic Realignment)
+**Active Task:** Task 22.2 (Resource-First UI)
+**Backlog:** 22.3 (Marketing Realignment)
 **Blocked/Investigating:**
 - None
 
 ## Recent Completions
+- [x] Task 22.1: Engineering: Implemented the /mcp JSON-RPC 2.0 Gateway in the Web Console. Standardized tools: \`query_mdb\`, \`provision_node\`, \`mcp.list_keys\`, \`mcp.provision_key\`. (Issue #135)
+- [x] Task 22.0: Research: Conducted comprehensive audit of WebMCP misalignment. Identified "Persona Conflict" between legacy terminal UX and modern Resource-First vision. Developed `artifacts/web-mcp-alignment-plan.md`. (Issue #135)
 - [x] Bug #134: Security: Resolved Secret Leak in `pharos.test.ts`. Replaced hardcoded OpenSSH Private Key with dynamic `crypto.generateKeyPairSync` execution in the test suite. Fixed OpenSSH PEM format construction in tests to match the `parseEd25519OpenSSH` parser. (Issue #134)
 - [x] Task 21.4: Engineering: Implemented \"Add Node\" UI and Contextual Search Guidance in the Web Console. (Issue #133)
 - [x] Task 21.2: Engineering: Implemented the \`scripts/install.sh\` automated installer. Verified OS/Architecture detection and dependency checks in a clean Ubuntu 24.04 Podman environment. (Issue #132)

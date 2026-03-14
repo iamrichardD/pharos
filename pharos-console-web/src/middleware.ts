@@ -23,15 +23,22 @@ export const onRequest = defineMiddleware(async (context, next) => {
     }
 
     // Verify session
-    const session = await getSession(cookies.get(AUTH_COOKIE_NAME)?.value);
+    const sessionCookie = cookies.get(AUTH_COOKIE_NAME)?.value;
+    let session = await getSession(sessionCookie);
     
+    // Support PHAROS_SKIP_AUTH for E2E testing / Sandbox dev
+    if (!session && process.env.PHAROS_SKIP_AUTH === 'true') {
+        session = { userId: 'admin', roles: ['admin'], sub: 'admin' };
+    }
+
     // Attach session to locals for use in pages/components
     if (session) {
         context.locals.session = session;
     }
 
     // Enforce password change if flagged
-    if (session?.mustChangePassword && url.pathname !== '/change-password' && !url.pathname.startsWith('/_actions')) {
+    const isMcpRoute = url.pathname.startsWith('/mcp');
+    if (session?.mustChangePassword && url.pathname !== '/change-password' && !url.pathname.startsWith('/_actions') && !isMcpRoute) {
         return redirect('/change-password');
     }
 
@@ -45,6 +52,17 @@ export const onRequest = defineMiddleware(async (context, next) => {
     }
 
     if (!session) {
+        // Return 401 for /mcp API route instead of redirecting
+        if (url.pathname === '/mcp' || url.pathname === '/mcp/' || url.pathname === '/mcp.json' || url.pathname === '/mcp.json/') {
+            return new Response(JSON.stringify({
+                jsonrpc: '2.0',
+                error: { code: -32000, message: 'Unauthorized' },
+                id: null
+            }), { 
+                status: 401,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
         // Redirect to login if unauthenticated on a protected route
         return redirect('/login');
     }

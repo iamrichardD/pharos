@@ -194,3 +194,8 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Task 21.3 (Issue #132):** Advocacy: Create \`website/src/content/docs/install.mdx\` and update marketing site.
 - [x] **Task 21.4 (Issue #133):** Engineering: Implement \"Add Node\" UI and Contextual Search Guidance (examples/CLI links) in the Web Console.
 
+## Phase 22: WebMCP Strategic Realignment
+- [x] **Task 22.1 (Issue #135):** Engineering: Implement the \`/mcp\` JSON-RPC 2.0 Gateway in the Web Console. (HIGH PRIORITY)
+- [ ] **Task 22.2 (Issue #136):** Engineering: Implement Resource-First Realignment & Metadata Injection (Replace Fake Terminal).
+- [ ] **Task 22.3 (Issue #137):** Advocacy: Strategic Realignment of Marketing & Docs (v1.3.0 Agent-Sovereign Vision).
+
