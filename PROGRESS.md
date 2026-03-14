@@ -8,6 +8,7 @@
 - None
 
 ## Recent Completions
+- [x] Bug #134: Security: Resolved Secret Leak in `pharos.test.ts`. Replaced hardcoded OpenSSH Private Key with dynamic `crypto.generateKeyPairSync` execution in the test suite. Fixed OpenSSH PEM format construction in tests to match the `parseEd25519OpenSSH` parser. (Issue #134)
 - [x] Task 21.4: Engineering: Implemented \"Add Node\" UI and Contextual Search Guidance in the Web Console. (Issue #133)
 - [x] Task 21.2: Engineering: Implemented the \`scripts/install.sh\` automated installer. Verified OS/Architecture detection and dependency checks in a clean Ubuntu 24.04 Podman environment. (Issue #132)
 - [x] Task 21.3: Advocacy: Created unified installation documentation at \`website/src/content/docs/install.mdx\` and integrated "One-Liner" tips across the marketing site. (Issue #132)
