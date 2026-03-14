@@ -183,5 +183,6 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Bug #122 (Issue #122):** Engineering: Resolve `ECONNREFUSED` and TLS `BadSignature` in Sandbox.
 - [x] **Bug #123 (Issue #123):** Engineering: Resolve `ECONNREFUSED` in `mdb` CLI (ignores PHAROS_HOST).
 - [x] **Bug #124 (Issue #124):** Engineering: Resolve Authentication Required error when adding records in Web Console (Persistent).
+- [x] **Bug #128 (Issue #130):** Engineering: Resolve "Signing failed: DECODER routines::unsupported" in HitL Record Addition.
 - [x] **Task 20.4 (Issue #97):** Engineering: Update \`deploy/sandbox.yml\` and \`Containerfile\`s for bootstrapped \`pharos-main\` registration.
 - [x] **Task 20.5 (Issue #125):** Engineering: Implement \`deploy/sandbox.local.yml\` for Live HitL verification using on-host source code.

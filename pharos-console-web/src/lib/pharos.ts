@@ -40,6 +40,67 @@
         .join('\n');
  }
 
+ /**
+  * Extracts the 32-byte Ed25519 seed from an unencrypted OpenSSH private key PEM.
+  * * Rationale: Node.js does not natively support OpenSSH format for Ed25519.
+  */
+ function parseEd25519OpenSSH(pem: string): Buffer {
+    const base64 = pem
+        .replace(/-----BEGIN OPENSSH PRIVATE KEY-----/, '')
+        .replace(/-----END OPENSSH PRIVATE KEY-----/, '')
+        .replace(/\s+/g, '');
+    const buffer = Buffer.from(base64, 'base64');
+    
+    let offset = 0;
+    const readString = () => {
+        const len = buffer.readUInt32BE(offset);
+        offset += 4;
+        const s = buffer.subarray(offset, offset + len);
+        offset += len;
+        return s;
+    };
+
+    if (buffer.subarray(0, 15).toString() !== 'openssh-key-v1\0') throw new Error('Invalid OpenSSH magic');
+    offset = 15;
+
+    const cipher = readString().toString();
+    const kdf = readString().toString();
+    readString(); // kdfopts
+    const numKeys = buffer.readUInt32BE(offset); offset += 4;
+
+    if (cipher !== 'none' || kdf !== 'none') throw new Error('Encrypted OpenSSH keys not supported');
+    if (numKeys !== 1) throw new Error('Only single-key OpenSSH files supported');
+
+    readString(); // pubkey blob
+    const privKeyBlob = readString();
+    
+    let pOffset = 8; // skip checkints
+    const algoLen = privKeyBlob.readUInt32BE(pOffset); pOffset += 4;
+    const algo = privKeyBlob.subarray(pOffset, pOffset + algoLen).toString();
+    pOffset += algoLen;
+
+    if (algo !== 'ssh-ed25519') throw new Error('Unsupported algorithm: ' + algo);
+    
+    const readBlob = () => {
+        const len = privKeyBlob.readUInt32BE(pOffset); pOffset += 4;
+        const s = privKeyBlob.subarray(pOffset, pOffset + len);
+        pOffset += len;
+        return s;
+    };
+
+    readBlob(); // pubkey again
+    const seedWithPub = readBlob(); // 64 bytes: seed + pub
+    return seedWithPub.subarray(0, 32);
+ }
+
+ /**
+  * Wraps a 32-byte Ed25519 seed in a PKCS#8 DER structure.
+  */
+ function seedToPkcs8(seed: Buffer): Buffer {
+    const header = Buffer.from('302e020100300506032b657004220420', 'hex');
+    return Buffer.concat([header, seed]);
+ }
+
  export async function executePharosQuery(clientId: string, queryStr: string, host?: string, port?: number): Promise<PharosResponse> {
     const hostEnv = host || process.env.PHAROS_HOST || '127.0.0.1';
     const portEnv = port || parseInt(process.env.PHAROS_PORT || '2378', 10);
@@ -117,9 +178,29 @@
 
                     if (challenge && privKey && pubKey) {
                         try {
-                            const privateKey = privKey.includes('PRIVATE KEY') 
-                                ? privKey 
-                                : Buffer.from(privKey, 'base64').toString();
+                            let privateKey: crypto.KeyObject | string;
+
+                            if (privKey.includes('BEGIN OPENSSH PRIVATE KEY')) {
+                                // 1. OpenSSH format (Ed25519 seed)
+                                const seed = parseEd25519OpenSSH(privKey);
+                                privateKey = crypto.createPrivateKey({
+                                    key: seedToPkcs8(seed),
+                                    format: 'der',
+                                    type: 'pkcs8'
+                                });
+                            } else if (privKey.includes('BEGIN PRIVATE KEY')) {
+                                // 2. Standard PKCS#8 PEM
+                                privateKey = privKey;
+                            } else {
+                                // 3. Assume raw base64 seed
+                                const seed = Buffer.from(privKey, 'base64');
+                                if (seed.length !== 32) throw new Error('Invalid seed length (expected 32 bytes)');
+                                privateKey = crypto.createPrivateKey({
+                                    key: seedToPkcs8(seed),
+                                    format: 'der',
+                                    type: 'pkcs8'
+                                });
+                            }
                             
                             const signature = crypto.sign(null, Buffer.from(challenge), privateKey);
                             const signatureBase64 = signature.toString('base64');
