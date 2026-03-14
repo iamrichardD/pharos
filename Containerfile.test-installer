@@ -1,0 +1,20 @@
+FROM ubuntu:24.04
+
+# Avoid interactive prompts
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install minimal dependencies for the installer
+RUN apt-get update && apt-get install -y \
+    curl \
+    ca-certificates \
+    sudo \
+    openssl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy the installer script
+COPY scripts/install.sh /usr/local/bin/install.sh
+RUN chmod +x /usr/local/bin/install.sh
+
+# Run the installer for toolbelt by default
+ENTRYPOINT ["/usr/local/bin/install.sh"]
+CMD ["toolbelt"]

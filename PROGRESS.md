@@ -1,14 +1,18 @@
 # Pharos State & Progress
 
 ## Current Status
-**Phase:** 16 (Pharos Web Console)
+**Phase:** 21 (Installation UX & Toolbelt Refinement)
 **Active Task:** None
-**Backlog:** 1.8 (DevSecOps Refinement), 10.5 (Subnet Scanning), 18.1 (Alternation)
+**Backlog:** 1.8 (DevSecOps Refinement), 10.5 (Subnet Scanning)
 **Blocked/Investigating:**
 - None
 
 ## Recent Completions
+- [x] Task 21.2: Engineering: Implemented the \`scripts/install.sh\` automated installer. Verified OS/Architecture detection and dependency checks in a clean Ubuntu 24.04 Podman environment. (Issue #132)
+- [x] Task 21.3: Advocacy: Created unified installation documentation at \`website/src/content/docs/install.mdx\` and integrated "One-Liner" tips across the marketing site. (Issue #132)
+- [x] Task 21.1: Planning: Designed a frictionless installation experience (One-Liner & Unified Docs) inspired by Pi-hole. Created \`artifacts/pharos-installation-ux-plan.md\`. (Issue #131)
 - [x] Task 17.10: Advocacy: Improved Sandbox Terminal placeholder text to emphasize MDB status queries. (Issue #128)
+
 - [x] Task 17.11: Engineering: Format Sandbox Terminal output to match `mdb` CLI style. (Issue #129)
 - [x] Bug #127: Resolved Sandbox Terminal Query failure. Standardized client ID to \`web-sandbox-mdb\` to ensure machine record defaults on server. (Issue #127)
 - [x] Bug #126: Resolved Pulse Baseline Presence failure in Sandbox. Standardized private key paths to \`/etc/pharos/keys\` (matching Web Console) and improved \`pharos-client\` with a 60s wait loop, debug logging, and fallback path discovery. (Issue #126)

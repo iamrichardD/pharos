@@ -1,0 +1,112 @@
+---
+title: "Installation"
+description: "Get started with the Pharos ecosystem using our frictionless automated installer."
+order: 1
+---
+import TieredTabs from '../../components/TieredTabs.astro';
+
+/* ========================================================================
+ * Project: pharos
+ * Component: Marketing Site
+ * File: install.mdx
+ * Author: Richard D. (https://github.com/iamrichardd)
+ * License: AGPL-3.0 (See LICENSE file for details)
+ * * Purpose (The "Why"):
+ * Unified installation guide for the Pharos ecosystem.
+ * * Traceability:
+ * Related to Task 21.2 and 21.3 (Issue #132).
+ * ======================================================================== */
+
+Pharos is designed for "60-second success." Our automated installer detects your environment and sets up the requested component with minimal friction.
+
+---
+
+## 🚀 The One-Liner (Recommended)
+
+Run the following command on your target machine (Ubuntu, Debian, macOS, or WSL):
+
+```bash
+curl -sSL https://raw.githubusercontent.com/iamrichardD/pharos/main/scripts/install.sh | bash -s -- [hub|node]
+```
+
+Replace `[hub|node]` with the appropriate role for your machine:
+- **`hub`**: (Recommended for your main server) Installs the **Pharos Server**, **Web Console**, and **Scan Engine**.
+- **`node`**: (Recommended for managed nodes) Installs the **Pulse Agent**, **mdb**, and **ph** CLI tools.
+
+---
+
+## 🛠️ Role Selection
+
+<TieredTabs>
+  <div slot="homelab">
+
+    ### 🏠 Home Lab: The "All-in-One" Hub
+    Most Home Labbers want a single "Hub" that hosts the server and manages the network, while existing and future nodes run the lightweight "Node" bundle.
+
+    #### 1. Set Up The Hub (Main Server)
+    Run this on your primary Ubuntu/Debian host (e.g., a Proxmox LXC):
+    ```bash
+    curl -sSL https://raw.githubusercontent.com/iamrichardD/pharos/main/scripts/install.sh | bash -s -- hub
+    ```
+
+    #### 2. Set Up Nodes (Managed Machines)
+    Run this on every machine or container you want Pharos to track:
+    ```bash
+    PHAROS_HOST="192.168.1.5" curl -sSL https://raw.githubusercontent.com/iamrichardD/pharos/main/scripts/install.sh | bash -s -- node
+    ```
+
+  </div>
+
+  <div slot="enterprise">
+
+    ### 🏢 Enterprise: Granular Deployment
+    Enterprise environments typically use configuration management (Ansible/Terraform) to deploy components individually.
+
+    #### 1. Deploy the Protocol Server
+    ```bash
+    curl -sSL https://raw.githubusercontent.com/iamrichardD/pharos/main/scripts/install.sh | bash -s -- server
+    ```
+
+    #### 2. Mass Deploy Pulse Agents
+    ```bash
+    PHAROS_HOST="pharos.enterprise.com" curl -sSL https://raw.githubusercontent.com/iamrichardD/pharos/main/scripts/install.sh | bash -s -- pulse
+    ```
+
+    #### 3. Install the Toolbelt (Workstations)
+    ```bash
+    curl -sSL https://raw.githubusercontent.com/iamrichardD/pharos/main/scripts/install.sh | bash -s -- toolbelt
+    ```
+
+  </div>
+</TieredTabs>
+
+---
+
+## 📋 Prerequisites
+
+| Requirement | Supported Versions |
+| :--- | :--- |
+| **OS** | Ubuntu 22.04+, Debian 12+, macOS (Intel/M-series), WSL2 |
+| **Arch** | x86_64, aarch64 |
+| **Dependencies** | `curl`, `tar` (Automatically checked) |
+
+---
+
+## 🔍 Post-Installation Checklist
+
+After running the installer, verify your setup:
+
+- [ ] **Server**: `sudo systemctl status pharos-server` should be `active (running)`.
+- [ ] **Pulse**: `sudo systemctl status pharos-pulse` should be `active (running)`.
+- [ ] **Web Console**: Access `https://your-server-ip:3000` to verify the UI.
+- [ ] **CLIs**: Run `mdb status` to verify CLI path injection.
+
+---
+
+## 🛑 Manual Installation
+
+If your environment is air-gapped or restricted, you can download the binaries directly from our [GitHub Releases](https://github.com/iamrichardD/pharos/releases).
+
+1. Download the appropriate `.tar.gz` for your OS/Arch.
+2. Extract to `/usr/local/bin`.
+3. (Optional) Configure systemd services manually as described in [Server Setup](/pharos/docs/server-setup).
