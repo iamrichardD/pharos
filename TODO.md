@@ -191,5 +191,5 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Task 21.1 (Issue #131):** Planning: Design a frictionless installation experience (One-Liner & Unified Docs).
 - [x] **Task 21.2 (Issue #132):** Engineering: Implement the \`scripts/install.sh\` automated installer.
 - [x] **Task 21.3 (Issue #132):** Advocacy: Create \`website/src/content/docs/install.mdx\` and update marketing site.
-- [ ] **Task 21.4 (#TBD):** Engineering: Implement \"Add Node\" UI and Contextual Search Guidance (examples/CLI links) in the Web Console.
+- [x] **Task 21.4 (Issue #133):** Engineering: Implement \"Add Node\" UI and Contextual Search Guidance (examples/CLI links) in the Web Console.
 
