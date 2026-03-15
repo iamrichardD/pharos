@@ -200,7 +200,8 @@ A task is considered complete and may be marked `[x]` only when:
 ## Phase 22: WebMCP Strategic Realignment
 - [x] **Task 22.1 (Issue #135):** Engineering: Implement the \`/mcp\` JSON-RPC 2.0 Gateway in the Web Console. (HIGH PRIORITY)
 - [x] **Task 22.2 (Issue #136):** Engineering: Implement Resource-First Realignment & Metadata Injection (Replace Fake Terminal).
-- [x] **Task 22.3 (Issue #137):** Advocacy: Strategic Realignment of Marketing & Docs (v1.3.0 Agent-Sovereign Vision).
+- [x] **Task 22.3 (Issue #137):** Advocacy: Strategic Realignment of Marketing & Docs (v1.3.0 Agent-Native Vision).
 - [x] **Bug #138 (Task 22.4):** Engineering: Normalize Ecosystem Property Names (os vs os_name). (Issue #138)
 - [x] **Task 22.4 (Issue #141):** Engineering: Implement Human-Readable Flags for MDB CLI.
+- [x] **Task 23.1 (Issue #143):** Advocacy: Transition to "Agent-Native Infrastructure" Standard. (HIGH PRIORITY)
 

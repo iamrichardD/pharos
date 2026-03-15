@@ -7,7 +7,7 @@
  * * Purpose (The "Why"):
  * Resolves the "WebMCP Mirage" by bridging the gap between the RFC 2378 
  * legacy foundation and the AI-native WebMCP vision. Provides a roadmap
- * for the Agent-Sovereign implementation in the Web Console.
+ * for the Agent-Native implementation in the Web Console.
  * * Traceability:
  * Related to Phase 17 (Sandbox & WebMCP Integration) and Phase 22.
  * ======================================================================== */
@@ -15,7 +15,7 @@
 # Strategic Alignment: WebMCP & Resource-First Console
 
 ## 1. Executive Summary
-The Pharos ecosystem currently suffers from a "Persona Conflict" where the marketing site promises an AI-native WebMCP experience that is not yet fully implemented in the Web Console. This plan realigns the technical architecture with the marketing vision, transitioning from a "Fake Terminal" UX to a "Resource-First" Agent-Sovereign model.
+The Pharos ecosystem currently suffers from a "Persona Conflict" where the marketing site promises an AI-native WebMCP experience that is not yet fully implemented in the Web Console. This plan realigns the technical architecture with the marketing vision, transitioning from a "Fake Terminal" UX to a "Resource-First" Agent-Native model.
 
 ## 2. Research Findings (The Discrepancy)
 - **Endpoint Missing:** The promised `/mcp` web endpoint does not exist in the Astro Console.
@@ -25,7 +25,7 @@ The Pharos ecosystem currently suffers from a "Persona Conflict" where the marke
 
 ## 3. Implementation Roadmap (Phase 22)
 
-### 3.1 The WebMCP Sovereign Bridge
+### 3.1 The WebMCP Agent-Native Bridge
 - **Endpoint Implementation:** Create `pharos-console-web/src/pages/mcp.ts` as a JSON-RPC 2.0 gateway.
 - **Tool Unification:** Standardize the toolset (e.g., `query_mdb`, `provision_node`) between the Rust server and the Web Console.
 - **Auth Handshake:** Ensure the `/mcp` route utilizes the existing JWT session logic to authorize agent actions on behalf of the user.
@@ -37,7 +37,7 @@ The Pharos ecosystem currently suffers from a "Persona Conflict" where the marke
 
 ### 3.3 Marketing & Docs Surgery
 - **Authority Pivot:** Update `index.astro` and `console.mdx` to emphasize the **Web Console** as the primary Human/AI interface.
-- **Backplane Story:** Position **RFC 2378** as the "Invisible High-Performance Engine" and WebMCP as the "Sovereign Cockpit."
+- **Backplane Story:** Position **RFC 2378** as the "Invisible High-Performance Engine" and WebMCP as the "Agent-Native Control Plane."
 - **Transparency:** Explicitly document the "Read-Only" nature of the current LDAP Enterprise Tier to maintain engineering integrity.
 
 ## 4. Verification Strategy (TDD-First)

@@ -94,3 +94,11 @@ To balance "Protocol Consistency" (UTC) with "Human Readability" (Regional), the
 - **IF** The page loads in a browser **THEN** A client-side script transforms these strings into the user's regional format using `Intl.DateTimeFormat`.
 - **Rationale:** This preserves the "Single Source of Truth" in the protocol while providing a localized UX without requiring server-side locale tracking.
 
+## 9. Agent-Native Infrastructure (Standard)
+To align with modern DevSecOps and "Cloud-Native" paradigms, Pharos is designed as **Agent-Native Infrastructure**.
+
+- **IF** An AI Agent needs to manage resources **THEN** It must use the **WebMCP JSON-RPC 2.0 gateway** (`/mcp`) rather than scraping the UI or using legacy terminals.
+- **IF** The term "Sovereign" is used **THEN** It refers to the *territory* of the Sandbox, while "Native" refers to the *engineering standard* of the entire infrastructure.
+- **Rationale:** "Native" implies that the agent is a first-class citizen with its own optimized, deterministic instruction set (tools), reducing hallucinations and operational friction.
+
+

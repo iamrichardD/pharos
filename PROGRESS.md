@@ -2,7 +2,7 @@
 
 ## Current Status
 **Phase:** 22 (WebMCP Strategic Realignment)
-**Active Task:** Finalizing Phase 22
+**Active Task:** Task 23.1: Transition to "Agent-Native Infrastructure" Standard (Issue #143)
 **Backlog:** 
 - TBD
 **Blocked/Investigating:**
@@ -12,7 +12,7 @@
 - [x] Task 16.18: Engineering: Implement Browser-Based Date Formatting in Web Console (Issue #142). Implemented client-side regional date formatting for `created_at` and `last_seen_at` fields using `Intl.DateTimeFormat` and a reusable `FormattedDate.astro` component. Verified with unit and E2E tests.
 - [x] Task 14.12: Engineering: Implement `created_at` and `last_seen_at` field injection in `pharos-server` storage layer (Issue #140).
 - [x] Task 22.4: Engineering: Implement Human-Readable Flags for MDB CLI (Issue #141).
-- [x] Task 22.3: Advocacy: Strategic Realignment of Marketing & Docs (v1.3.0 Agent-Sovereign Vision). Updated all documentation and marketing to emphasize the Web Console as the "Sovereign Cockpit" and RFC 2378 as the "Invisible High-Performance Engine". Explicitly documented Read-Only Enterprise LDAP tier. (Issue #137)
+- [x] Task 22.3: Advocacy: Strategic Realignment of Marketing & Docs (v1.3.0 Agent-Native Vision). Updated all documentation and marketing to emphasize the Web Console as the "Agent-Native Control Plane" and RFC 2378 as the "Invisible High-Performance Engine". Explicitly documented Read-Only Enterprise LDAP tier. (Issue #137)
 - [x] Bug #138: Engineering: Normalize Ecosystem Property Names (os vs os_name). Standardized on \`os_name\` across Web Console, MCP Gateway, and Tests. Audited \`mac\`, \`ip\`, \`hostname\` for harmonization. (Issue #138)
 - [x] Task 22.2: Engineering: Implement Resource-First Realignment & Metadata Injection (Replace Fake Terminal). (Issue #136)
 - [x] Task 22.1: Engineering: Implemented the /mcp JSON-RPC 2.0 Gateway in the Web Console. Standardized tools: \`query_mdb\`, \`provision_node\`, \`mcp.list_keys\`, \`mcp.provision_key\`. (Issue #135)
@@ -146,9 +146,9 @@
 ## AI Agent Instructions for Next Session
 1. Read `GEMINI.md` to internalize strict Zero-Host constraints, Clean Code philosophies, **TDD-first workflow**, and **Vertical Slice Architecture** mandates.
 2. Read `TODO.md` to understand the roadmap and the **Definition of Done (DoD)**.
-3. **Execute Task 17.5 (#TBD):**
-    - Create the issue for "Release: Prepare v1.3.0 release including the integrated Pharos Sandbox."
-    - Ensure all documentation is up to date, changelog is ready, and perform the Git tagging workflow per standard release process.
+3. **Execute Task 23.1 (#143):**
+    - Transition all project terminology from "Agent-Sovereign" to "Agent-Native Infrastructure."
+    - Update `docs/DECISIONS.md`, marketing hero, and UI components.
 4. Begin execution on the Active Task, utilizing Podman commands exclusively for execution.
 5. **Validation:** Verify the sandbox environment locally via Podman Compose.
 6. **AI-Handover:** Before concluding, push commits and close the GitHub issue with a **Fix Summary** and an **AI-Ready Verification Prompt**.

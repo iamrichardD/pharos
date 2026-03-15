@@ -1,11 +1,12 @@
 # Pharos Web Console
 
-**The Sovereign Cockpit for your Lab.**
+**The Agent-Native Control Plane for your Lab.**
 
 Pharos Web Console (`pharos-console-web`) is the primary Human/AI interface for the Pharos ecosystem. It transforms the high-performance RFC 2378 engine into an actionable, resource-first command center for both humans and AI agents.
 
 ## Key Features
-- **Sovereign Cockpit**: A mobile-first, responsive interface for managing your entire lab.
+- **Agent-Native Control Plane**: A mobile-first, responsive interface for managing your entire lab.
+
 - **WebMCP JSON-RPC Gateway**: A secure bridge for AI agents to interact with your lab resources via the Model Context Protocol.
 - **Resource-First Design**: High-density inventory management with metadata "glance" blocks optimized for both humans and LLMs.
 - **Security & Identity**: Implements "First-to-Claim" identity bonding and secure SSH-key authorization.

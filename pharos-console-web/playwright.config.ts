@@ -33,9 +33,9 @@ export default defineConfig({
   webServer: [
     {
       command: 'PHAROS_SANDBOX=true PHAROS_SERVER_URL=https://127.0.0.1:2378 PHAROS_HOST=127.0.0.1 PHAROS_PORT=2378 HOST=0.0.0.0 PORT=3000 node test-server.mjs',
-      url: 'http://localhost:3000',
+      url: 'https://localhost:3000',
       reuseExistingServer: !process.env.CI,
-      timeout: 60 * 1000,
+      timeout: 120 * 1000,
     },
     {
       command: 'PHAROS_SKIP_AUTH=true cargo run --manifest-path ../Cargo.toml --package pharos-server',

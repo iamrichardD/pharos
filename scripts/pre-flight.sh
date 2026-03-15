@@ -27,7 +27,8 @@ npm run build
 
 # --- 3. Web Console Verification (E2E) ---
 echo "--- [3/3] Web Console: Running Playwright E2E Tests ---"
-# Generate ephemeral certs for E2E backend
+# Generate fresh ephemeral certs for E2E backend
+rm -rf /tmp/e2e-certs
 mkdir -p /tmp/e2e-certs
 ../scripts/gen-sandbox-certs.sh /tmp/e2e-certs
 cat /tmp/e2e-certs/root-ca.crt >> /tmp/e2e-certs/pharos-server.crt

@@ -1,6 +1,6 @@
 # Pharos
 
-**The Sovereign Cockpit for your lab. Built on an Invisible High-Performance Engine.**
+**The Agent-Native Infrastructure for your lab. Built on an Invisible High-Performance Engine.**
 
 Pharos is a highly optimized, cross-platform client-server ecosystem built to modernize **RFC 2378** (The Phonebook Protocol). Designed with rigorous *Clean Architecture* principles, Pharos transforms the high-performance RFC 2378 engine into an actionable, resource-first command center for both Humans and AI Agents.
 
@@ -8,7 +8,8 @@ Pharos is a highly optimized, cross-platform client-server ecosystem built to mo
 
 Pharos is composed of four interconnected pieces:
 1. **`pharos-server` (The Engine):** An invisible, read-optimized, ultra-fast backend daemon. It natively understands discriminators to seamlessly route requests for human contacts or machine assets via the RFC 2378 protocol.
-2. **`pharos-console-web` (The Sovereign Cockpit):** The primary Human/AI interface. A resource-first Web Console that implements the **Model Context Protocol (MCP)** via WebMCP, allowing AI agents to safely manage your lab.
+2. **`pharos-console-web` (The Agent-Native Control Plane):** The primary Human/AI interface. A resource-first Web Console that implements the **Model Context Protocol (MCP)** via WebMCP, allowing AI agents to safely manage your lab.
+
 3. **`ph` (CLI):** The people-contact client for the terminal.
 4. **`mdb` (CLI):** The machine database client for the terminal.
 
