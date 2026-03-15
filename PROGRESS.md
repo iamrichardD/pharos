@@ -2,13 +2,15 @@
 
 ## Current Status
 **Phase:** 22 (WebMCP Strategic Realignment)
-**Active Task:** Task 22.3 (Marketing Realignment)
+**Active Task:** Finalizing Phase 22
 **Backlog:** 
 - TBD
 **Blocked/Investigating:**
 - None
 
 ## Recent Completions
+- [x] Bug #139: Advocacy: Marketing Simulation Drift. Updated simulated UI components in \`website/src/pages/index.astro\` for \`pharos-scan\`, \`pharos-pulse\`, \`pharos-console-web\`, and CLI output to ensure 100% "Reality Fidelity". Verified with \`scripts/pre-flight.sh\`. (Issue #139)
+- [x] Task 22.3: Advocacy: Strategic Realignment of Marketing & Docs (v1.3.0 Agent-Sovereign Vision). Updated all documentation and marketing to emphasize the Web Console as the "Sovereign Cockpit" and RFC 2378 as the "Invisible High-Performance Engine". Explicitly documented Read-Only Enterprise LDAP tier. (Issue #137)
 - [x] Bug #138: Engineering: Normalize Ecosystem Property Names (os vs os_name). Standardized on \`os_name\` across Web Console, MCP Gateway, and Tests. Audited \`mac\`, \`ip\`, \`hostname\` for harmonization. (Issue #138)
 - [x] Task 22.2: Engineering: Implement Resource-First Realignment & Metadata Injection (Replace Fake Terminal). (Issue #136)
 - [x] Task 22.1: Engineering: Implemented the /mcp JSON-RPC 2.0 Gateway in the Web Console. Standardized tools: \`query_mdb\`, \`provision_node\`, \`mcp.list_keys\`, \`mcp.provision_key\`. (Issue #135)

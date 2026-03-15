@@ -59,6 +59,7 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Debt #05 (Issue #115):** **GitHub Actions Modernization**. Update workflows to support Node.js 24 and remove deprecation warnings. (HIGH PRIORITY)
 - [x] **Bug #126 (Issue #126):** **Pulse Baseline Presence Failure**. \`pharos-pulse\` fails to send baseline presence due to missing private key in Sandbox. (Remediation: Standardized paths to /etc/pharos/keys and improved client discovery loop).
 - [x] **Bug #127 (Issue #127):** **Sandbox Terminal Query Failure**. Query \`hostname=pharos-main\` returns no result on home page terminal, but works in Search MDB. (Remediation: Standardized client ID to web-sandbox-mdb).
+- [x] **Bug #139 (Issue #139):** **Advocacy: Marketing Simulation Drift**. Simulated UI components in `website/src/pages/index.astro` were out of sync with actual service logic/output. (Remediation: Updated all simulations to match real service output and design).
 
 - [x] **Debt #02 (Issue #84):** **Logic Duplication**. Move all authorization logic from `lib.rs` into `SecurityTierMiddleware`.
 - [x] **Debt #03 (Issue #85):** **Hardcoded Paths**. Transitioned SSH key paths to relative `PHAROS_KEYS_DIR`.
@@ -197,6 +198,6 @@ A task is considered complete and may be marked `[x]` only when:
 ## Phase 22: WebMCP Strategic Realignment
 - [x] **Task 22.1 (Issue #135):** Engineering: Implement the \`/mcp\` JSON-RPC 2.0 Gateway in the Web Console. (HIGH PRIORITY)
 - [x] **Task 22.2 (Issue #136):** Engineering: Implement Resource-First Realignment & Metadata Injection (Replace Fake Terminal).
-- [ ] **Task 22.3 (Issue #137):** Advocacy: Strategic Realignment of Marketing & Docs (v1.3.0 Agent-Sovereign Vision).
+- [x] **Task 22.3 (Issue #137):** Advocacy: Strategic Realignment of Marketing & Docs (v1.3.0 Agent-Sovereign Vision).
 - [x] **Bug #138 (Task 22.4):** Engineering: Normalize Ecosystem Property Names (os vs os_name). (Issue #138)
 

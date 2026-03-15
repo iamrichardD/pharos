@@ -93,16 +93,16 @@ const pageDescription = "Pharos is a highly performant, read-optimized client-se
           <div class="p-6 font-mono text-sm leading-relaxed overflow-hidden">
             <div class="text-secondary-400 mb-2">$ pharos-scan 192.168.1.0/24</div>
             <div class="text-primary-400 mb-1">Scanning subnet... [■■■■■■■■■■■■■■■■] 100%</div>
-            <div class="text-green-400 mb-4">Found 4 new services:</div>
-            <div class="grid grid-cols-2 gap-x-4 gap-y-1 mb-4">
-              <div class="text-secondary-100">[1] 192.168.1.42</div> <div class="text-secondary-500">SSH (Ubuntu 22.04)</div>
-              <div class="text-secondary-100">[2] 192.168.1.100</div> <div class="text-secondary-500">Proxmox VE 8.1</div>
-              <div class="text-secondary-100">[3] 192.168.1.105</div> <div class="text-secondary-500">Plex Media Server</div>
-              <div class="text-secondary-100">[4] 192.168.1.110</div> <div class="text-secondary-500">SSH (Alpine Linux)</div>
+            <div class="text-green-400 mb-4">Found 4 nodes via mDNS:</div>
+            <div class="text-secondary-100 mb-4">
+              ? Select nodes to provision into Pharos:<br/>
+              <span class="text-primary-400">❯ [X] [NEW] 192.168.1.100 (proxmox-01) - Hypervisor</span><br/>
+              &nbsp;&nbsp;[ ] [NEW] 192.168.1.42 (workstation) - Ubuntu Desktop<br/>
+              &nbsp;&nbsp;[ ] [EXISTING] 192.168.1.1 (router) - Gateway<br/>
+              &nbsp;&nbsp;[ ] [NEW] 192.168.1.105 (plex) - Media Server
             </div>
-            <div class="text-secondary-100">? Select nodes to provision into Pharos: (Space to select)</div>
-            <div class="text-primary-400">❯ [X] 192.168.1.100 (proxmox-01)</div>
-            <div class="text-secondary-100">  [ ] 192.168.1.42 (workstation)</div>
+            <div class="text-secondary-400">--- Provisioning Node: 192.168.1.100 ---</div>
+            <div class="text-secondary-100">? Alias: <span class="text-primary-400">proxmox-01</span></div>
           </div>
         </div>
       </div>
@@ -130,35 +130,38 @@ const pageDescription = "Pharos is a highly performant, read-optimized client-se
         <div class="bg-secondary-900 rounded-2xl p-1 shadow-2xl border border-secondary-800 lg:order-1">
           <div class="bg-secondary-800/50 rounded-xl p-6 font-mono text-xs">
             <div class="flex justify-between items-center border-b border-secondary-700 pb-4 mb-4">
-              <span class="text-primary-400 font-bold tracking-widest uppercase">PHAROS LIVE DASHBOARD</span>
-              <span class="text-secondary-500">Uptime: 14d 02h 44m</span>
+              <span class="text-primary-400 font-bold tracking-widest uppercase">PHAROS PULSE MONITOR</span>
+              <span class="text-secondary-500">Live Signals</span>
             </div>
             <div class="space-y-4">
-              <div>
-                <div class="flex justify-between mb-1">
-                  <span class="text-secondary-100">proxmox-01</span>
-                  <span class="text-secondary-400 text-[10px]">CPU: 12.4% | MEM: 4.2/64GB</span>
+              <!-- Node Card 1 -->
+              <div class="bg-secondary-900 p-3 rounded-lg border border-secondary-700">
+                <div class="flex justify-between items-start mb-2">
+                  <div class="font-bold text-secondary-100">proxmox-01</div>
+                  <div class="flex items-center gap-1.5 text-green-400 text-[10px] uppercase font-bold">
+                    <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> ONLINE
+                  </div>
                 </div>
-                <div class="w-full bg-secondary-700 h-1.5 rounded-full overflow-hidden">
-                  <div class="bg-primary-500 h-full w-[12%]"></div>
-                </div>
-              </div>
-              <div>
-                <div class="flex justify-between mb-1">
-                  <span class="text-secondary-100">storage-nas</span>
-                  <span class="text-secondary-400 text-[10px]">CPU: 4.2% | MEM: 1.1/16GB</span>
-                </div>
-                <div class="w-full bg-secondary-700 h-1.5 rounded-full overflow-hidden">
-                  <div class="bg-primary-500 h-full w-[4%]"></div>
+                <div class="grid grid-cols-2 gap-2 text-[10px] text-secondary-400">
+                  <div>CPU: <span class="text-secondary-200">AMD EPYC™ 7003</span></div>
+                  <div>OS: <span class="text-secondary-200">Proxmox VE 8.1</span></div>
+                  <div>SN: <span class="text-secondary-200">S9Z2X844</span></div>
+                  <div>CORES: <span class="text-secondary-200">64 vCPU</span></div>
                 </div>
               </div>
-              <div>
-                <div class="flex justify-between mb-1">
-                  <span class="text-secondary-100">dev-workstation</span>
-                  <span class="text-secondary-400 text-[10px]">CPU: 88.1% | MEM: 28.4/32GB</span>
+              <!-- Node Card 2 -->
+              <div class="bg-secondary-900 p-3 rounded-lg border border-secondary-700 opacity-60">
+                <div class="flex justify-between items-start mb-2">
+                  <div class="font-bold text-secondary-100">dev-workstation</div>
+                  <div class="flex items-center gap-1.5 text-secondary-500 text-[10px] uppercase font-bold">
+                    <span class="w-2 h-2 rounded-full bg-secondary-600"></span> OFFLINE
+                  </div>
                 </div>
-                <div class="w-full bg-secondary-700 h-1.5 rounded-full overflow-hidden">
-                  <div class="bg-red-500 h-full w-[88%]"></div>
+                <div class="grid grid-cols-2 gap-2 text-[10px] text-secondary-400">
+                  <div>CPU: <span class="text-secondary-200">Apple M2 Max</span></div>
+                  <div>OS: <span class="text-secondary-200">macOS 14.2</span></div>
+                  <div>SN: <span class="text-secondary-200">M124P99Q</span></div>
+                  <div>CORES: <span class="text-secondary-200">12 Cores</span></div>
                 </div>
               </div>
             </div>
@@ -188,24 +191,31 @@ const pageDescription = "Pharos is a highly performant, read-optimized client-se
         <!-- Simulated Web Console UI -->
         <div class="bg-secondary-900 rounded-2xl p-1 shadow-2xl border border-secondary-800">
           <div class="bg-secondary-800/50 rounded-xl p-6 font-sans text-xs h-full">
-            <div class="flex justify-between items-center border-b border-secondary-700 pb-3 mb-4">
-              <span class="text-primary-400 font-bold text-sm">Pharos Console</span>
-              <span class="text-secondary-500 bg-secondary-900 px-2 py-1 rounded">Menu</span>
-            </div>
-            <div class="space-y-3">
-              <div class="bg-secondary-900 p-4 rounded-lg border border-secondary-700 flex justify-between items-center">
-                <div>
-                  <div class="text-secondary-100 font-bold mb-1 text-sm">router-main</div>
-                  <div class="text-secondary-400 text-[10px]">192.168.1.1</div>
-                </div>
-                <div class="text-green-500 text-xs flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-green-500"></span> Online</div>
+            <div class="flex justify-between items-center border-b border-secondary-700 pb-3 mb-6">
+              <span class="text-primary-400 font-bold text-sm tracking-tight">PHAROS CONSOLE</span>
+              <div class="flex gap-1">
+                <div class="w-2 h-2 rounded-full bg-secondary-700"></div>
+                <div class="w-2 h-2 rounded-full bg-secondary-700"></div>
               </div>
-              <div class="bg-secondary-900 p-4 rounded-lg border border-secondary-700 flex justify-between items-center">
-                <div>
-                  <div class="text-secondary-100 font-bold mb-1 text-sm">proxmox-01</div>
-                  <div class="text-secondary-400 text-[10px]">192.168.1.100</div>
+            </div>
+            <div class="grid grid-cols-1 gap-4">
+              <div class="bg-secondary-900 p-4 rounded-xl border border-secondary-700 flex items-start space-x-3">
+                <div class="bg-emerald-500/10 text-emerald-400 p-2 rounded-lg">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                 </div>
-                <div class="text-green-500 text-xs flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-green-500"></span> Online</div>
+                <div>
+                  <div class="text-secondary-100 font-bold text-sm">Search MDB</div>
+                  <div class="text-secondary-500 text-[10px] mt-0.5">Query machine and infrastructure records.</div>
+                </div>
+              </div>
+              <div class="bg-secondary-900 p-4 rounded-xl border border-secondary-700 flex items-start space-x-3">
+                <div class="bg-blue-500/10 text-blue-400 p-2 rounded-lg">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <div>
+                  <div class="text-secondary-100 font-bold text-sm">Add Node</div>
+                  <div class="text-secondary-500 text-[10px] mt-0.5">Install the Pulse agent on a new machine.</div>
+                </div>
               </div>
             </div>
           </div>
@@ -240,16 +250,18 @@ const pageDescription = "Pharos is a highly performant, read-optimized client-se
           </div>
           <div class="p-6 font-mono text-sm leading-relaxed overflow-hidden">
             <div class="text-secondary-400 mb-2">$ mdb find proxmox</div>
-            <div class="text-secondary-100 mb-1">1 record found:</div>
-            <div class="bg-secondary-800/50 p-3 rounded border-l-2 border-primary-500 mb-4">
-              <div class="text-primary-400">proxmox-01 (192.168.1.100)</div>
-              <div class="text-secondary-500 text-xs">Role: Hypervisor | Status: Online | CPU: 12%</div>
+            <div class="text-secondary-100 mb-4">
+              <span class="text-secondary-500">       hostname:</span> proxmox-01<br/>
+              <span class="text-secondary-500">             ip:</span> 192.168.1.100<br/>
+              <span class="text-secondary-500">           role:</span> Hypervisor<br/>
+              <span class="text-secondary-500">         status:</span> ONLINE
             </div>
             <div class="text-secondary-400 mb-2">$ ph find "richard"</div>
-            <div class="text-secondary-100 mb-1">1 record found:</div>
-            <div class="bg-secondary-800/50 p-3 rounded border-l-2 border-primary-500">
-              <div class="text-primary-400">Richard D. (System Architect)</div>
-              <div class="text-secondary-500 text-xs">Email: rd@example.com | SSH: registered</div>
+            <div class="text-secondary-100">
+              <span class="text-secondary-500">           name:</span> Richard D.<br/>
+              <span class="text-secondary-500">          title:</span> System Architect<br/>
+              <span class="text-secondary-500">          email:</span> rd@example.com<br/>
+              <span class="text-secondary-500">            ssh:</span> registered
             </div>
           </div>
         </div>
