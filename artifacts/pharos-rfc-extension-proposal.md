@@ -60,3 +60,17 @@ PhP formalizes **SSH-Key Based Authorization** for write operations, utilizing t
 - **Pharos-V1 Spec**: This document serves as the internal specification.
 - **Internet-Draft**: We will format this proposal using **xml2rfc** syntax for submission as an Informational IETF Draft.
 - **Open Source Advocate Persona**: We will publish a "Why Ph Still Matters" whitepaper on the marketing site to drive community adoption of these extensions.
+
+## 6. CLI Human-Readable Formatting (MDB Extension)
+While RFC 2378 defines the protocol's raw wire format, PhP extends the client behavior for `mdb` (Machine Database) to support human-centric terminal UX.
+
+### 6.1 Transformation Flag
+Implementations of `mdb` SHOULD support a `--human` (or `-H`) flag to transform machine-readable values into human-friendly formats.
+
+### 6.2 Unit Transformations
+- **Memory/Storage**: Fields with suffixes such as `_kb`, `_bytes`, or `_mb` SHOULD be scaled to the most appropriate unit (KB, MB, GB, TB) with one decimal place.
+- **Temporal context**: ISO8601 UTC strings (e.g., `2026-03-15T14:30:00Z`) SHOULD be formatted into a cleaner, localized string (e.g., `2026-03-15 14:30:00`) when the human flag is active.
+
+### 6.3 Interoperability Mandate
+Raw protocol data MUST be the default output of the CLI to ensure backward compatibility with existing Unix pipelines and scripts (e.g., `grep`, `awk`, `jq`).
+

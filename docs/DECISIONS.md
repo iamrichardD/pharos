@@ -66,7 +66,23 @@ To balance "Frictionless Setup" with "Day 1 Security," Pharos enforces a mandato
 - **IF** The session is flagged **THEN** Middleware intercepts all requests and redirects the user to `/change-password`.
 - **IF** The user submits a new password **THEN** The hash is saved to `data/auth_store.json` and the flag is cleared.
 
-## 5. Troubleshooting Connectivity
+## 5. Machine Presence Metadata (Temporal Context)
+To enable the **Tri-State Presence Model** (ONLINE, OFFLINE, UNREACHABLE), Pharos automatically injects temporal metadata into every machine record.
+
+- **`created_at`**: Captured during the initial registration (first `ONLINE` signal).
+- **`last_seen_at`**: Updated on every interaction (HEARTBEAT, ONLINE, manual `add`).
+- **Standardization**: All timestamps are stored as **ISO8601 UTC strings**.
+- **Naming**: We use `_at` suffix (e.g., `created_at`) rather than `_datetime` to align with modern REST and Graph APIs.
+
+## 7. Human-Readable CLI Output (MDB)
+To balance "Script-First" interoperability with "Human-First" readability, the `mdb` CLI implements a transform layer for display.
+
+- **IF** The `--human` (or `-H`) flag is used **THEN** Raw values are transformed into human-friendly formats.
+- **IF** The flag is omitted **THEN** Values are displayed in their raw, machine-readable protocol format (e.g., ISO8601, KB).
+- **Success Factor:** Use `clap` for standardized argument parsing and `chrono` for precise temporal transformations.
+
+
+## 6. Troubleshooting Connectivity
 If a connection fails, follow this decision path:
 
 1.  **Check the Port:** The Pharos protocol defaults to **2378** (TCP).

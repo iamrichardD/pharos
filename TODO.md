@@ -122,6 +122,7 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Task 14.11 (Issue #99):** Engineering: Refactor `pharos-pulse` to implement the "Baseline vs. Delta" inventory strategy. Collect hardware metadata (CPU cores/brand, serial, RAM) once at `ONLINE` and send minimal `HEARTBEAT` every 60 minutes.
 - [ ] **Task 14.8 (#TBD):** Engineering: Implement "Presence Monitor" background sweep in `pharos-server` to infer `UNREACHABLE` state (70m timeout).
 - [ ] **Task 14.9 (#TBD):** Engineering: Implement "Presence Fencing" logic in storage layer to prevent destructive automation on `UNREACHABLE` nodes.
+- [x] **Task 14.12 (Issue #140):** Engineering: Implement `created_at` and `last_seen_at` field injection in `pharos-server` storage layer.
 - [x] **Task 14.2 (Issue #49):** Engineering: Extend `pharos-server` security model to support Triple-Tier Security (open, protected, scoped) and Provenance Metadata.
 - [x] **Task 14.3 (Issue #51):** Engineering: Develop the `pharos-console` backend (MCP Server) for AI-agent management.
 - [x] **Task 14.4 (Issue #53):** Advocacy: Create multi-tenant documentation and `pharos-pulse` installation guides.
@@ -200,4 +201,5 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Task 22.2 (Issue #136):** Engineering: Implement Resource-First Realignment & Metadata Injection (Replace Fake Terminal).
 - [x] **Task 22.3 (Issue #137):** Advocacy: Strategic Realignment of Marketing & Docs (v1.3.0 Agent-Sovereign Vision).
 - [x] **Bug #138 (Task 22.4):** Engineering: Normalize Ecosystem Property Names (os vs os_name). (Issue #138)
+- [x] **Task 22.4 (Issue #141):** Engineering: Implement Human-Readable Flags for MDB CLI.
 

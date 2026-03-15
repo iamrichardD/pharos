@@ -9,7 +9,8 @@
 - None
 
 ## Recent Completions
-- [x] Bug #139: Advocacy: Marketing Simulation Drift. Updated simulated UI components in \`website/src/pages/index.astro\` for \`pharos-scan\`, \`pharos-pulse\`, \`pharos-console-web\`, and CLI output to ensure 100% "Reality Fidelity". Verified with \`scripts/pre-flight.sh\`. (Issue #139)
+- [x] Task 14.12: Engineering: Implement `created_at` and `last_seen_at` field injection in `pharos-server` storage layer (Issue #140).
+- [x] Task 22.4: Engineering: Implement Human-Readable Flags for MDB CLI (Issue #141).
 - [x] Task 22.3: Advocacy: Strategic Realignment of Marketing & Docs (v1.3.0 Agent-Sovereign Vision). Updated all documentation and marketing to emphasize the Web Console as the "Sovereign Cockpit" and RFC 2378 as the "Invisible High-Performance Engine". Explicitly documented Read-Only Enterprise LDAP tier. (Issue #137)
 - [x] Bug #138: Engineering: Normalize Ecosystem Property Names (os vs os_name). Standardized on \`os_name\` across Web Console, MCP Gateway, and Tests. Audited \`mac\`, \`ip\`, \`hostname\` for harmonization. (Issue #138)
 - [x] Task 22.2: Engineering: Implement Resource-First Realignment & Metadata Injection (Replace Fake Terminal). (Issue #136)

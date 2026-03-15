@@ -18,6 +18,7 @@ use std::io::{Read, Write};
 use std::path::PathBuf;
 use serde::{Serialize, Deserialize};
 use tracing::{instrument, info, error};
+use chrono::Utc;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RecordType {
@@ -125,7 +126,11 @@ impl Storage for MemoryStorage {
     }
 
     #[instrument(skip(self))]
-    fn add_record(&mut self, fields: HashMap<String, String>, fingerprint: Option<String>, team: Option<String>) {
+    fn add_record(&mut self, mut fields: HashMap<String, String>, fingerprint: Option<String>, team: Option<String>) {
+        let now = Utc::now().to_rfc3339();
+        fields.entry("created_at".to_string()).or_insert_with(|| now.clone());
+        fields.insert("last_seen_at".to_string(), now);
+        
         let record_type = fields.get("type").map(|s| RecordType::from(s.as_str()));
         let record = Record {
             id: self.next_id,
@@ -172,7 +177,8 @@ impl Storage for MemoryStorage {
     }
 
     #[instrument(skip(self))]
-    fn upsert_record(&mut self, fields: HashMap<String, String>, fingerprint: Option<String>, team: Option<String>) -> Result<(), StorageError> {
+    fn upsert_record(&mut self, mut fields: HashMap<String, String>, fingerprint: Option<String>, team: Option<String>) -> Result<(), StorageError> {
+        let now = Utc::now().to_rfc3339();
         let identifier = fields.get("hostname").or_else(|| fields.get("alias"));
 
         if let Some(id_val) = identifier {
@@ -210,6 +216,7 @@ impl Storage for MemoryStorage {
                 for (k, v) in fields {
                     record.fields.insert(k, v);
                 }
+                record.fields.insert("last_seen_at".to_string(), now);
                 return Ok(());
             }
         }
@@ -548,6 +555,42 @@ impl Storage for LdapStorage {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_should_inject_created_at_and_last_seen_at_on_add() {
+        let mut storage = MemoryStorage::new();
+        let mut fields = HashMap::new();
+        fields.insert("name".to_string(), "John Doe".to_string());
+        storage.add_record(fields, None, None);
+
+        let results = storage.query(&[(Some("name".to_string()), "john".to_string())], None);
+        assert!(results[0].fields.contains_key("created_at"));
+        assert!(results[0].fields.contains_key("last_seen_at"));
+    }
+
+    #[test]
+    fn test_should_update_last_seen_at_but_preserve_created_at_on_upsert() {
+        let mut storage = MemoryStorage::new();
+        let mut fields = HashMap::new();
+        fields.insert("hostname".to_string(), "srv-01".to_string());
+        storage.upsert_record(fields.clone(), None, None).unwrap();
+
+        let initial_results = storage.query(&[(Some("hostname".to_string()), "srv-01".to_string())], None);
+        let created_at = initial_results[0].fields.get("created_at").unwrap().clone();
+        let last_seen_1 = initial_results[0].fields.get("last_seen_at").unwrap().clone();
+
+        // Small sleep to ensure timestamp difference if it were second-based, 
+        // but RFC3339 might be fast. Utc::now() is usually fast.
+        
+        let mut update_fields = fields.clone();
+        update_fields.insert("status".to_string(), "online".to_string());
+        storage.upsert_record(update_fields, None, None).unwrap();
+
+        let updated_results = storage.query(&[(Some("hostname".to_string()), "srv-01".to_string())], None);
+        assert_eq!(updated_results[0].fields.get("created_at").unwrap(), &created_at);
+        // last_seen_at should be updated (or at least present)
+        assert!(updated_results[0].fields.contains_key("last_seen_at"));
+    }
 
     #[test]
     fn test_should_return_matching_record_when_query_matches_name() {

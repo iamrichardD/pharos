@@ -20,4 +20,6 @@ pharos-client = { path = "../crates/pharos-client" }
 tokio = { version = "1.37", features = ["full"] }
 anyhow = "1.0"
 log = "0.4"
+clap = { version = "4.5", features = ["derive"] }
+chrono = { version = "0.4", features = ["serde"] }
 

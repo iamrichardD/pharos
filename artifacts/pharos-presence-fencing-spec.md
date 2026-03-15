@@ -30,7 +30,7 @@ The `pharos-server` maintains a background process (the "Presence Monitor") that
 
 ### 2.1 Inference Logic
 For every `Machine` record in the `mdb`:
-1.  Calculate `Delta = CurrentTime - last_seen`.
+1.  Calculate `Delta = CurrentTime - last_seen_at`.
 2.  If `presence == ONLINE` AND `Delta > 70 minutes`:
     *   Update `presence` to `UNREACHABLE`.
     *   Emit a `SystemAlert` event for the Web Console and Pulse Alerting (Phase 15.3).
