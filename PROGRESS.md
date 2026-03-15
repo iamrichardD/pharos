@@ -2,14 +2,14 @@
 
 ## Current Status
 **Phase:** 22 (WebMCP Strategic Realignment)
-**Active Task:** Task 23.1: Transition to "Agent-Native Infrastructure" Standard (Issue #143)
+**Active Task:** Finalizing Terminology Shift
 **Backlog:** 
-- TBD
-**Blocked/Investigating:**
 - None
+**Blocked/Investigating:**
 
 ## Recent Completions
-- [x] Task 16.18: Engineering: Implement Browser-Based Date Formatting in Web Console (Issue #142). Implemented client-side regional date formatting for `created_at` and `last_seen_at` fields using `Intl.DateTimeFormat` and a reusable `FormattedDate.astro` component. Verified with unit and E2E tests.
+- [x] Bug #144: Engineering: Untrack and Ignore Transient Test Results (Issue #144). Removed `pharos-console-web/test-results/.last-run.json` from the Git index and updated `.gitignore` to robustly ignore all Playwright test artifacts. Verified with a successful pre-flight run.
+- [x] Task 16.18: Engineering: Implement Browser-Based Date Formatting in Web Console (Issue #142).
 - [x] Task 14.12: Engineering: Implement `created_at` and `last_seen_at` field injection in `pharos-server` storage layer (Issue #140).
 - [x] Task 22.4: Engineering: Implement Human-Readable Flags for MDB CLI (Issue #141).
 - [x] Task 22.3: Advocacy: Strategic Realignment of Marketing & Docs (v1.3.0 Agent-Native Vision). Updated all documentation and marketing to emphasize the Web Console as the "Agent-Native Control Plane" and RFC 2378 as the "Invisible High-Performance Engine". Explicitly documented Read-Only Enterprise LDAP tier. (Issue #137)

@@ -46,7 +46,7 @@ test.describe('Sandbox Mode Resource Preview', () => {
     const preview = page.locator('.resource-preview');
     await expect(preview).toBeVisible();
     await expect(preview).toContainText('Live Resource Preview');
-    await expect(preview).toContainText('WebMCP Active');
+    await expect(preview).toContainText('Agent-Native Infrastructure');
 
     // Wait for the pulse agent to register and show up in the preview
     // In our playwright config, pharos-pulse is started as 'e2e-pharos-main'
