@@ -15,10 +15,11 @@
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Read, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use serde::{Serialize, Deserialize};
-use tracing::{instrument, info, error};
+use tracing::{instrument, info, error, debug};
 use chrono::Utc;
+use tokio::sync::mpsc;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RecordType {
@@ -277,14 +278,30 @@ impl Storage for MemoryStorage {
 pub struct FileStorage {
     memory: MemoryStorage,
     path: PathBuf,
+    tx: mpsc::UnboundedSender<Vec<Record>>,
 }
 
 impl FileStorage {
     #[instrument]
     pub fn new(path: PathBuf) -> Self {
+        let (tx, mut rx) = mpsc::unbounded_channel::<Vec<Record>>();
+        let worker_path = path.clone();
+
+        // Spawn background persistence worker
+        tokio::spawn(async move {
+            info!("Persistence worker started for {:?}", worker_path);
+            while let Some(records) = rx.recv().await {
+                if let Err(e) = Self::persist_to_disk_atomic(&worker_path, &records) {
+                    error!("Failed to persist records to disk: {}", e);
+                }
+            }
+            info!("Persistence worker shutting down for {:?}", worker_path);
+        });
+
         let mut storage = Self {
             memory: MemoryStorage::new(),
             path,
+            tx,
         };
         storage.load_from_disk();
         storage
@@ -328,26 +345,26 @@ impl FileStorage {
         }
     }
 
-    #[instrument(skip(self))]
-    fn persist_to_disk(&self) {
-        let data = match serde_json::to_string_pretty(&self.memory.records) {
-            Ok(d) => d,
-            Err(e) => {
-                error!("Failed to serialize records: {}", e);
-                return;
-            }
-        };
+    /// Atomically replaces the storage file using a temporary file and rename.
+    fn persist_to_disk_atomic(path: &Path, records: &[Record]) -> anyhow::Result<()> {
+        debug!("Starting atomic persistence to {:?}", path);
+        let data = serde_json::to_string_pretty(records)?;
+        
+        let tmp_path = path.with_extension("tmp");
+        {
+            let mut file = File::create(&tmp_path)?;
+            file.write_all(data.as_bytes())?;
+            file.sync_all()?;
+        }
 
-        let mut file = match File::create(&self.path) {
-            Ok(f) => f,
-            Err(e) => {
-                error!("Failed to create storage file: {}", e);
-                return;
-            }
-        };
+        std::fs::rename(tmp_path, path)?;
+        debug!("Atomic persistence completed successfully for {:?}", path);
+        Ok(())
+    }
 
-        if let Err(e) = file.write_all(data.as_bytes()) {
-            error!("Failed to write to storage file: {}", e);
+    fn queue_persistence(&self) {
+        if let Err(e) = self.tx.send(self.memory.records.clone()) {
+            error!("Failed to queue persistence: {}", e);
         }
     }
 }
@@ -359,7 +376,7 @@ impl Storage for FileStorage {
 
     fn add_record(&mut self, fields: HashMap<String, String>, fingerprint: Option<String>, team: Option<String>) {
         self.memory.add_record(fields, fingerprint, team);
-        self.persist_to_disk();
+        self.queue_persistence();
     }
 
     fn query(&self, selections: &[(Option<String>, String)], default_type: Option<RecordType>) -> Vec<Record> {
@@ -368,14 +385,14 @@ impl Storage for FileStorage {
 
     fn upsert_record(&mut self, fields: HashMap<String, String>, fingerprint: Option<String>, team: Option<String>) -> Result<(), StorageError> {
         self.memory.upsert_record(fields, fingerprint, team)?;
-        self.persist_to_disk();
+        self.queue_persistence();
         Ok(())
     }
 
     fn delete_record(&mut self, selections: &[(Option<String>, String)], fingerprint: Option<String>, teams: &[String]) -> Result<usize, StorageError> {
         let count = self.memory.delete_record(selections, fingerprint, teams)?;
         if count > 0 {
-            self.persist_to_disk();
+            self.queue_persistence();
         }
         Ok(count)
     }

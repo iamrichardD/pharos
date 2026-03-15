@@ -20,6 +20,13 @@ COPY . .
 RUN npm run build
 
 FROM public.ecr.aws/docker/library/node:22-slim AS runtime
+
+LABEL org.opencontainers.image.title="pharos-console-web"
+LABEL org.opencontainers.image.description="Agent-Native Control Plane (Web Console)"
+LABEL org.opencontainers.image.vendor="Richard D."
+LABEL org.opencontainers.image.licenses="AGPL-3.0"
+LABEL org.opencontainers.image.source="https://github.com/iamrichardd/pharos"
+
 WORKDIR /app
 RUN apt-get update && apt-get install -y tini && rm -rf /var/lib/apt/lists/*
 COPY --from=build /app/dist ./dist

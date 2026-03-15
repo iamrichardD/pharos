@@ -1,0 +1,74 @@
+---
+title: "Configuration Reference"
+description: "A centralized guide for all environment variables used by the Pharos ecosystem."
+order: 9
+---
+
+/* ========================================================================
+ * Project: pharos
+ * Component: Marketing Site - Configuration Reference
+ * File: configuration.mdx
+ * Author: Richard D. (https://github.com/iamrichardd)
+ * License: AGPL-3.0 (See LICENSE file for details)
+ * * Purpose (The "Why"):
+ * Centralized discovery point for all configuration variables.
+ * * Traceability:
+ * Related to Task 1.11, implements the configuration discovery point.
+ * ======================================================================== */
+
+The Pharos ecosystem is designed to be highly configurable via environment variables, ensuring compatibility across Home Lab, Enterprise, and Sandbox environments.
+
+---
+
+## 🖥️ Server Configuration (`pharos-server`)
+
+| Variable | Description | Default | Impact |
+| :--- | :--- | :--- | :--- |
+| `PHAROS_ADDR` | The IP and port the server binds to. | `0.0.0.0:2378` | Network accessibility. |
+| `PHAROS_PORT` | The TCP port the server listens on. | `2378` | Network accessibility. |
+| `PHAROS_TLS_CERT` | **(Mandatory)** Path to the SSL/TLS certificate. | None | Security (SSL). |
+| `PHAROS_TLS_KEY` | **(Mandatory)** Path to the SSL/TLS private key. | None | Security (SSL). |
+| `PHAROS_STORAGE_PATH`| Path to the JSON file for persistent storage. | Unset (Memory) | Data persistence. |
+| `PHAROS_KEYS_DIR` | Directory containing authorized SSH public keys. | `./keys` | Authorization. |
+| `PHAROS_SECURITY_TIER`| Security mode: `open`, `protected`, or `scoped`. | `open` | Access control. |
+| `PHAROS_SYNC_ADDR` | The public address used for peer registration. | Unset | Multi-server sync. |
+| `PHAROS_BOOTSTRAP_PEER`| Address of a peer to pull initial data from. | Unset | Multi-server sync. |
+| `PHAROS_LDAP_URL` | URL of the LDAP server for Enterprise tier. | Unset | External Auth. |
+| `PHAROS_CPU_THRESHOLD`| CPU usage percentage for health alerts. | `90.0` | Monitoring. |
+| `PHAROS_MEM_THRESHOLD_GB`| Memory usage (GB) for health alerts. | `1` | Monitoring. |
+
+---
+
+## 🛠️ CLI Client Configuration (`ph`, `mdb`)
+
+| Variable | Description | Default | Impact |
+| :--- | :--- | :--- | :--- |
+| `PHAROS_HOST` | Hostname or IP of the Pharos server. | `127.0.0.1` | Connectivity. |
+| `PHAROS_PORT` | TCP port of the Pharos server. | `2378` | Connectivity. |
+| `PHAROS_SERVER` | Combined address (`host:port`). | Unset | Connectivity. |
+| `PHAROS_CA_CERT` | Path to CA certificate for TLS trust. | Unset | Security. |
+| `PHAROS_PRIVATE_KEY` | Path to SSH private key for authentication. | `~/.ssh/id_ed25519`| Authorization. |
+
+---
+
+## 💓 Pulse Agent Configuration (`pharos-pulse`)
+
+| Variable | Description | Default | Impact |
+| :--- | :--- | :--- | :--- |
+| `PHAROS_SERVER` | Address of the Pharos server. | `127.0.0.1:2378`| Connectivity. |
+| `PHAROS_MACHINE_NAME`| Override hostname for node registration. | System Hostname | Identity. |
+| `PHAROS_CA_CERT` | Path to CA certificate for TLS trust. | Unset | Security. |
+| `PHAROS_PRIVATE_KEY` | Path to SSH private key for authentication. | Unset | Authorization. |
+
+---
+
+## 🌐 Web Console Configuration (`pharos-console-web`)
+
+| Variable | Description | Default | Impact |
+| :--- | :--- | :--- | :--- |
+| `PHAROS_SERVER_URL` | URL of the backend Pharos server. | `https://localhost:2378` | Backend connectivity. |
+| `PHAROS_SANDBOX` | Enable Sandbox-specific UI hints. | `false` | UX/UI. |
+| `PHAROS_TLS_CERT` | Path to SSL/TLS certificate for Web. | Unset | Security (HTTPS). |
+| `PHAROS_TLS_KEY` | Path to SSL/TLS private key for Web. | Unset | Security (HTTPS). |
+| `PHAROS_PRIVATE_KEY` | Private key for signing auth challenges. | Unset | Authorization. |
+| `PHAROS_PUBLIC_KEY` | Public key associated with the private key. | Unset | Authorization. |

@@ -35,6 +35,12 @@ RUN cargo build --release --bin pharos-pulse --bin ph --bin mdb --bin pharos-sca
 # --- Runtime Stage ---
 FROM public.ecr.aws/docker/library/debian:trixie-slim AS runtime
 
+LABEL org.opencontainers.image.title="pharos-pulse"
+LABEL org.opencontainers.image.description="Automated Inventory & Presence Agent (Agent-Native Infrastructure)"
+LABEL org.opencontainers.image.vendor="Richard D."
+LABEL org.opencontainers.image.licenses="AGPL-3.0"
+LABEL org.opencontainers.image.source="https://github.com/iamrichardd/pharos"
+
 WORKDIR /app
 
 # Install runtime dependencies and tini

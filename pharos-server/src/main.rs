@@ -16,6 +16,7 @@ use pharos_server::metrics::{CPU_USAGE, MEMORY_USAGE_BYTES, TOTAL_RECORDS, gathe
 use pharos_server::auth::{AuthManager, SecurityTier};
 use pharos_server::middleware::{MiddlewareChain, LoggingMiddleware, ReadOnlyMiddleware, SecurityTierMiddleware};
 use pharos_server::handle_connection;
+use pharos_server::sync;
 use tokio::net::TcpListener;
 use tracing::{info, error};
 use tracing_subscriber;
@@ -61,6 +62,21 @@ async fn wait_for_files(paths: &[&Path], timeout: Duration) -> anyhow::Result<()
     anyhow::bail!("Timeout waiting for files: {:?}", paths)
 }
 
+fn validate_env() -> anyhow::Result<()> {
+    let mandatory = ["PHAROS_TLS_CERT", "PHAROS_TLS_KEY"];
+    for var in &mandatory {
+        if env::var(var).is_err() {
+            return Err(anyhow::anyhow!("Mandatory environment variable {} is missing", var));
+        }
+    }
+
+    if let Ok(port) = env::var("PHAROS_PORT") {
+        port.parse::<u16>().map_err(|_| anyhow::anyhow!("PHAROS_PORT must be a valid u16"))?;
+    }
+
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let args: Vec<String> = env::args().collect();
@@ -71,9 +87,12 @@ async fn main() -> anyhow::Result<()> {
         tracing_subscriber::fmt::init();
     }
 
+    info!("Performing environment sanity checks...");
+    validate_env()?;
+
     // --- Mandatory TLS Configuration ---
-    let cert_path_str = env::var("PHAROS_TLS_CERT").map_err(|_| anyhow::anyhow!("PHAROS_TLS_CERT environment variable is required for mandatory SSL"))?;
-    let key_path_str = env::var("PHAROS_TLS_KEY").map_err(|_| anyhow::anyhow!("PHAROS_TLS_KEY environment variable is required for mandatory SSL"))?;
+    let cert_path_str = env::var("PHAROS_TLS_CERT")?;
+    let key_path_str = env::var("PHAROS_TLS_KEY")?;
 
     let cert_path = Path::new(&cert_path_str);
     let key_path = Path::new(&key_path_str);
@@ -108,6 +127,19 @@ async fn main() -> anyhow::Result<()> {
         info!("Initializing in-memory storage (Development Tier)");
         Arc::new(RwLock::new(MemoryStorage::new()))
     };
+
+    // --- Bootstrap & Self-Registration ---
+    let my_addr = env::var("PHAROS_SYNC_ADDR").unwrap_or_default();
+    if !my_addr.is_empty() {
+        if let Ok(peer) = env::var("PHAROS_BOOTSTRAP_PEER") {
+            if let Err(e) = sync::bootstrap(Arc::clone(&storage), &peer).await {
+                error!("Bootstrap failed: {}", e);
+            }
+        }
+        if let Err(e) = sync::register_self(Arc::clone(&storage), &my_addr).await {
+            error!("Self-registration failed: {}", e);
+        }
+    }
 
     // Initialize AuthManager
     let keys_dir = env::var("PHAROS_KEYS_DIR").unwrap_or_else(|_| "./keys".to_string());

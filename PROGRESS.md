@@ -8,6 +8,9 @@
 **Blocked/Investigating:**
 
 ## Recent Completions
+- [x] Task 1.11: Advocacy/Debt: Create `docs/CONFIGURATION.md` and marketing site exposure (Issue #112).
+- [x] Task 1.9: DevSecOps: Automated DORA Metric Generator and `docs/DORA.md` (Issue #88).
+- [x] Task 1.8: DevSecOps: Implement AFR, Granular Labeling, Env Sanity Checks, and Dynamic Peer Sync (Issue #87).
 - [x] Bug #144: Engineering: Untrack and Ignore Transient Test Results (Issue #144). Removed `pharos-console-web/test-results/.last-run.json` from the Git index and updated `.gitignore` to robustly ignore all Playwright test artifacts. Verified with a successful pre-flight run.
 - [x] Task 16.18: Engineering: Implement Browser-Based Date Formatting in Web Console (Issue #142).
 - [x] Task 14.12: Engineering: Implement `created_at` and `last_seen_at` field injection in `pharos-server` storage layer (Issue #140).

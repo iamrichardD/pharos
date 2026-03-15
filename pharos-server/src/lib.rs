@@ -17,6 +17,7 @@ pub mod metrics;
 pub mod auth;
 pub mod middleware;
 pub mod tui;
+pub mod sync;
 
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader, AsyncRead, AsyncWrite};
 use tracing::{info, error, instrument};
@@ -50,6 +51,8 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
     // Send initial status message as per Ph protocol expectation
     // S: 200:Database ready
     writer.write_all(b"200:Database ready\n").await?;
+
+    let my_addr = std::env::var("PHAROS_SYNC_ADDR").unwrap_or_default();
 
     loop {
         line.clear();
@@ -127,6 +130,8 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                         break;
                     }
                     Command::Add(fields) => {
+                        let is_forwarded = fields.iter().any(|(k, v)| k == "forwarded" && v == "true");
+
                         let mut field_map = std::collections::HashMap::new();
                         for (k, v) in fields {
                             field_map.insert(k.clone(), v.clone());
@@ -143,6 +148,16 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                             Ok(_) => {
                                 let _ = crate::tui::EVENT_TX.send(format!("[{}] Added/Updated record", context.peer_addr));
                                 writer.write_all(b"200:Ok\n").await?;
+
+                                // Replicate to peers if not already forwarded
+                                if !is_forwarded && !my_addr.is_empty() {
+                                    let storage_clone = Arc::clone(&storage);
+                                    let cmd_str = input.to_string();
+                                    let my_addr_clone = my_addr.clone();
+                                    tokio::spawn(async move {
+                                        crate::sync::replicate_command(storage_clone, cmd_str, my_addr_clone).await;
+                                    });
+                                }
                             }
                             Err(crate::storage::StorageError::Collision) | Err(crate::storage::StorageError::Unauthorized) => {
                                 writer.write_all(b"403:Forbidden: Unauthorized record modification\n").await?;
@@ -201,6 +216,16 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                             Ok(count) => {
                                 if count > 0 {
                                     writer.write_all(b"200:Ok\n").await?;
+
+                                    // Replicate delete to peers
+                                    if !my_addr.is_empty() {
+                                        let storage_clone = Arc::clone(&storage);
+                                        let cmd_str = input.to_string();
+                                        let my_addr_clone = my_addr.clone();
+                                        tokio::spawn(async move {
+                                            crate::sync::replicate_command(storage_clone, cmd_str, my_addr_clone).await;
+                                        });
+                                    }
                                 } else {
                                     writer.write_all(b"501:No matches to delete\n").await?;
                                 }
