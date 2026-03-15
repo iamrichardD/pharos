@@ -1,24 +1,23 @@
 # Pharos
 
-**Lightning-fast directory services for your people and your infrastructure.**
+**The Sovereign Cockpit for your lab. Built on an Invisible High-Performance Engine.**
 
-
-
-Pharos is a highly optimized, cross-platform client-server ecosystem built to modernize **RFC 2378** (The Phonebook Protocol). Designed with rigorous *Clean Architecture* principles, Pharos empowers Home Labbers and Enterprise Engineers to manage directories with uncompromised speed and total environment awareness.
+Pharos is a highly optimized, cross-platform client-server ecosystem built to modernize **RFC 2378** (The Phonebook Protocol). Designed with rigorous *Clean Architecture* principles, Pharos transforms the high-performance RFC 2378 engine into an actionable, resource-first command center for both Humans and AI Agents.
 
 ## The Ecosystem
 
-Pharos is composed of three interconnected pieces:
-1. **`pharos` (Server):** A read-optimized, ultra-fast backend daemon. It natively understands discriminators to seamlessly route requests for human contacts or machine assets. Designed specifically for Ubuntu LTS, it boasts deep environment introspection, customizable threshold alerting, and robust observability (Push/Pull metrics).
-2. **`ph` (CLI):** The people-contact client. Read-only by default, requiring cryptographic SSH-key authentication for updates.
-3. **`mdb` (CLI):** The machine database client. Instantly query your hardware, servers, and cloud assets.
+Pharos is composed of four interconnected pieces:
+1. **`pharos-server` (The Engine):** An invisible, read-optimized, ultra-fast backend daemon. It natively understands discriminators to seamlessly route requests for human contacts or machine assets via the RFC 2378 protocol.
+2. **`pharos-console-web` (The Sovereign Cockpit):** The primary Human/AI interface. A resource-first Web Console that implements the **Model Context Protocol (MCP)** via WebMCP, allowing AI agents to safely manage your lab.
+3. **`ph` (CLI):** The people-contact client for the terminal.
+4. **`mdb` (CLI):** The machine database client for the terminal.
 
 ## Storage That Scales With You
 
-Pharos meets you where your infrastructure is at:
+Pharos maintains engineering integrity by distinguishing between Home Lab and Enterprise capabilities:
 * **Dev Mode:** Lightning-fast, in-memory execution.
-* **Home Lab (MVP):** File-level, restart-survivable storage optimized perfectly for Proxmox LXC containers.
-* **Enterprise:** Full LDAP-backed integration with a customizable, standard-compliant schema.
+* **Home Lab (Full CRUD):** File-level, restart-survivable storage optimized perfectly for Proxmox LXC containers.
+* **Enterprise (Read-Only):** Full LDAP-backed integration, acting as a high-speed, read-only proxy for your corporate source of truth.
 
 ## Getting Started
 

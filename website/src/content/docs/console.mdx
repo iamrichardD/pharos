@@ -19,33 +19,43 @@ While this site (`iamrichardd.com/pharos/`) provides static documentation and ar
 
 ## What is the Pharos Console?
 
-The Pharos Console is a dynamic web application co-hosted with your `pharos-server` (or deployed as a standalone LXC service). It serves as the **primary interface for non-technical users and mobile Home Labbers**, offering a mobile-first, highly accessible experience. Rather than relying solely on the CLI, the Web Console provides a unified, real-time view of your inventory, node telemetry, and security configuration directly from your browser.
+The Pharos Console is the **Sovereign Cockpit** of your lab. It serves as the primary **Human/AI Interface**, transforming the high-performance RFC 2378 engine into an actionable, resource-first command center. Rather than relying solely on the CLI, the Web Console provides a unified, real-time view of your inventory, node telemetry, and security configuration directly from your browser.
 
 ### Key Features
-- **MDB Search**: High-performance inventory querying with visual search results.
-- **Key Management**: A centralized interface for enrolling and revoking SSH public keys for Write operations.
-- **Provisioning**: Generate short-lived tokens for one-click node enrollment.
+- **WebMCP Gateway**: A secure JSON-RPC 2.0 bridge for AI agents to interact with your lab resources.
+- **Resource-First MDB**: High-density inventory management with visual search and metadata "glance" blocks.
+- **Identity Bonding**: A "First-to-Claim" enrollment system for securing new nodes.
 - **TUI/Web Hybrid**: Access the full server dashboard from any browser.
 
 ## AI Orchestration with WebMCP
 
-Pharos is the first infrastructure tool built from the ground up for the AI-agent era. The Console implements the **Model Context Protocol (MCP)** and **WebMCP** to allow LLMs to safely manage your lab.
+Pharos is built for the Agent-Sovereign era. The Console implements the **Model Context Protocol (MCP)** and **WebMCP** to allow LLMs to safely manage your lab as a first-class citizen.
 
 ### How WebMCP Works
-WebMCP acts as a secure bridge between your browser and an AI agent (like Gemini or Claude). Instead of the agent "scraping" the DOM, the Console exposes structured JavaScript tools.
+WebMCP acts as a secure bridge between your browser and an AI agent (like Gemini or Claude). Instead of the agent "scraping" the DOM, the Console exposes structured JSON-RPC tools via the `/mcp` endpoint.
 
-1.  **Tool Discovery**: When you ask an agent to "Add this node to my lab," the agent discovers the `add_ssh_key` or `create_provisioning_token` tools.
-2.  **Human-in-the-Loop (HitL)**: For destructive actions (like `revoke_ssh_key`), the Console will trigger a browser-level confirmation modal. **The agent cannot bypass your manual approval.**
+1.  **Tool Discovery**: When you ask an agent to "Query my lab for Proxmox nodes," the agent discovers and calls the `query_mdb` tool.
+2.  **Human-in-the-Loop (HitL)**: For destructive actions (like `provision_node`), the Console will trigger a browser-level confirmation modal. **The agent cannot bypass your manual approval.**
 3.  **Scoped Access**: The agent only sees the tools and data you have explicitly granted access to via your current session.
 
 ### Available Tools
 
 | Tool | Description | HitL Required |
 | :--- | :--- | :--- |
-| `add_ssh_key` | Enrolls a new public key for a team. | No |
-| `revoke_ssh_key` | Immediately cuts off write access for a key. | **Yes** |
-| `create_provisioning_token` | Generates a single-use enrollment token. | **Yes** |
-| `query_telemetry` | Retrieves the latest metrics for a node. | No |
+| `query_mdb` | Search machine and infrastructure records using RFC 2378 syntax. | No |
+| `provision_node` | Adds a new machine record to the database. | **Yes** |
+| `mcp.list_keys` | Lists all SSH public keys currently authorized for write access. | No |
+| `mcp.provision_key` | Enrolls a new SSH public key into the security tier. | **Yes** |
+
+## Storage Tiers & Transparency
+
+Pharos maintains strict engineering integrity by distinguishing between Home Lab and Enterprise capabilities.
+
+### Enterprise LDAP (Read-Only)
+The Enterprise Tier utilizes LDAP-backed storage for seamless integration with existing corporate directories. In its current implementation, the **LDAP Tier is Read-Only**. This design decision ensures that Pharos can serve as a high-performance proxy for your existing source of truth without requiring administrative write-access to your corporate directory.
+
+### Home Lab (Full CRUD)
+The Home Lab Tier uses a file-level, restart-survivable storage engine. This tier supports full **Create, Read, Update, and Delete (CRUD)** operations, allowing you to manage your lab with zero external dependencies.
 
 ## Deployment & Separation
 
