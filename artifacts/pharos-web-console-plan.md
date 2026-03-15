@@ -77,6 +77,7 @@ sequenceDiagram
 ### Phase 1: Interactive MDB (Highest Priority)
 - **Feature**: Mobile-responsive search interface for machine records.
 - **Feature**: "One-off Addition" forms using **Astro Actions** (Type-safe, POST-only).
+- **Feature**: **Localized Temporal Formatting**: Automatic browser-based transformation of UTC timestamps to user-regional formats.
 - **Target**: The "Home Labber" on a tablet in the server closet or the "Office Manager" adding a laptop.
 
 ### Phase 2: Pulse Monitoring & Identity

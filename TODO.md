@@ -153,6 +153,7 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Task 16.15 (Issue #113):** Engineering: Implement Mandatory Password Rotation on First Login. Create a secure, file-based `password-store.ts` using `scrypt` hashing and enforce updates for default credentials. (Issue #113)
 - [x] **Task 16.16 (Issue #118):** Engineering: Refine Web Console UI (Remove Pulse, Streamline Session Info, Relocate Quick Add, Remove Help). (Issue #118)
 - [x] **Task 16.17 (Issue #121):** Engineering: Consolidate MDB Search entry point. (Issue #121)
+- [x] **Task 16.18 (Issue #142):** Engineering: Implement Browser-Based Date Formatting in Web Console. (Issue #142)
 
 ## Phase 17: Pharos Sandbox & WebMCP Integration
 - [x] **Task 17.1 (Issue #71):** Engineering: Automate Container Image Publishing to GHCR. Created production `Containerfile`s and updated `ci.yml`.

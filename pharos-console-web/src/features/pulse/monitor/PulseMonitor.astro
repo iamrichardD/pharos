@@ -12,6 +12,7 @@
  * Related to Task 16.4 (Issue #66).
  * ======================================================================== */
 import { getPulseStatus } from './pulse-logic';
+import FormattedDate from '../../../components/FormattedDate.astro';
 
 const machines = await getPulseStatus();
 ---
@@ -46,9 +47,20 @@ const machines = await getPulseStatus();
                     <div class="flex items-start justify-between mb-4">
                         <div class="space-y-0.5">
                             <h3 class="font-bold text-slate-900 truncate max-w-[150px]" title={machine.hostname}>{machine.hostname}</h3>
-                            <p class="text-xs text-slate-500 italic">
-                                {machine.status === 'OFFLINE' ? 'Last seen: shutdown' : 'Status: Online'}
-                            </p>
+                            <div class="text-[10px] text-slate-500 italic flex flex-wrap items-center gap-1">
+                                {machine.status === 'OFFLINE' ? (
+                                    <>
+                                        <span>Last seen:</span>
+                                        {machine.last_seen_at ? (
+                                            <FormattedDate date={machine.last_seen_at} class="pharos-date bg-slate-50 px-1 rounded font-mono text-slate-600 border border-slate-100" />
+                                        ) : (
+                                            <span>shutdown</span>
+                                        )}
+                                    </>
+                                ) : (
+                                    <span>Status: Online</span>
+                                )}
+                            </div>
                         </div>
                         <span class={`h-2.5 w-2.5 rounded-full ring-4 ring-offset-2 ${machine.status === 'ONLINE' ? 'bg-green-500 ring-green-100' : (machine.status === 'OFFLINE' ? 'bg-slate-300 ring-slate-100' : 'bg-red-500 ring-red-100')}`}></span>
                     </div>

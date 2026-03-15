@@ -1,0 +1,67 @@
+---
+/* ========================================================================
+ * Project: pharos
+ * Component: Web Console
+ * File: src/components/FormattedDate.astro
+ * Author: Richard D. (https://github.com/iamrichardd)
+ * License: AGPL-3.0 (See LICENSE file for details)
+ * * Purpose (The "Why"):
+ * Reusable component for browser-based (client-side) date formatting.
+ * Ensures that temporal fields like created_at and last_seen_at are 
+ * rendered using the user's regional settings for improved UX.
+ * * Traceability:
+ * Related to Task 16.18 (Issue #142).
+ * ======================================================================== */
+
+interface Props {
+  date: string;
+  class?: string;
+}
+
+const { date, class: className } = Astro.props;
+---
+
+<time 
+  datetime={date} 
+  class:list={[
+    "pharos-date", 
+    className || "bg-emerald-50 px-2 py-0.5 rounded font-mono text-slate-900 border border-emerald-100"
+  ]} 
+  data-raw={date}
+>
+  {date}
+</time>
+
+<script>
+  /**
+   * Scans the document for .pharos-date elements and formats their content
+   * according to the user's browser locale settings.
+   */
+  function formatPharosDates() {
+    const dateElements = document.querySelectorAll('.pharos-date');
+    dateElements.forEach((el) => {
+      const raw = el.getAttribute('data-raw');
+      if (raw) {
+        try {
+          const d = new Date(raw);
+          // Only format if it's a valid date
+          if (!isNaN(d.getTime())) {
+            el.textContent = new Intl.DateTimeFormat(undefined, {
+              dateStyle: 'medium',
+              timeStyle: 'short',
+            }).format(d);
+          }
+        } catch (e) {
+          // If formatting fails, fallback to the raw ISO string (already in textContent)
+          console.debug('Failed to format date:', raw, e);
+        }
+      }
+    });
+  }
+
+  // Initial execution for SSR-loaded content
+  formatPharosDates();
+
+  // Re-run whenever a new page is loaded via View Transitions (ClientRouter)
+  document.addEventListener('astro:page-load', formatPharosDates);
+</script>

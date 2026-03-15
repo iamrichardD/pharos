@@ -77,5 +77,19 @@ test.describe('Sandbox Mode Resource Preview', () => {
     const metadata = await page.locator('script[type="application/pharos+json"]').innerHTML();
     const record = JSON.parse(metadata);
     expect(record.fields.find((f: any) => f.key === 'hostname').value).toBe('e2e-pharos-main');
+
+    // Verify browser-based date formatting for last_seen_at
+    const lastSeenRow = page.locator('div.px-6.py-3').filter({ hasText: 'last_seen_at' });
+    await expect(lastSeenRow).toBeVisible();
+    
+    // The <time> element should contain the formatted date, not the raw ISO string.
+    const timeElement = lastSeenRow.locator('time.pharos-date');
+    await expect(timeElement).toBeVisible();
+    
+    const dateValue = await timeElement.innerText();
+    // Raw ISO: 2026-03-15T12:34:56.789Z
+    // Formatted: Mar 15, 2026 (or similar based on locale)
+    // We expect it NOT to start with YYYY-MM-DD if formatted by the browser.
+    expect(dateValue).not.toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 });

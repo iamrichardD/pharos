@@ -9,6 +9,7 @@
 - None
 
 ## Recent Completions
+- [x] Task 16.18: Engineering: Implement Browser-Based Date Formatting in Web Console (Issue #142). Implemented client-side regional date formatting for `created_at` and `last_seen_at` fields using `Intl.DateTimeFormat` and a reusable `FormattedDate.astro` component. Verified with unit and E2E tests.
 - [x] Task 14.12: Engineering: Implement `created_at` and `last_seen_at` field injection in `pharos-server` storage layer (Issue #140).
 - [x] Task 22.4: Engineering: Implement Human-Readable Flags for MDB CLI (Issue #141).
 - [x] Task 22.3: Advocacy: Strategic Realignment of Marketing & Docs (v1.3.0 Agent-Sovereign Vision). Updated all documentation and marketing to emphasize the Web Console as the "Sovereign Cockpit" and RFC 2378 as the "Invisible High-Performance Engine". Explicitly documented Read-Only Enterprise LDAP tier. (Issue #137)

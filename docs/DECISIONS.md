@@ -85,6 +85,12 @@ To balance "Script-First" interoperability with "Human-First" readability, the `
 ## 6. Troubleshooting Connectivity
 If a connection fails, follow this decision path:
 
-1.  **Check the Port:** The Pharos protocol defaults to **2378** (TCP).
-2.  **Verify the Tier:** Is the server in `Protected` mode? (Check `PHAROS_SECURITY_TIER`).
 3.  **Validate Keys:** Does the `PHAROS_KEYS_DIR` contain your `.pub` key?
+
+## 8. Regional Date Formatting (Web Console)
+To balance "Protocol Consistency" (UTC) with "Human Readability" (Regional), the Web Console implements a deferred formatting strategy.
+
+- **IF** A machine record contains temporal fields (`created_at`, `last_seen_at`) **THEN** The server-side (SSR) renders them as raw ISO8601 strings within a `<time>` element.
+- **IF** The page loads in a browser **THEN** A client-side script transforms these strings into the user's regional format using `Intl.DateTimeFormat`.
+- **Rationale:** This preserves the "Single Source of Truth" in the protocol while providing a localized UX without requiring server-side locale tracking.
+

@@ -17,7 +17,7 @@ export interface MachineStatus {
     name: string;
     hostname: string;
     status: 'ONLINE' | 'OFFLINE' | 'UNREACHABLE';
-    last_seen: Date;
+    last_seen_at?: string;
     cpu_brand?: string;
     cpu_cores?: string;
     mem_total_kb?: string;
@@ -55,15 +55,13 @@ export async function getPulseStatus(): Promise<MachineStatus[]> {
         const kernel_version = record.fields.find(f => f.key === 'kernel_version')?.value;
         const serial_number = record.fields.find(f => f.key === 'serial_number')?.value;
         
-        // In the absence of an explicit timestamp from the server, 
-        // we'll assume the record exists and is recent if it was returned.
-        const last_seen = new Date(); 
+        const last_seen_at = record.fields.find(f => f.key === 'last_seen_at')?.value;
 
         const status: MachineStatus = {
             name,
             hostname,
             status: statusField.toUpperCase() === 'OFFLINE' ? 'OFFLINE' : 'ONLINE',
-            last_seen,
+            last_seen_at,
             cpu_brand,
             cpu_cores,
             mem_total_kb,

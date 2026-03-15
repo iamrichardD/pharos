@@ -64,8 +64,8 @@ describe('pulse-logic', () => {
             serial_number: 'ABC123XYZ'
         }));
         
-        // Ensure last_seen is a Date
-        expect(status[0].last_seen).toBeInstanceOf(Date);
+        // Ensure last_seen_at is handled
+        expect(status[0].last_seen_at).toBeUndefined(); // Missing in mock above
     });
 
     it('test_should_return_empty_array_when_no_records_found', async () => {
@@ -102,7 +102,7 @@ describe('pulse-logic', () => {
             name: 'node-minimal',
             hostname: 'node-minimal',
             status: 'ONLINE',
-            last_seen: expect.any(Date),
+            last_seen_at: undefined,
             cpu_brand: undefined,
             cpu_cores: undefined,
             mem_total_kb: undefined,
@@ -111,5 +111,27 @@ describe('pulse-logic', () => {
             kernel_version: undefined,
             serial_number: undefined
         });
+    });
+
+    it('test_should_map_last_seen_at_when_present', async () => {
+        const mockRecords = [
+            {
+                id: 3,
+                fields: [
+                    { key: 'hostname', value: 'node-dates' },
+                    { key: 'status', value: 'online' },
+                    { key: 'last_seen_at', value: '2026-03-15T14:30:00Z' }
+                ]
+            }
+        ];
+
+        vi.mocked(executePharosQuery).mockResolvedValue({
+            type: 'matches',
+            count: 1,
+            records: mockRecords
+        });
+
+        const status = await getPulseStatus();
+        expect(status[0].last_seen_at).toBe('2026-03-15T14:30:00Z');
     });
 });
