@@ -52,6 +52,9 @@ const session = Astro.locals.session;
             </div>
         ) : (
             <div class="space-y-6">
+                {/* Machine-Optimized Metadata (Agent-Sovereign) */}
+                <script type="application/pharos+json" is:inline set:html={JSON.stringify(record)}></script>
+                
                 {/* Header Card */}
                 <div class="bg-slate-900 rounded-3xl p-8 text-white shadow-xl relative overflow-hidden">
                     <div class="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">

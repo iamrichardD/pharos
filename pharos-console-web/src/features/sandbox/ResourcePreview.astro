@@ -1,0 +1,96 @@
+---
+/* ========================================================================
+ * Project: pharos
+ * Component: Web Console
+ * File: src/features/sandbox/ResourcePreview.astro
+ * Author: Richard D. (https://github.com/iamrichardd)
+ * License: AGPL-3.0 (See LICENSE file for details)
+ * * Purpose (The "Why"):
+ * Provides a "Resource-First" live preview of the MDB infrastructure for 
+ * the Sandbox environment. Replaces the legacy "Fake Terminal" with 
+ * structured components and WebMCP integration awareness.
+ * * Traceability:
+ * Related to Task 22.2 (Resource-First Realignment).
+ * ======================================================================== */
+import { searchMdb } from '../mdb/search/search-logic';
+
+const host = process.env.PHAROS_HOST || 'pharos-server';
+const port = process.env.PHAROS_PORT ? parseInt(process.env.PHAROS_PORT, 10) : 2378;
+
+let result = null;
+let error = null;
+
+try {
+    // Default preview: show pharos-main or any online nodes
+    result = await searchMdb('status=online', 1, 5, host, port);
+} catch (e: any) {
+    error = e.message || 'Failed to connect to Pharos server';
+}
+
+function getFieldValue(record: any, key: string): string | undefined {
+    return record.fields.find((f: any) => f.key === key)?.value;
+}
+---
+
+<div class="resource-preview bg-white rounded-2xl p-1 shadow-2xl border border-slate-200 overflow-hidden text-left mt-8">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50/50">
+        <div class="flex items-center gap-3">
+            <div class="flex gap-1.5">
+                <div class="w-3 h-3 rounded-full bg-slate-300"></div>
+                <div class="w-3 h-3 rounded-full bg-slate-300"></div>
+                <div class="w-3 h-3 rounded-full bg-slate-300"></div>
+            </div>
+            <div class="text-[10px] text-slate-500 font-bold uppercase tracking-widest ml-2">Live Resource Preview</div>
+        </div>
+        <div class="flex items-center gap-2">
+             <div class="text-[10px] text-emerald-600 font-bold uppercase tracking-widest bg-emerald-50 px-2 py-1 rounded border border-emerald-100">WebMCP Active</div>
+        </div>
+    </div>
+
+    <div class="p-6">
+        <div class="mb-6">
+            <h3 class="text-sm font-bold text-slate-900 mb-1">Agent-Sovereign Environment</h3>
+            <p class="text-xs text-slate-500 leading-relaxed">
+                This sandbox is being managed by the <strong class="text-slate-700">Pharos WebMCP Gateway</strong>. 
+                AI Agents can interact with these resources directly via <code class="bg-slate-100 px-1 rounded text-blue-600 font-mono">/mcp</code>.
+            </p>
+        </div>
+
+        {error ? (
+            <div class="p-4 bg-red-50 rounded-xl border border-red-100 text-xs text-red-600 font-mono">
+                {error}
+            </div>
+        ) : result && result.records && result.records.length > 0 ? (
+            <div class="space-y-3">
+                {result.records.map((record: any) => {
+                    const hostname = getFieldValue(record, 'hostname') || getFieldValue(record, 'name') || 'unknown';
+                    const ip = getFieldValue(record, 'ip') || '0.0.0.0';
+                    const status = getFieldValue(record, 'status') || 'offline';
+                    
+                    return (
+                        <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 hover:border-emerald-200 transition-colors">
+                            <div class="flex items-center gap-3">
+                                <div class={`w-2 h-2 rounded-full ${status === 'online' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-slate-300'}`}></div>
+                                <div>
+                                    <div class="text-sm font-bold text-slate-900">{hostname}</div>
+                                    <div class="text-[10px] font-mono text-slate-500">{ip}</div>
+                                </div>
+                            </div>
+                            <a href={`/mdb/${hostname}`} class="text-[10px] font-bold text-slate-400 hover:text-emerald-600 uppercase tracking-wider">Inspect &rarr;</a>
+                        </div>
+                    );
+                })}
+            </div>
+        ) : (
+            <div class="text-center py-8 bg-slate-50 rounded-xl border border-slate-100 border-dashed">
+                <p class="text-xs text-slate-400">No active resources found in this sandbox.</p>
+                <a href="/add-node" class="text-[10px] font-bold text-blue-600 uppercase mt-2 inline-block">Provision First Node</a>
+            </div>
+        )}
+    </div>
+    
+    <div class="p-3 bg-slate-50 border-t border-slate-100 flex justify-between items-center px-6">
+        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Protocol: RFC 2378 (Ph)</span>
+        <a href="/mdb" class="text-[10px] font-bold text-blue-600 hover:underline uppercase tracking-widest">Open Full MDB &rarr;</a>
+    </div>
+</div>

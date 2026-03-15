@@ -13,7 +13,7 @@
  * and Task 16.14 (Unified Gateway).
  * ======================================================================== */
 import ConsoleLayout from '../layouts/ConsoleLayout.astro';
-import SandboxTerminal from '../features/sandbox/SandboxTerminal.astro';
+import ResourcePreview from '../features/sandbox/ResourcePreview.astro';
 
 const isSandbox = process.env.PHAROS_SANDBOX === 'true';
 const session = Astro.locals.session;
@@ -43,7 +43,7 @@ const session = Astro.locals.session;
     </section>
 
     {isSandbox && (
-        <SandboxTerminal />
+        <ResourcePreview />
     )}
 
     <section class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mt-8">

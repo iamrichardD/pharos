@@ -31,9 +31,9 @@ describe('searchMdb', () => {
         const mockResponse: pharosClient.PharosResponse = { type: 'matches', count: 1, records: [] };
         vi.mocked(pharosClient.executePharosQuery).mockResolvedValue(mockResponse);
 
-        const result = await searchMdb('  return all  ');
+        const result = await searchMdb('  *  ');
         
-        expect(pharosClient.executePharosQuery).toHaveBeenCalledWith('web-mdb-search', 'return all', undefined, undefined);
+        expect(pharosClient.executePharosQuery).toHaveBeenCalledWith('web-mdb-search', '*', undefined, undefined);
         expect(result).toEqual(mockResponse);
     });
 

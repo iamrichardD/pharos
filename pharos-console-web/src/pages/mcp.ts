@@ -127,7 +127,7 @@ async function handleQueryMdb(params: any, id: any) {
 }
 
 async function handleProvisionNode(params: any, id: any) {
-    const { hostname, ip, mac, os, alias } = params || {};
+    const { hostname, ip, mac, os_name, alias } = params || {};
     if (!hostname || !ip) {
         return new Response(JSON.stringify({
             jsonrpc: '2.0',
@@ -140,7 +140,7 @@ async function handleProvisionNode(params: any, id: any) {
     }
 
     try {
-        const res = await commitMdbRecord({ hostname, ip, mac, os, alias });
+        const res = await commitMdbRecord({ hostname, ip, mac, os_name, alias });
         if (res.type === 'error') {
             throw new Error(res.message || 'Pharos server error');
         }

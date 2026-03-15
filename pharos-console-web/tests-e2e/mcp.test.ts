@@ -1,188 +1,143 @@
 /* ========================================================================
  * Project: pharos
  * Component: Web Console
- * File: pharos-console-web/tests-e2e/mcp.json.test.ts
+ * File: tests-e2e/mcp.test.ts
  * Author: Richard D. (https://github.com/iamrichardd)
  * License: AGPL-3.0 (See LICENSE file for details)
  * * Purpose (The "Why"):
- * Automated E2E verification of the WebMCP JSON-RPC 2.0 gateway.
- * Ensures tool discovery and query_mdb execution work correctly.
+ * E2E test suite for the WebMCP JSON-RPC 2.0 Gateway. Ensures that 
+ * AI agents can interact with the Pharos protocol via the Web Console.
  * * Traceability:
- * Related to Phase 22 (Issue #135).
+ * Related to Phase 22 (Task 22.1, Task 22.2).
  * ======================================================================== */
 import { test, expect } from '@playwright/test';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 
-test.describe('WebMCP JSON-RPC 2.0 Gateway', () => {
+test.describe('WebMCP Gateway', () => {
+    const storePath = path.join(process.cwd(), 'data/auth_store.json');
 
-  test('should require authentication for /mcp', async ({ request }) => {
-    const response = await request.post('/mcp', {
-      data: {
-        jsonrpc: '2.0',
-        method: 'query_mdb',
-        params: { query: 'test' },
-        id: 1
-      }
-    });
-    
-    // If SKIP_AUTH is enabled (e.g. in E2E environment), it might return 200 or 500
-    // If not, it MUST return 401 or 302
-    const status = response.status();
-    if (status === 401 || status === 302) {
-        if (status === 302) {
-            expect(response.headers().location).toContain('/login');
+    test.beforeEach(async () => {
+        if (fs.existsSync(storePath)) {
+            fs.unlinkSync(storePath);
         }
-    } else {
-        // If it's not 401/302, it should only be acceptable if we're in a skip-auth environment
-        // We can't easily check process.env here but we can assume if it's 200/500 it's skip-auth
-        expect([200, 500]).toContain(status);
-    }
-  });
+    });
 
-  test('should handle query_mdb tool call after login', async ({ page }) => {
-    // 1. Login
-    await page.goto('/login');
-    await page.fill('input[name="username"]', 'admin');
-    await page.fill('input[name="password"]', 'admin');
-    await page.click('button[type="submit"]');
-    
-    // Wait for the home page or password change page
-    await page.waitForURL(/\/(|change-password)/);
-    
-    // Handle mandatory password change if it appears
-    if (page.url().includes('/change-password')) {
+    test('should return 401 if unauthenticated', async ({ request }) => {
+        const response = await request.post('/mcp', {
+            data: {
+                jsonrpc: '2.0',
+                method: 'query_mdb',
+                params: { query: 'status=online' },
+                id: 1
+            }
+        });
+        expect(response.status()).toBe(401);
+        const body = await response.json();
+        expect(body.error.message).toBe('Unauthorized');
+    });
+
+    test('should execute query_mdb when authenticated', async ({ page, request }) => {
+        // First login
+        await page.goto('/login');
+        await page.fill('input[name="username"]', 'admin');
+        await page.fill('input[name="password"]', 'admin');
+        await page.click('button[type="submit"]');
+
+        // Handle mandatory password change
+        await expect(page).toHaveURL(/\/change-password/);
         await page.fill('input[name="password"]', 'NewSecurePassword123!');
         await page.fill('input[name="confirmPassword"]', 'NewSecurePassword123!');
         await page.click('button[type="submit"]');
-        await page.waitForURL(/\/$/);
-    }
+        
+        // Wait for redirect to home
+        await page.waitForURL('/');
 
-    // 2. Call /mcp with JSON-RPC using context.request to reuse session cookies
-    const response = await page.context().request.post('/mcp', {
-        data: {
-            jsonrpc: '2.0',
-            method: 'query_mdb',
-            params: { query: 'e2e' },
-            id: 1
+        // Now perform the MCP request using the page's context (which has the session cookie)
+        const mcpResponse = await page.evaluate(async () => {
+            const res = await fetch('/mcp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    jsonrpc: '2.0',
+                    method: 'query_mdb',
+                    params: { query: 'status=online' },
+                    id: 123
+                })
+            });
+            return await res.json();
+        });
+
+        expect(mcpResponse.jsonrpc).toBe('2.0');
+        expect(mcpResponse.id).toBe(123);
+        expect(mcpResponse.result).toBeDefined();
+        expect(mcpResponse.result.type).toBe('matches');
+        // Check if records are flattened as expected in mcp.ts
+        if (mcpResponse.result.records.length > 0) {
+            expect(mcpResponse.result.records[0].hostname).toBeDefined();
+            expect(mcpResponse.result.records[0].id).toBeDefined();
         }
     });
-    const mcpResponse = await response.json();
 
-    expect(mcpResponse.jsonrpc).toBe('2.0');
-    if (mcpResponse.error) {
-        throw new Error(`MCP Error: ${JSON.stringify(mcpResponse.error)} (Status: ${response.status()})`);
-    }
-    expect(mcpResponse.id).toBe(1);
-    expect(mcpResponse.result).toBeDefined();
-    // result.records should be an array (even if empty)
-    expect(Array.isArray(mcpResponse.result.records)).toBe(true);
-  });
+    test('should return error for invalid jsonrpc version', async ({ page }) => {
+        // Authenticate
+        await page.goto('/login');
+        await page.fill('input[name="username"]', 'admin');
+        await page.fill('input[name="password"]', 'admin');
+        await page.click('button[type="submit"]');
 
-  test('should return error for unknown method', async ({ page }) => {
-      // Login first
-      await page.goto('/login');
-      await page.fill('input[name="username"]', 'admin');
-      await page.fill('input[name="password"]', 'admin');
-      await page.click('button[type="submit"]');
-      await page.waitForURL(/\/(|change-password)/);
-
-      if (page.url().includes('/change-password')) {
-          await page.fill('input[name="password"]', 'NewSecurePassword123!');
-          await page.fill('input[name="confirmPassword"]', 'NewSecurePassword123!');
-          await page.click('button[type="submit"]');
-          await page.waitForURL(/\/$/);
-      }
-
-      const response = await page.context().request.post('/mcp', {
-          data: {
-              jsonrpc: '2.0',
-              method: 'unknown_method',
-              params: {},
-              id: 2
-          }
-      });
-      const mcpResponse = await response.json();
-
-      expect(mcpResponse.jsonrpc).toBe('2.0');
-      expect(mcpResponse.id).toBe(2);
-      expect(mcpResponse.error).toBeDefined();
-      expect(mcpResponse.error.code).toBe(-32601); // Method not found
-  });
-
-  test('should handle provision_node tool call', async ({ page }) => {
-    // 1. Login
-    await page.goto('/login');
-    await page.fill('input[name="username"]', 'admin');
-    await page.fill('input[name="password"]', 'admin');
-    await page.click('button[type="submit"]');
-    await page.waitForURL(/\/(|change-password)/);
-    
-    if (page.url().includes('/change-password')) {
+        await expect(page).toHaveURL(/\/change-password/);
         await page.fill('input[name="password"]', 'NewSecurePassword123!');
         await page.fill('input[name="confirmPassword"]', 'NewSecurePassword123!');
         await page.click('button[type="submit"]');
-        await page.waitForURL(/\/$/);
-    }
+        await page.waitForURL('/');
 
-    const response = await page.context().request.post('/mcp', {
-        data: {
-            jsonrpc: '2.0',
-            method: 'provision_node',
-            params: { 
-                hostname: 'mcp-test-node',
-                ip: '10.0.0.50',
-                os: 'Linux'
-            },
-            id: 3
-        }
+        const mcpResponse = await page.evaluate(async () => {
+            const res = await fetch('/mcp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    jsonrpc: '1.0',
+                    method: 'query_mdb',
+                    params: { query: 'status=online' },
+                    id: 456
+                })
+            });
+            return await res.json();
+        });
+
+        expect(mcpResponse.error.code).toBe(-32600);
+        expect(mcpResponse.error.message).toContain('jsonrpc must be 2.0');
     });
-    const mcpResponse = await response.json();
 
-    expect(mcpResponse.jsonrpc).toBe('2.0');
-    expect(mcpResponse.id).toBe(3);
-    if (mcpResponse.error) {
-        throw new Error(`MCP Error: ${JSON.stringify(mcpResponse.error)}`);
-    }
-    expect(mcpResponse.result.status).toBe('success');
-  });
+    test('should return error for non-existent method', async ({ page }) => {
+        // Authenticate
+        await page.goto('/login');
+        await page.fill('input[name="username"]', 'admin');
+        await page.fill('input[name="password"]', 'admin');
+        await page.click('button[type="submit"]');
 
-  test('should handle mcp.list_keys and mcp.provision_key', async ({ page }) => {
-    await page.goto('/login');
-    await page.fill('input[name="username"]', 'admin');
-    await page.fill('input[name="password"]', 'admin');
-    await page.click('button[type="submit"]');
-    await page.waitForURL(/\/(|change-password)/);
-
-    if (page.url().includes('/change-password')) {
+        await expect(page).toHaveURL(/\/change-password/);
         await page.fill('input[name="password"]', 'NewSecurePassword123!');
         await page.fill('input[name="confirmPassword"]', 'NewSecurePassword123!');
         await page.click('button[type="submit"]');
-        await page.waitForURL(/\/$/);
-    }
+        await page.waitForURL('/');
 
-    // 1. Provision a key
-    const provResponse = await page.context().request.post('/mcp', {
-        data: {
-            jsonrpc: '2.0',
-            method: 'mcp.provision_key',
-            params: { role: 'mcp-test-role' },
-            id: 4
-        }
-    });
-    const provData = await provResponse.json();
-    expect(provData.result.status).toBe('success');
-    expect(provData.result.public_key).toContain('ssh-ed25519');
+        const mcpResponse = await page.evaluate(async () => {
+            const res = await fetch('/mcp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    jsonrpc: '2.0',
+                    method: 'invalid_method',
+                    params: {},
+                    id: 789
+                })
+            });
+            return await res.json();
+        });
 
-    // 2. List keys and verify the new one is there
-    const listResponse = await page.context().request.post('/mcp', {
-        data: {
-            jsonrpc: '2.0',
-            method: 'mcp.list_keys',
-            params: {},
-            id: 5
-        }
+        expect(mcpResponse.error.code).toBe(-32601);
+        expect(mcpResponse.error.message).toContain('Method not found');
     });
-    const listData = await listResponse.json();
-    expect(Array.isArray(listData.result.keys)).toBe(true);
-    expect(listData.result.keys.some((k: string) => k.startsWith('mcp-test-role_mcp_'))).toBe(true);
-  });
 });

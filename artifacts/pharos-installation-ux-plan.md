@@ -48,7 +48,7 @@ The Web Console should serve as a living guide for expansion.
 
 ### 2.4. Contextual Guidance & CLI Bridging
 Bridge the gap between the Web Console (GUI) and the specialized CLI toolbelt.
-- **Search Examples**: Add clickable search examples (e.g., `hostname=pharos-*`, `status=up`, `return all`) below the MDB search bar.
+- **Search Examples**: Add clickable search examples (e.g., `hostname=pharos-*`, `status=online`, `*`) below the MDB search bar.
 - **CLI References**: Provide direct links to the marketing site's CLI documentation on every relevant page (e.g., Search, Node Details).
 - **Toolbelt Hints**: When a user performs an action in the Web Console, provide the equivalent CLI command as a "Power User Hint."
 

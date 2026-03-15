@@ -2,12 +2,15 @@
 
 ## Current Status
 **Phase:** 22 (WebMCP Strategic Realignment)
-**Active Task:** Task 22.2 (Resource-First UI)
-**Backlog:** 22.3 (Marketing Realignment)
+**Active Task:** Task 22.3 (Marketing Realignment)
+**Backlog:** 
+- TBD
 **Blocked/Investigating:**
 - None
 
 ## Recent Completions
+- [x] Bug #138: Engineering: Normalize Ecosystem Property Names (os vs os_name). Standardized on \`os_name\` across Web Console, MCP Gateway, and Tests. Audited \`mac\`, \`ip\`, \`hostname\` for harmonization. (Issue #138)
+- [x] Task 22.2: Engineering: Implement Resource-First Realignment & Metadata Injection (Replace Fake Terminal). (Issue #136)
 - [x] Task 22.1: Engineering: Implemented the /mcp JSON-RPC 2.0 Gateway in the Web Console. Standardized tools: \`query_mdb\`, \`provision_node\`, \`mcp.list_keys\`, \`mcp.provision_key\`. (Issue #135)
 - [x] Task 22.0: Research: Conducted comprehensive audit of WebMCP misalignment. Identified "Persona Conflict" between legacy terminal UX and modern Resource-First vision. Developed `artifacts/web-mcp-alignment-plan.md`. (Issue #135)
 - [x] Bug #134: Security: Resolved Secret Leak in `pharos.test.ts`. Replaced hardcoded OpenSSH Private Key with dynamic `crypto.generateKeyPairSync` execution in the test suite. Fixed OpenSSH PEM format construction in tests to match the `parseEd25519OpenSSH` parser. (Issue #134)

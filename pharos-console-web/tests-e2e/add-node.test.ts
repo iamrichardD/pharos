@@ -40,13 +40,13 @@ test.describe('Add Node and Search Guidance', () => {
         await exampleBtn.click();
 
         // Verify input is populated
-        await expect(searchInput).toHaveValue('status=up');
+        await expect(searchInput).toHaveValue('status=online');
 
         // Submit form
         await page.keyboard.press('Enter');
 
         // Verify URL contains the query
-        await expect(page).toHaveURL(/\/mdb\?q=status%3Dup/);
+        await expect(page).toHaveURL(/\/mdb\?q=status%3Donline/);
     });
 
     test('should show CLI power user hint with current query', async ({ page }) => {

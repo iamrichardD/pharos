@@ -30,7 +30,7 @@ const { query } = Astro.props;
             name="q"
             id="search"
             class="block w-full pl-10 pr-3 py-3 border border-slate-300 rounded-xl focus:ring-emerald-500 focus:border-emerald-500 bg-white shadow-sm text-lg"
-            placeholder="e.g., return all"
+            placeholder="e.g., *"
             value={query}
             autofocus
         />
@@ -46,10 +46,10 @@ const { query } = Astro.props;
 <div class="flex flex-wrap items-center gap-2 mt-3">
     <span class="text-xs font-bold text-slate-400 uppercase tracking-widest mr-1">Examples:</span>
     {[
-        { label: 'All Records', query: 'return all' },
-        { label: 'Online Only', query: 'status=up' },
+        { label: 'All Records', query: '*' },
+        { label: 'Online Only', query: 'status=online' },
         { label: 'By Hostname', query: 'hostname=pharos-*' },
-        { label: 'By OS', query: 'os_family=linux' }
+        { label: 'By OS', query: 'os_name=debian' }
     ].map((example) => (
         <button
             type="button"
@@ -65,7 +65,7 @@ const { query } = Astro.props;
     <div class="flex items-center space-x-2 text-xs text-slate-500">
         <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
         <span><strong>Power User Hint:</strong> Use the CLI toolbelt for faster queries:</span>
-        <code class="bg-slate-200 px-1.5 py-0.5 rounded text-slate-700 font-mono">mdb "{query || 'return all'}"</code>
+        <code class="bg-slate-200 px-1.5 py-0.5 rounded text-slate-700 font-mono">mdb "{query || '*'}"</code>
     </div>
     <a href="https://iamrichardd.com/pharos/docs/cli-clients" target="_blank" class="text-[10px] font-bold text-emerald-600 hover:text-emerald-500 uppercase tracking-wider group-hover:translate-x-0.5 transition-transform">
         CLI Docs &rarr;

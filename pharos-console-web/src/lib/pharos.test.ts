@@ -179,14 +179,14 @@ describe('executePharosQuery', () => {
             id: 1,
             fields: [
                 { key: 'hostname', value: 'pharos-main' },
-                { key: 'os', value: 'Debian' }
+                { key: 'os_name', value: 'Debian' }
             ]
         };
         const formatted = formatPharosRecord(record);
         const lines = formatted.split('\n');
         
         expect(lines[0]).toBe('       hostname: pharos-main');
-        expect(lines[1]).toBe('             os: Debian');
+        expect(lines[1]).toBe('        os_name: Debian');
     });
 
     it('test_should_support_openssh_private_keys', async () => {

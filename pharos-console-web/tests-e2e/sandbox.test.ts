@@ -5,10 +5,9 @@
  * Author: Richard D. (https://github.com/iamrichardd)
  * License: AGPL-3.0 (See LICENSE file for details)
  * * Purpose (The "Why"):
- * E2E verification of the Sandbox mode and its interaction with the 
- * pharos-server backend.
+ * E2E verification of the Sandbox mode and its "Resource-First" preview UI.
  * * Traceability:
- * Related to Bug #82 (Issue #82).
+ * Related to Task 22.2 (Resource-First Realignment).
  * ======================================================================== */
 import { test, expect } from '@playwright/test';
 import * as fs from 'node:fs';
@@ -22,7 +21,7 @@ test.beforeEach(async () => {
   }
 });
 
-test.describe('Sandbox Mode Backend Interaction', () => {
+test.describe('Sandbox Mode Resource Preview', () => {
   test.beforeEach(async ({ page }) => {
     // 1. Login first
     await page.goto('/login');
@@ -40,21 +39,43 @@ test.describe('Sandbox Mode Backend Interaction', () => {
     await expect(page).toHaveURL(/\/$/);
   });
 
-  test('should execute a query and show 200 OK from backend', async ({ page }) => {
-    // Navigate to a page with the Sandbox Terminal (usually the home page in sandbox mode)
+  test('should display the Live Resource Preview and at least one active node', async ({ page }) => {
     await page.goto('/');
     
-    const queryInput = page.locator('#query-input');
-    await expect(queryInput).toBeVisible();
+    // Verify Resource Preview container is visible
+    const preview = page.locator('.resource-preview');
+    await expect(preview).toBeVisible();
+    await expect(preview).toContainText('Live Resource Preview');
+    await expect(preview).toContainText('WebMCP Active');
 
-    // Execute a simple status query
-    await queryInput.fill('status');
-    await page.click('button:has-text("Execute")');
+    // Wait for the pulse agent to register and show up in the preview
+    // In our playwright config, pharos-pulse is started as 'e2e-pharos-main'
+    const resource = preview.getByText('e2e-pharos-main');
+    await expect(resource).toBeVisible({ timeout: 15000 });
+    
+    // Verify it shows as online
+    const statusIndicator = preview.locator('.bg-emerald-500');
+    await expect(statusIndicator).toBeVisible();
+  });
 
-    // Wait for the response in the terminal output
-    const terminalOutput = page.locator('#terminal-output');
-    // If the backend is running, it should return some records or OK.
-    // If it's NOT running, it should show a "Failed to connect" error.
-    await expect(terminalOutput).toContainText('200 OK', { timeout: 10000 });
+  test('should navigate to resource details from preview', async ({ page }) => {
+    await page.goto('/');
+    
+    // Wait for resource to appear
+    const preview = page.locator('.resource-preview');
+    const resource = preview.getByText('e2e-pharos-main');
+    await expect(resource).toBeVisible({ timeout: 15000 });
+    
+    // Click "Inspect"
+    await page.click('text=Inspect →');
+    
+    // Verify navigation to detail page
+    await expect(page).toHaveURL(/\/mdb\/e2e-pharos-main/);
+    await expect(page.locator('h1')).toContainText('e2e-pharos-main');
+    
+    // Verify machine-optimized metadata is present
+    const metadata = await page.locator('script[type="application/pharos+json"]').innerHTML();
+    const record = JSON.parse(metadata);
+    expect(record.fields.find((f: any) => f.key === 'hostname').value).toBe('e2e-pharos-main');
   });
 });

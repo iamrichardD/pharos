@@ -19,25 +19,6 @@ import { verifyStoredPassword, updateStoredPassword } from '../features/auth/pas
 import { executePharosQuery, executeAuthCheck } from '../lib/pharos';
 
 export const server = {
-    sandboxQuery: defineAction({
-        accept: 'form',
-        input: z.object({
-            query: z.string().min(1, 'Query is required')
-        }),
-        handler: async (input) => {
-            if (process.env.PHAROS_SANDBOX !== 'true') {
-                throw new Error('Sandbox mode is not enabled');
-            }
-            try {
-                const host = process.env.PHAROS_HOST || 'pharos-server';
-                const port = process.env.PHAROS_PORT ? parseInt(process.env.PHAROS_PORT, 10) : 2378;
-                const res = await executePharosQuery('web-sandbox-mdb', input.query, host, port);
-                return { success: true, result: res };
-            } catch (e: any) {
-                throw new Error(e.message || 'Sandbox query failed');
-            }
-        }
-    }),
     login: defineAction({
         accept: 'form',
         input: z.object({
@@ -160,7 +141,7 @@ export const server = {
             hostname: z.string().min(1, 'Hostname is required'),
             ip: z.string().min(1, 'IP is required'),
             mac: z.string().optional(),
-            os: z.string().optional(),
+            os_name: z.string().optional(),
             alias: z.string().optional(),
             actionType: z.enum(['stage', 'commit']).default('stage')
         }),

@@ -42,13 +42,13 @@ describe('commitMdbRecord', () => {
             hostname: 'node-01', 
             ip: '1.2.3.4', 
             mac: '00:11:22', 
-            os: 'Ubuntu', 
+            os_name: 'Ubuntu', 
             alias: 'primary' 
         });
         
         expect(pharosClient.executePharosQuery).toHaveBeenCalledWith(
             'web-console-add', 
-            'add type="machine" hostname="node-01" ip="1.2.3.4" mac="00:11:22" os="Ubuntu" alias="primary"',
+            'add type="machine" hostname="node-01" ip="1.2.3.4" mac="00:11:22" os_name="Ubuntu" alias="primary"',
             undefined,
             undefined
         );

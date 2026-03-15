@@ -55,7 +55,7 @@ const { result } = Astro.props;
                     </div>
                     <div class="sm:col-span-1">
                         <dt class="font-medium text-blue-600 uppercase tracking-wider text-xs">Operating System</dt>
-                        <dd class="mt-1 text-slate-900">{result.data.data.os || 'N/A'}</dd>
+                        <dd class="mt-1 text-slate-900">{result.data.data.os_name || 'N/A'}</dd>
                     </div>
                 </dl>
                 
@@ -63,7 +63,7 @@ const { result } = Astro.props;
                 <input type="hidden" name="hostname" value={result.data.data.hostname} />
                 <input type="hidden" name="ip" value={result.data.data.ip} />
                 {result.data.data.mac && <input type="hidden" name="mac" value={result.data.data.mac} />}
-                {result.data.data.os && <input type="hidden" name="os" value={result.data.data.os} />}
+                {result.data.data.os_name && <input type="hidden" name="os_name" value={result.data.data.os_name} />}
                 {result.data.data.alias && <input type="hidden" name="alias" value={result.data.data.alias} />}
                 <input type="hidden" name="actionType" value="commit" />
             </div>
@@ -99,11 +99,11 @@ const { result } = Astro.props;
                             value={result?.data?.data?.mac || ''} />
                     </div>
                     <div>
-                        <label for="os" class="block text-sm font-medium text-slate-700">Operating System</label>
-                        <input type="text" name="os" id="os"
+                        <label for="os_name" class="block text-sm font-medium text-slate-700">Operating System</label>
+                        <input type="text" name="os_name" id="os_name"
                             class="mt-1 block w-full border border-slate-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" 
                             placeholder="Ubuntu 22.04"
-                            value={result?.data?.data?.os || ''} />
+                            value={result?.data?.data?.os_name || ''} />
                     </div>
                 </div>
 

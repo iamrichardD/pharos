@@ -15,7 +15,7 @@ export interface MdbAddInput {
     hostname: string;
     ip: string;
     mac?: string;
-    os?: string;
+    os_name?: string;
     alias?: string;
 }
 
@@ -28,7 +28,7 @@ export async function commitMdbRecord(input: MdbAddInput, host?: string, port?: 
     
     let queryStr = `add type="machine" hostname="${esc(input.hostname)}" ip="${esc(input.ip)}"`;
     if (input.mac) queryStr += ` mac="${esc(input.mac)}"`;
-    if (input.os) queryStr += ` os="${esc(input.os)}"`;
+    if (input.os_name) queryStr += ` os_name="${esc(input.os_name)}"`;
     if (input.alias) queryStr += ` alias="${esc(input.alias)}"`;
 
     return executePharosQuery('web-console-add', queryStr, host, port);
