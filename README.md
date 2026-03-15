@@ -88,3 +88,15 @@ If you receive a `403 Forbidden` error, the packages may still be marked as "Pri
 If you see an error related to `seccomp` and `bdflush` (common on Ubuntu 24.04 with older container runtimes), the sandbox configuration now includes a bypass (`seccomp: unconfined`) to ensure a smooth evaluation.
 
 **Note:** This bypass is only for the ephemeral sandbox and should not be used in production environments where a custom seccomp profile or an updated runtime (`crun`) is preferred.
+
+---
+
+<!-- DORA_START -->
+### 🚀 Project Velocity (DORA)
+| Metric | Status | Category |
+| :--- | :--- | :--- |
+| **Deployment Frequency** | 4 tags | Medium (monthly) |
+| **Change Failure Rate** | 1.0% | Elite |
+
+> [View Full DORA Report](docs/DORA.md)
+<!-- DORA_END -->

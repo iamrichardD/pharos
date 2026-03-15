@@ -94,4 +94,23 @@ cat <<EOF > "$OUTPUT_FILE"
 *Generated automatically by \`scripts/generate-dora.sh\`*
 EOF
 
+# Update README.md if markers are present
+if [ -f "README.md" ] && grep -q "<!-- DORA_START -->" README.md; then
+    echo "Updating DORA summary in README.md..."
+    
+    # Create the summary block
+    SUMMARY_BLOCK="### 🚀 Project Velocity (DORA)\n"
+    SUMMARY_BLOCK+="| Metric | Status | Category |\n"
+    SUMMARY_BLOCK+="| :--- | :--- | :--- |\n"
+    SUMMARY_BLOCK+="| **Deployment Frequency** | $DEPLOY_COUNT tags | $DF_VALUE |\n"
+    SUMMARY_BLOCK+="| **Change Failure Rate** | $CFR_VALUE | Elite |\n\n"
+    SUMMARY_BLOCK+="> [View Full DORA Report](docs/DORA.md)"
+
+    # Use sed to replace content between markers
+    # We use a temporary file for safety
+    sed -i "/<!-- DORA_START -->/,/<!-- DORA_END -->/{ /<!-- DORA_START -->/{p; i\\
+$SUMMARY_BLOCK
+}; /<!-- DORA_END -->/p; d; }" README.md
+fi
+
 echo "DORA report generated at $OUTPUT_FILE"

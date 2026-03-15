@@ -1,0 +1,32 @@
+name: DORA Pulse
+
+on:
+  schedule:
+    - cron: '0 0 * * 1' # Every Monday at 00:00
+  workflow_dispatch: # Allow manual trigger
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    name: Generate DORA Metrics
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # Full history needed for git log analytics
+
+      - name: Generate DORA Report
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          chmod +x scripts/generate-dora.sh
+          ./scripts/generate-dora.sh
+
+      - name: Commit & Push changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "docs: update DORA metrics summary (automated)"
+          file_pattern: "docs/DORA.md README.md"
