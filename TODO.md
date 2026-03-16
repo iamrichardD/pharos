@@ -206,3 +206,6 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Task 23.1 (Issue #143):** Advocacy: Transition to "Agent-Native Infrastructure" Standard. (HIGH PRIORITY)
 - [x] **Bug #144:** Engineering: Untrack and Ignore Transient Test Results. (Issue #144)
 
+
+## Phase 24: Marketing Engagement & Analytics
+- [x] **Task 24.1 (Issue #145):** Planning: Engagement Measurement Strategy (Page Reads & Clicks).
