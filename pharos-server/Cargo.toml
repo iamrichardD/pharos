@@ -39,6 +39,7 @@ warp = "0.3"
 tokio-rustls = "0.26"
 rustls-pemfile = "2.1"
 chrono = { version = "0.4", features = ["serde"] }
+pharos-client = { path = "../crates/pharos-client" }
 
 [dev-dependencies]
 tempfile = "3"

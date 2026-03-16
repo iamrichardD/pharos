@@ -15,18 +15,32 @@
 set -e
 
 # --- 1. Rust Verification ---
-echo "--- [1/3] Rust: Building and Running Unit Tests ---"
+echo "--- [1/4] Rust: Building and Running Unit Tests ---"
 cargo test --verbose
+cargo build --package pharos-server
+cargo build --package pharos-pulse
+cargo build --package pharos-scan
+cargo build --package ph
+cargo build --package mdb
 
-# --- 2. Web Console Verification (Static) ---
-echo "--- [2/3] Web Console: Static Analysis & Build ---"
+# --- 2. Marketing Site Verification ---
+echo "--- [2/4] Marketing Site: Build ---"
+cd website
+npm install
+npm run build
+cd ..
+
+# --- 3. Web Console Verification (Static) ---
+echo "--- [3/4] Web Console: Static Analysis & Build ---"
 cd pharos-console-web
 npm install
 npm run check
 npm run build
+cd ..
 
-# --- 3. Web Console Verification (E2E) ---
-echo "--- [3/3] Web Console: Running Playwright E2E Tests ---"
+# --- 4. Web Console Verification (E2E) ---
+echo "--- [4/4] Web Console: Running Playwright E2E Tests ---"
+cd pharos-console-web
 # Generate fresh ephemeral certs for E2E backend
 rm -rf /tmp/e2e-certs
 mkdir -p /tmp/e2e-certs
@@ -39,6 +53,7 @@ export NODE_EXTRA_CA_CERTS=/tmp/e2e-certs/root-ca.crt
 
 # Playwright config handles startup
 npm run test:e2e
+cd ..
 
 echo "===================================================="
 echo "✅ PRE-FLIGHT SUCCESSFUL: All systems verified."

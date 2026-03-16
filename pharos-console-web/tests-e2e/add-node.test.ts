@@ -16,7 +16,7 @@ test.describe('Add Node and Search Guidance', () => {
         await page.goto('/');
         
         // Check for Quick Action card (specifically the one on the home page, not the nav link)
-        const addNodeCard = page.locator('main a[href="/add-node"]');
+        const addNodeCard = page.locator('main a[href="/add-node"]').first();
         await expect(addNodeCard).toBeVisible();
         await addNodeCard.click();
 

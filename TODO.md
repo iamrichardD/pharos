@@ -209,3 +209,4 @@ A task is considered complete and may be marked `[x]` only when:
 
 ## Phase 24: Marketing Engagement & Analytics
 - [x] **Task 24.1 (Issue #145):** Planning: Engagement Measurement Strategy (Page Reads & Clicks).
+- [x] **Task 24.2 (Issue #146):** Engineering: Implement Umami Cloud Analytics Integration. Integrated privacy-first tracking into `BaseLayout.astro`, `SandboxSnippet.astro` (copy-sandbox), and `TieredTabs.astro` (view-homelab/enterprise). Verified with a full pre-flight run.

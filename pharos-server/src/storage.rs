@@ -752,8 +752,8 @@ mod tests {
         assert_eq!(results[0].fields.get("status").unwrap(), "busy");
     }
 
-    #[test]
-    fn test_should_persist_and_reload_records_when_using_file_storage() {
+    #[tokio::test]
+    async fn test_should_persist_and_reload_records_when_using_file_storage() {
         let temp_dir = std::env::temp_dir();
         let storage_path = temp_dir.join("pharos_test_rbac.json");
         
@@ -767,6 +767,8 @@ mod tests {
             fields.insert("name".to_string(), "Persistent Pete".to_string());
             storage.add_record(fields, None, None);
             assert_eq!(storage.record_count(), 1);
+            // Give the background worker a moment to persist
+            tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
         }
 
         {

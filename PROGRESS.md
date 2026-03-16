@@ -8,7 +8,9 @@
 **Blocked/Investigating:**
 
 ## Recent Completions
-- [x] Task 24.1: Planning: Engagement Measurement Strategy (Page Reads & Clicks) (Issue #145). Conducted a comprehensive engagement audit of the Astro-based marketing site, identifying high-signal interaction points (One-Liner copy events, Tiered Tab persona splits, and deep reads of technical specs). Designed a two-tier strategy favoring **Umami Cloud** for its privacy-first, cookie-less, and lightweight (~2kB) approach. Created `artifacts/marketing-engagement-plan.md` documenting KPIs (CLI-Copy-Conversion, Persona-Split) and an implementation roadmap.
+- [x] Task 24.2: Engineering: Implement Umami Cloud Analytics Integration (Issue #146). Integrated Umami Cloud's privacy-first, cookie-less tracking into the marketing site layout (`BaseLayout.astro`) using `PUBLIC_UMAMI_WEBSITE_ID`. Instrumented high-signal interaction points including 'One-Liner' copy events in `SandboxSnippet.astro` and persona-split tab switching in `TieredTabs.astro`. Enhanced `scripts/pre-flight.sh` to include marketing site builds and pre-built Rust binaries for faster E2E cycles. Resolved `pharos-server` compilation and test regressions.
+- [x] Task 24.1: Planning: Engagement Measurement Strategy (Page Reads & Clicks) (Issue #145). Conducted a comprehensive engagement audit of the Astro-based marketing site, identifying high-signal interaction points (One-Liner copy events, Tiered Tab persona splits, and deep reads of technical specs). Designed a two-tier strategy favoring **Umami Cloud** for its privacy-first, cookie-less and lightweight (~2kB) approach. Created `artifacts/marketing-engagement-plan.md` documenting KPIs (CLI-Copy-Conversion, Persona-Split) and an implementation roadmap.
+
 - [x] Task 1.11: Advocacy/Debt: Create `docs/CONFIGURATION.md` and marketing site exposure (Issue #112).
 - [x] Task 1.9: DevSecOps: Automated DORA Metric Generator and `docs/DORA.md` (Issue #88).
 - [x] Task 1.8: DevSecOps: Implement AFR, Granular Labeling, Env Sanity Checks, and Dynamic Peer Sync (Issue #87).

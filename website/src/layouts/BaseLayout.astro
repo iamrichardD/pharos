@@ -22,6 +22,7 @@ interface Props {
 }
 
 const { title, description } = Astro.props;
+const umamiId = import.meta.env.PUBLIC_UMAMI_WEBSITE_ID;
 ---
 
 <html lang="en" class="scroll-smooth">
@@ -38,6 +39,9 @@ const { title, description } = Astro.props;
     <!-- SEO Meta Tags -->
     <title>{title}</title>
     <meta name="description" content={description} />
+
+    <!-- Umami Analytics (Privacy-First) -->
+    {umamiId && <script defer src="https://cloud.umami.is/script.js" data-website-id={umamiId}></script>}
     
     <!-- In-lined theme script to prevent flash of light mode -->
     <script is:inline>

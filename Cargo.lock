@@ -1873,6 +1873,7 @@ dependencies = [
  "hex",
  "lazy_static",
  "ldap3",
+ "pharos-client",
  "prometheus",
  "rand",
  "ratatui 0.29.0",

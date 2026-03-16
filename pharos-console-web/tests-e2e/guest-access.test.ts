@@ -45,8 +45,8 @@ test.describe('Guest Access (Unauthenticated)', () => {
     await page.goto('/mdb?q=e2e-pharos-main');
     
     const resultsTable = page.locator('table');
-    // Ensure table eventually appears
-    await expect(resultsTable).toBeVisible({ timeout: 10000 });
+    // Ensure table eventually appears (Pulse registration can take time)
+    await expect(resultsTable).toBeVisible({ timeout: 15000 });
 
     // Serial Number header should be visible (No masking per user preference)
     await expect(page.locator('th:has-text("Serial Number")')).toBeVisible();
