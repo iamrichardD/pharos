@@ -101,4 +101,11 @@ To align with modern DevSecOps and "Cloud-Native" paradigms, Pharos is designed 
 - **IF** The term "Sovereign" is used **THEN** It refers to the *territory* of the Sandbox, while "Native" refers to the *engineering standard* of the entire infrastructure.
 - **Rationale:** "Native" implies that the agent is a first-class citizen with its own optimized, deterministic instruction set (tools), reducing hallucinations and operational friction.
 
+## 10. Deterministic Infrastructure & Unified Source of Truth
+To align with the "Collaborative Force Multiplier" role and the "Deterministic Infrastructure" narrative, Pharos serves as the high-rigor grounding layer for all network assets.
+
+- **IF** There is a discrepancy between manual documentation and the Pharos registry **THEN** The Pharos registry is the **Unified Source of Truth**.
+- **IF** An AI Agent or Human Actor requires infrastructure discovery **THEN** Pharos provides the deterministic data needed to eliminate the **"Hallucination Gap."**
+- **Rationale:** High-rigor systems design reduces engineering toil and ensures that infrastructure state is observable, verifiable, and clinical.
+
 

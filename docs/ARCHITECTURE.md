@@ -1,20 +1,23 @@
 # Pharos Architecture
 
-Project Pharos is a highly performant, read-optimized client-server ecosystem based on RFC 2378 (Phonebook Protocol). It is designed to empower Home Labbers and Enterprise Engineers by providing a "source of truth" for infrastructure that is as fast as it is reliable.
+Pharos is a high-rigor, read-optimized client-server ecosystem based on RFC 2378 (Phonebook Protocol). It serves as a **Unified Source of Truth**, eliminating the "Hallucination Gap" in infrastructure discovery by providing **Deterministic Infrastructure** for both humans and autonomous AI Agents.
+
+For more information on the architectural philosophy and the Collaborative Force Multiplier role, visit [iamrichardd.com](https://iamrichardd.com).
 
 ## Platform Architecture (Macro-View)
-Helping you visualize how the various components—from the CLI to the Web Console—interact across the "Trust Boundary."
+Visualizing the high-rigor interaction across the "Trust Boundary," highlighting the **webMCP Grounding Layer** as the primary engine for agentic autonomy.
 
 ```mermaid
 graph TD
-    subgraph "Client Layer"
+    subgraph "Client Layer (Engineer Success)"
         Human[Human Actor]
         CLI_PH[ph CLI]
         CLI_MDB[mdb CLI]
     end
 
-    subgraph "Web Layer (Astro v5)"
+    subgraph "Web Layer (Manager Success & webMCP)"
         Human -->|HTTPS| WebConsole[Pharos Web Console]
+        WebConsole -->|webMCP| AI_Agents[Autonomous Agents]
         WebConsole -->|JWT Auth| SessionManager[Session Manager]
         WebConsole -->|TCP/Ph Protocol| ClientLib[pharos.ts Client Lib]
     end
@@ -120,17 +123,23 @@ sequenceDiagram
 ## Core Components
 
 ### 1. Pharos Server (`pharos-server`)
-The backend engine handling connection lifecycle, protocol parsing, and storage abstraction.
+The high-performance engine handling connection lifecycle, protocol parsing, and storage abstraction.
 - **Protocol:** RFC 2378 (Ph) with `auth` extension.
+- **Deterministic Truth:** Optimized for high-rigor physical attribution of network assets.
 - **Authentication:** SSH-key based challenge-response for Write operations.
 - **Metrics:** Integrated Prometheus scrape point (`:9090/metrics`) and health monitoring.
 
-### 2. CLI Clients
-- **`ph`:** Optimized for human contact management.
-- **`mdb`:** Optimized for machine/infrastructure asset management.
-- Both support automatic authentication via local SSH private keys.
+### 2. CLI Clients (Engineer Success)
+- **`ph`:** Optimized for human contact management with millisecond search.
+- **`mdb`:** Optimized for machine/infrastructure asset management, providing the "Physical Truth" of the network.
+- Both support automatic authentication via local SSH private keys to reduce engineering toil.
 
-### 3. Home Lab Password Store (`src/features/auth/password-store.ts`)
+### 3. Pharos Web Console (Manager Success)
+The Pharos Web Console serves as the **Truth Engine** for the modern enterprise.
+- **Agentic Autonomy:** Provides a deterministic grounding layer for AI Agents via the **webMCP** protocol.
+- **Visibility:** Centralized orchestration and resource management for complex environments.
+
+### 4. Home Lab Password Store (`src/features/auth/password-store.ts`)
 A secure, file-based persistence layer for the Web Console's admin password.
 - **Security:** Uses `scrypt` hashing with unique salts for every password update.
 - **Persistence:** Stores hashes in `data/auth_store.json` to ensure credentials survive container restarts.

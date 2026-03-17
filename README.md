@@ -1,45 +1,34 @@
-# Pharos
+# Pharos: Deterministic Infrastructure
 
-**The Agent-Native Infrastructure for your lab. Built on an Invisible High-Performance Engine.**
+**The Unified Source of Truth for Humans and AI Agents. Born in the Home Lab, Rooted in Enterprise Experience.**
 
-Pharos is a highly optimized, cross-platform client-server ecosystem built to modernize **RFC 2378** (The Phonebook Protocol). Designed with rigorous *Clean Architecture* principles, Pharos transforms the high-performance RFC 2378 engine into an actionable, resource-first command center for both Humans and AI Agents.
+Pharos is a high-rigor, read-optimized client-server ecosystem designed to eliminate the **"Hallucination Gap"** in infrastructure discovery. By providing **Deterministic Infrastructure** through an optimized implementation of **RFC 2378** (The Phonebook Protocol), Pharos serves as a Collaborative Force Multiplier for both high-performance engineering teams and autonomous agents.
 
 ## The Ecosystem
 
-Pharos is composed of four interconnected pieces:
-1. **`pharos-server` (The Engine):** An invisible, read-optimized, ultra-fast backend daemon. It natively understands discriminators to seamlessly route requests for human contacts or machine assets via the RFC 2378 protocol.
-2. **`pharos-console-web` (The Agent-Native Control Plane):** The primary Human/AI interface. A resource-first Web Console that implements the **Model Context Protocol (MCP)** via WebMCP, allowing AI agents to safely manage your lab.
+Pharos is a modular architecture designed for high-rigor systems management:
+1. **`pharos-server` (The Engine):** A high-performance, read-optimized backend daemon. It provides a deterministic grounding layer for network assets and human contacts via the RFC 2378 protocol.
+2. **`pharos-console-web` (Manager Success):** The primary orchestration interface. A resource-first Web Console providing the **webMCP Grounding Layer** for autonomous AI Agents, ensuring deterministic action across complex environments.
+3. **`ph` and `mdb` (Engineer Success):** Ultra-fast CLI clients providing millisecond access to the "Physical Truth" of the network, reducing engineering toil through high-rigor attribution.
 
-3. **`ph` (CLI):** The people-contact client for the terminal.
-4. **`mdb` (CLI):** The machine database client for the terminal.
+## High-Rigor Storage Tiering
 
-## Storage That Scales With You
+Pharos maintains architectural integrity by adapting to your environment:
+* **Development:** Volatile, in-memory execution for rapid iteration.
+* **Home Lab (Engineer Success):** File-level, restart-survivable storage optimized for Proxmox/LXC environments.
+* **Enterprise (Manager Success):** LDAP-backed integration, providing a high-speed, read-optimized proxy for corporate sources of truth.
 
-Pharos maintains engineering integrity by distinguishing between Home Lab and Enterprise capabilities:
-* **Dev Mode:** Lightning-fast, in-memory execution.
-* **Home Lab (Full CRUD):** File-level, restart-survivable storage optimized perfectly for Proxmox LXC containers.
-* **Enterprise (Read-Only):** Full LDAP-backed integration, acting as a high-speed, read-only proxy for your corporate source of truth.
+## Documentation & Traceability
 
-## Getting Started
+The latest documentation and architecture diagrams are available at:
 
-Pharos is designed to be easy to deploy and use.
+👉 **[iamrichardd.com/pharos/](https://iamrichardd.com/pharos/)**
 
-## Documentation
-
-The latest documentation, architecture diagrams, and how-to guides are available on our official marketing site:
-
-👉 **[iamrichardd.github.io/pharos/](https://iamrichardd.github.io/pharos/)**
-
-Detailed guides include:
-- **[CLI Clients](https://iamrichardd.github.io/pharos/docs/cli-clients/)** - Master the `ph` and `mdb` tools.
-- **[Management Console](https://iamrichardd.github.io/pharos/docs/console/)** - Real-time dashboard and WebMCP.
-- **[Automation Workflows](https://iamrichardd.github.io/pharos/docs/automation/)** - Proxmox and CI/CD integration.
-- **[Server Setup](https://iamrichardd.github.io/pharos/docs/server-setup/)** - Technical backend configuration.
-- **[Network Scan](https://iamrichardd.github.io/pharos/docs/network-scan/)** - Automated discovery and provisioning.
-- **[Architecture Overview](https://iamrichardd.github.io/pharos/docs/architecture/)** - Deep dive into system design.
-- **[Contributing Guide](CONTRIBUTING.md)** - How to contribute to the Pharos ecosystem.
-
-Local Markdown versions are also maintained in the [`docs/`](docs/) directory.
+Detailed guides (Local versions in [`docs/`](docs/)):
+- **[CLI Reference](docs/ARCHITECTURE.md)** - Millisecond access to truth.
+- **[Management Console](docs/ARCHITECTURE.md)** - webMCP and orchestration.
+- **[Architecture Overview](docs/ARCHITECTURE.md)** - High-rigor system design.
+- **[Contributing Guide](CONTRIBUTING.md)** - Collaborative standards.
 
 ### Quick Start (Sandbox / Lab-in-a-Box)
 The fastest way to evaluate Pharos is via our one-liner sandbox deployment:
