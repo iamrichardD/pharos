@@ -8,7 +8,7 @@ description: Synchronize Pharos project state between @TODO.md, @PROGRESS.md, an
 This skill enforces the "Single Source of Truth" for the Pharos project by reconciling the local tracking files with the GitHub issue tracker.
 
 ## 🛑 STRICT MANDATE: THE GATEKEEPER
-When a user starts a prompt with **"bug report"**, **"feature request"**, or **"feature update request"**, you MUST follow the **Document then Stop** workflow:
+When a user starts a prompt with **"bug report"**, **"feature request"**, **"feature update request"**, or when the agent identifies a **tracking intent** (creating a log or issue), you MUST follow the **Document then Stop** workflow:
 1. **Document**: 
     - **Check Existing**: Search GitHub Issues and local tracking files for a related open issue.
     - **Scope Expansion**: If a related issue exists, document the new findings or requirements as a detailed comment on the existing issue to expand its scope.
@@ -20,9 +20,11 @@ When a user starts a prompt with **"bug report"**, **"feature request"**, or **"
 
 ### 1. Task Initialization (`sync-init`)
 When starting a new task from the backlog:
-- **Pre-check Mandate**: Search BOTH `@TODO.md` and `@PROGRESS.md` for the proposed **Task ID** (e.g., `16.4`) and **Issue ID** (e.g., `#66`) to ensure they are not already in use.
-- **ID Assignment**: If a task is new and not in the backlog, assign the next available incremental ID for that phase (e.g., if Phase 16 ends at `16.14`, use `16.15`).
-- **Mandate**: Use `gh issue create` with the prefix `Task X.Y: [Title]` or `Bug #Z: [Title]`.
+- **Pre-check Naming Protocol**: You MUST read `@TODO.md` before calling `gh issue create` to ensure the **Task ID** (e.g., `16.4`) and title alignment follow existing patterns.
+- **Search Mandate**: Search BOTH `@TODO.md` and `@PROGRESS.md` for the proposed Task ID and Issue ID to ensure they are not already in use.
+- **ID Assignment**: If a task is new and not in the backlog, assign the next available incremental ID for that phase.
+- **Label Validation**: Always run `gh label list` before creating an issue. If a required label is missing, you MUST create it using `gh label create [NAME] --color [HEX]`.
+- **Mandate**: Use `gh issue create` with the prefix `Task X.Y: [Title]`, `Bug #Z: [Title]`, or `Debt #A: [Title]`.
 - **Update**: Immediately add the resulting `(Issue #ID)` to the corresponding line in `@TODO.md`.
 - **Assignment**: Ensure the issue is assigned to the current agent and tagged with the correct `phase-X` label.
 

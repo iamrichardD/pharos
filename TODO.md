@@ -20,6 +20,8 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Task 1.8 (Issue #87):** DevSecOps: Implement AFR, Granular Labeling, and Env Sanity Checks. (HIGH PRIORITY)
 - [x] **Task 1.9 (Issue #88):** DevSecOps: Implement Automated DORA Metric Generator and \`docs/DORA.md\`. (HIGH PRIORITY)
 - [x] **Task 1.11 (Issue #112):** Advocacy/Debt: Create \`docs/CONFIGURATION.md\` as the centralized discovery point for all environment variables and their system impact. Update marketing site to expose this reference.
+- [ ] **Task 1.12 (Issue #150):** DevSecOps: Integrate Gitleaks into \`scripts/pre-flight.sh\`. (HIGH PRIORITY)
+- [ ] **Task 1.13 (Issue #151):** DevSecOps: Integrate Cargo-Audit into \`scripts/pre-flight.sh\`. (HIGH PRIORITY)
 
 ## Phase 2: Core Server (`pharos`) MVP
 - [x] **Task 2.1 (Issue #6):** Implement core TCP listener and base RFC 2378 (Ph) syntax parser.
@@ -60,6 +62,9 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Bug #126 (Issue #126):** **Pulse Baseline Presence Failure**. \`pharos-pulse\` fails to send baseline presence due to missing private key in Sandbox. (Remediation: Standardized paths to /etc/pharos/keys and improved client discovery loop).
 - [x] **Bug #127 (Issue #127):** **Sandbox Terminal Query Failure**. Query \`hostname=pharos-main\` returns no result on home page terminal, but works in Search MDB. (Remediation: Standardized client ID to web-sandbox-mdb).
 - [x] **Bug #139 (Issue #139):** **Advocacy: Marketing Simulation Drift**. Simulated UI components in `website/src/pages/index.astro` were out of sync with actual service logic/output. (Remediation: Updated all simulations to match real service output and design).
+- [ ] **Debt #06 (Issue #147):** **Upgrade protobuf to >= 3.7.2**. Mitigate uncontrolled recursion DoS (RUSTSEC-2024-0437).
+- [ ] **Bug #148 (Issue #148):** **Mitigate RSA Marvin Attack in ssh-key**. Side-channel timing attack for key recovery (RUSTSEC-2023-0071).
+- [ ] **Debt #07 (Issue #149):** **Replace unmaintained fxhash dependency**. Transition to ahash or rustc-hash for long-term support.
 
 - [x] **Debt #02 (Issue #84):** **Logic Duplication**. Move all authorization logic from `lib.rs` into `SecurityTierMiddleware`.
 - [x] **Debt #03 (Issue #85):** **Hardcoded Paths**. Transitioned SSH key paths to relative `PHAROS_KEYS_DIR`.

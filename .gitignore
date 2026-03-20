@@ -23,3 +23,4 @@ keys/
 /.gemini/*
 !/.gemini/skills/
 /certs/
+/semgrep-results.json

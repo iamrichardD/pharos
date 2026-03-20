@@ -5,6 +5,11 @@
 **Active Task:** None
 **Backlog:** 
 - Task 23.1: Advocacy: Transition to "Agent-Native Infrastructure" Standard. (Issue #143)
+- Task 1.12: DevSecOps: Integrate Gitleaks into \`scripts/pre-flight.sh\`. (Issue #150)
+- Task 1.13: DevSecOps: Integrate Cargo-Audit into \`scripts/pre-flight.sh\`. (Issue #151)
+- Debt #06: Upgrade protobuf to >= 3.7.2. (Issue #147)
+- Bug #148: Mitigate RSA Marvin Attack in ssh-key. (Issue #148)
+- Debt #07: Replace unmaintained fxhash dependency. (Issue #149)
 **Blocked/Investigating:**
 
 ## Recent Completions
