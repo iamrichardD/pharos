@@ -20,7 +20,7 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Task 1.8 (Issue #87):** DevSecOps: Implement AFR, Granular Labeling, and Env Sanity Checks. (HIGH PRIORITY)
 - [x] **Task 1.9 (Issue #88):** DevSecOps: Implement Automated DORA Metric Generator and \`docs/DORA.md\`. (HIGH PRIORITY)
 - [x] **Task 1.11 (Issue #112):** Advocacy/Debt: Create \`docs/CONFIGURATION.md\` as the centralized discovery point for all environment variables and their system impact. Update marketing site to expose this reference.
-- [ ] **Task 1.12 (Issue #150):** DevSecOps: Integrate Gitleaks into \`scripts/pre-flight.sh\`. (HIGH PRIORITY)
+- [x] **Task 1.12 (Issue #150):** DevSecOps: Integrate Gitleaks into `scripts/pre-flight.sh`. (HIGH PRIORITY)
 - [ ] **Task 1.13 (Issue #151):** DevSecOps: Integrate Cargo-Audit into \`scripts/pre-flight.sh\`. (HIGH PRIORITY)
 
 ## Phase 2: Core Server (`pharos`) MVP
@@ -72,7 +72,7 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Task 105 (Issue #105):** **Filter 'unknown' inventory fields**. `pharos-pulse` sends 'unknown' for missing hardware data, cluttering mdb output. (Remediation: Omit fields with 'unknown' value in `collect_inventory`).
 - [x] **Bug #107 (Issue #107):** **Sandbox certgen script permission denied**. The `pharos-certgen` container fails on startup with a 'Permission denied' error because `scripts/gen-sandbox-certs.sh` is missing the executable bit (+x).
 - [ ] **Task 17.6:** Engineering: Implement `/health` API on Warp metrics server.
-- [ ] **Task 17.11 (Issue #108):** Engineering: Implement HTTP-to-HTTPS redirect on port 3000. Redirect plain HTTP traffic to HTTPS on the same listener.
+- [x] **Task 17.11 (Issue #108):** Engineering: Implement HTTP-to-HTTPS redirect on port 3000. Redirect plain HTTP traffic to HTTPS on the same listener.
 - [x] **Task 17.12 (Issue #109):** Engineering: Include `pharos-scan` in the Pharos Toolbelt (bundled in Pulse image).
 - [ ] **Task 17.7:** Advocacy: Document end-user decision paths in `docs/DECISIONS.md`.
 - [x] **Task 6.1 (Issue #20):** CI: Verify standardized headers fails on Windows runner (bash syntax in pwsh).

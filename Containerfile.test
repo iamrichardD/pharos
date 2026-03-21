@@ -38,6 +38,13 @@ RUN npx -y playwright install-deps chromium && \
 # Install Netcat for protocol testing
 RUN apt-get update && apt-get install -y netcat-openbsd && rm -rf /var/lib/apt/lists/*
 
+# Install Gitleaks for secret detection
+RUN GITLEAKS_VERSION=$(curl -s https://api.github.com/repos/gitleaks/gitleaks/releases/latest | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/') && \
+    curl -fSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" -o gitleaks.tar.gz && \
+    tar -xzf gitleaks.tar.gz gitleaks && \
+    mv gitleaks /usr/local/bin/ && \
+    rm gitleaks.tar.gz
+
 # Install Rust via rustup
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
 ENV PATH="/root/.cargo/bin:${PATH}"

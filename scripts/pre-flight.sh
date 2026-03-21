@@ -14,8 +14,22 @@
 
 set -e
 
+# --- 0. Secret Detection ---
+echo "--- [0/5] DevSecOps: Gitleaks Scan ---"
+# Check if gitleaks is installed
+if command -v gitleaks >/dev/null 2>&1; then
+    # Run gitleaks detect on the current directory
+    # --source .  : scan current directory
+    # --verbose   : show detail
+    # --redact    : mask secrets in output
+    # --fail      : exit with code 1 if leaks found
+    gitleaks detect --source=. --verbose --redact
+else
+    echo "⚠️ Gitleaks not found. Skipping scan."
+fi
+
 # --- 1. Rust Verification ---
-echo "--- [1/4] Rust: Building and Running Unit Tests ---"
+echo "--- [1/5] Rust: Building and Running Unit Tests ---"
 cargo test --verbose
 cargo build --package pharos-server
 cargo build --package pharos-pulse
@@ -24,14 +38,14 @@ cargo build --package ph
 cargo build --package mdb
 
 # --- 2. Marketing Site Verification ---
-echo "--- [2/4] Marketing Site: Build ---"
+echo "--- [2/5] Marketing Site: Build ---"
 cd website
 npm install
 npm run build
 cd ..
 
 # --- 3. Web Console Verification (Static) ---
-echo "--- [3/4] Web Console: Static Analysis & Build ---"
+echo "--- [3/5] Web Console: Static Analysis & Build ---"
 cd pharos-console-web
 npm install
 npm run check
@@ -39,7 +53,7 @@ npm run build
 cd ..
 
 # --- 4. Web Console Verification (E2E) ---
-echo "--- [4/4] Web Console: Running Playwright E2E Tests ---"
+echo "--- [4/5] Web Console: Running Playwright E2E Tests ---"
 cd pharos-console-web
 # Generate fresh ephemeral certs for E2E backend
 rm -rf /tmp/e2e-certs
