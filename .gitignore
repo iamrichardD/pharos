@@ -24,3 +24,6 @@ keys/
 !/.gemini/skills/
 /certs/
 /semgrep-results.json
+
+# Skill Packaging
+*.skill
