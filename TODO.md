@@ -64,7 +64,7 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Bug #139 (Issue #139):** **Advocacy: Marketing Simulation Drift**. Simulated UI components in `website/src/pages/index.astro` were out of sync with actual service logic/output. (Remediation: Updated all simulations to match real service output and design).
 - [x] **Debt #06 (Issue #147):** **Upgrade protobuf to >= 3.7.2**. Mitigate uncontrolled recursion DoS (RUSTSEC-2024-0437).
 - [ ] **Bug #148 (Issue #148):** **Mitigate RSA Marvin Attack in ssh-key**. Side-channel timing attack for key recovery (RUSTSEC-2023-0071).
-- [ ] **Debt #07 (Issue #149):** **Replace unmaintained fxhash dependency**. Transition to ahash or rustc-hash for long-term support.
+- [x] **Debt #07 (Issue #149):** **Replace unmaintained fxhash dependency**. Transition to ahash or rustc-hash for long-term support.
 
 - [x] **Debt #02 (Issue #84):** **Logic Duplication**. Move all authorization logic from `lib.rs` into `SecurityTierMiddleware`.
 - [x] **Debt #03 (Issue #85):** **Hardcoded Paths**. Transitioned SSH key paths to relative `PHAROS_KEYS_DIR`.

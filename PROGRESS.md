@@ -5,10 +5,10 @@
 **Active Task:** None
 **Backlog:** 
 - Bug #148: Mitigate RSA Marvin Attack in ssh-key. (Issue #148)
-- Debt #07: Replace unmaintained fxhash dependency. (Issue #149)
 **Blocked/Investigating:**
 
 ## Recent Completions
+- [x] Debt #07: Replace unmaintained fxhash dependency (Issue #149). Upgraded `inquire` from `0.7` to `0.9` in `pharos-scan` which drops the `fxhash` dependency completely in favor of standard hash maps. Verified with `scripts/pre-flight.sh` inside Podman.
 - [x] Debt #06: Upgrade protobuf to >= 3.7.2 (Issue #147). Mitigated uncontrolled recursion DoS (RUSTSEC-2024-0437) by disabling default features for the `prometheus` crate to drop the vulnerable `protobuf` dependency. Verified with `cargo tree` and `scripts/pre-flight.sh`.
 - [x] Task 1.13: DevSecOps: Integrate Cargo-Audit into `scripts/pre-flight.sh` (Issue #151). Installed `cargo-audit` in `Containerfile.test` and integrated a dedicated vulnerability scanning step into the pre-flight script. Resolved vulnerable dependencies via `cargo update` and appropriately ignored manually tracked vulnerabilities with RUSTSEC advisories.
 - [x] Task 1.12: DevSecOps: Integrate Gitleaks into \`scripts/pre-flight.sh\` (Issue #150). Added Gitleaks installation to `Containerfile.test` and integrated a dedicated secret detection step ([0/5]) into the pre-flight verification script. This ensures that every pre-commit scan detects potential secret leaks before code is pushed.
