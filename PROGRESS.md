@@ -4,12 +4,12 @@
 **Phase:** 24 (Marketing Engagement & Analytics)
 **Active Task:** None
 **Backlog:** 
-- Debt #06: Upgrade protobuf to >= 3.7.2. (Issue #147)
 - Bug #148: Mitigate RSA Marvin Attack in ssh-key. (Issue #148)
 - Debt #07: Replace unmaintained fxhash dependency. (Issue #149)
 **Blocked/Investigating:**
 
 ## Recent Completions
+- [x] Debt #06: Upgrade protobuf to >= 3.7.2 (Issue #147). Mitigated uncontrolled recursion DoS (RUSTSEC-2024-0437) by disabling default features for the `prometheus` crate to drop the vulnerable `protobuf` dependency. Verified with `cargo tree` and `scripts/pre-flight.sh`.
 - [x] Task 1.13: DevSecOps: Integrate Cargo-Audit into `scripts/pre-flight.sh` (Issue #151). Installed `cargo-audit` in `Containerfile.test` and integrated a dedicated vulnerability scanning step into the pre-flight script. Resolved vulnerable dependencies via `cargo update` and appropriately ignored manually tracked vulnerabilities with RUSTSEC advisories.
 - [x] Task 1.12: DevSecOps: Integrate Gitleaks into \`scripts/pre-flight.sh\` (Issue #150). Added Gitleaks installation to `Containerfile.test` and integrated a dedicated secret detection step ([0/5]) into the pre-flight verification script. This ensures that every pre-commit scan detects potential secret leaks before code is pushed.
 - [x] Task 24.2: Engineering: Implement Umami Cloud Analytics Integration (Issue #146). Integrated Umami Cloud's privacy-first, cookie-less tracking into the marketing site layout (`BaseLayout.astro`) using `PUBLIC_UMAMI_WEBSITE_ID`. Instrumented high-signal interaction points including 'One-Liner' copy events in `SandboxSnippet.astro` and persona-split tab switching in `TieredTabs.astro`. Enhanced `scripts/pre-flight.sh` to include marketing site builds and pre-built Rust binaries for faster E2E cycles. Resolved `pharos-server` compilation and test regressions.

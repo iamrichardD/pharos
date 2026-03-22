@@ -62,7 +62,7 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Bug #126 (Issue #126):** **Pulse Baseline Presence Failure**. \`pharos-pulse\` fails to send baseline presence due to missing private key in Sandbox. (Remediation: Standardized paths to /etc/pharos/keys and improved client discovery loop).
 - [x] **Bug #127 (Issue #127):** **Sandbox Terminal Query Failure**. Query \`hostname=pharos-main\` returns no result on home page terminal, but works in Search MDB. (Remediation: Standardized client ID to web-sandbox-mdb).
 - [x] **Bug #139 (Issue #139):** **Advocacy: Marketing Simulation Drift**. Simulated UI components in `website/src/pages/index.astro` were out of sync with actual service logic/output. (Remediation: Updated all simulations to match real service output and design).
-- [ ] **Debt #06 (Issue #147):** **Upgrade protobuf to >= 3.7.2**. Mitigate uncontrolled recursion DoS (RUSTSEC-2024-0437).
+- [x] **Debt #06 (Issue #147):** **Upgrade protobuf to >= 3.7.2**. Mitigate uncontrolled recursion DoS (RUSTSEC-2024-0437).
 - [ ] **Bug #148 (Issue #148):** **Mitigate RSA Marvin Attack in ssh-key**. Side-channel timing attack for key recovery (RUSTSEC-2023-0071).
 - [ ] **Debt #07 (Issue #149):** **Replace unmaintained fxhash dependency**. Transition to ahash or rustc-hash for long-term support.
 

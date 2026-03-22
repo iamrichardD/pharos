@@ -32,7 +32,7 @@ signature = "2.2"
 base64 = "0.22"
 hex = "0.4"
 rand = "0.8"
-prometheus = { version = "0.13", features = ["process"] }
+prometheus = { version = "0.13", default-features = false, features = ["process"] }
 lazy_static = "1.4"
 sysinfo = "0.33"
 warp = "0.3"
