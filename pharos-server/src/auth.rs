@@ -77,8 +77,12 @@ impl AuthManager {
                         if let Ok(content) = fs::read_to_string(&path) {
                             match PublicKey::from_openssh(&content) {
                                 Ok(key) => {
-                                    info!("Loaded authorized key from {:?}", path);
-                                    Self::register_key(&mut authorized_keys, &mut key_roles, &mut key_teams, &path, key);
+                                    if key.algorithm() == ssh_key::Algorithm::Ed25519 {
+                                        info!("Loaded authorized key from {:?}", path);
+                                        Self::register_key(&mut authorized_keys, &mut key_roles, &mut key_teams, &path, key);
+                                    } else {
+                                        error!("Skipping non-Ed25519 key in {:?}: {}", path, key.algorithm());
+                                    }
                                 }
                                 Err(e) => error!("Failed to parse public key {:?}: {}", path, e),
                             }
@@ -224,7 +228,12 @@ impl AuthManager {
             }
         };
 
-        // 2. Check if authorized
+        // 2. Check if authorized and ensure Ed25519 algorithm
+        if pub_key.algorithm() != ssh_key::Algorithm::Ed25519 {
+            error!("Unsupported key algorithm: {}. Only Ed25519 is allowed.", pub_key.algorithm());
+            return None;
+        }
+
         if !self.authorized_keys.iter().any(|k| k == &pub_key) {
             info!("Public key not authorized.");
             return None;
@@ -318,5 +327,17 @@ mod tests {
         
         let roles = auth_manager.get_roles(&pub_openssh);
         assert!(roles.contains(&"user".to_string()));
+    }
+
+    #[test]
+    fn test_should_reject_rsa_key_when_provided() {
+        let dir = tempdir().unwrap();
+        let auth_manager = AuthManager::new(dir.path());
+        
+        // A dummy RSA public key in OpenSSH format
+        let rsa_pub = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC8u5f9/v8v test@example.com";
+        
+        let result = auth_manager.verify_with_fingerprint(rsa_pub, "sig", "challenge");
+        assert!(result.is_none(), "RSA key should be rejected even if parsing succeeded (which it shouldn't with features disabled)");
     }
 }

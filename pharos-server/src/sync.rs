@@ -11,7 +11,7 @@
  * Related to Task 1.8, implements dynamic peer-to-peer synchronization.
  * ======================================================================== */
 
-use crate::storage::{Storage, RecordType};
+use crate::storage::Storage;
 use pharos_client::PharosClient;
 use std::sync::{Arc, RwLock};
 use tracing::{info, error, debug};

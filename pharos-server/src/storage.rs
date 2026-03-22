@@ -178,7 +178,7 @@ impl Storage for MemoryStorage {
     }
 
     #[instrument(skip(self))]
-    fn upsert_record(&mut self, mut fields: HashMap<String, String>, fingerprint: Option<String>, team: Option<String>) -> Result<(), StorageError> {
+    fn upsert_record(&mut self, fields: HashMap<String, String>, fingerprint: Option<String>, team: Option<String>) -> Result<(), StorageError> {
         let now = Utc::now().to_rfc3339();
         let identifier = fields.get("hostname").or_else(|| fields.get("alias"));
 
@@ -594,7 +594,6 @@ mod tests {
 
         let initial_results = storage.query(&[(Some("hostname".to_string()), "srv-01".to_string())], None);
         let created_at = initial_results[0].fields.get("created_at").unwrap().clone();
-        let last_seen_1 = initial_results[0].fields.get("last_seen_at").unwrap().clone();
 
         // Small sleep to ensure timestamp difference if it were second-based, 
         // but RFC3339 might be fast. Utc::now() is usually fast.
