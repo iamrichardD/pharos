@@ -4,13 +4,13 @@
 **Phase:** 24 (Marketing Engagement & Analytics)
 **Active Task:** None
 **Backlog:** 
-- Task 1.13: DevSecOps: Integrate Cargo-Audit into \`scripts/pre-flight.sh\`. (Issue #151)
 - Debt #06: Upgrade protobuf to >= 3.7.2. (Issue #147)
 - Bug #148: Mitigate RSA Marvin Attack in ssh-key. (Issue #148)
 - Debt #07: Replace unmaintained fxhash dependency. (Issue #149)
 **Blocked/Investigating:**
 
 ## Recent Completions
+- [x] Task 1.13: DevSecOps: Integrate Cargo-Audit into `scripts/pre-flight.sh` (Issue #151). Installed `cargo-audit` in `Containerfile.test` and integrated a dedicated vulnerability scanning step into the pre-flight script. Resolved vulnerable dependencies via `cargo update` and appropriately ignored manually tracked vulnerabilities with RUSTSEC advisories.
 - [x] Task 1.12: DevSecOps: Integrate Gitleaks into \`scripts/pre-flight.sh\` (Issue #150). Added Gitleaks installation to `Containerfile.test` and integrated a dedicated secret detection step ([0/5]) into the pre-flight verification script. This ensures that every pre-commit scan detects potential secret leaks before code is pushed.
 - [x] Task 24.2: Engineering: Implement Umami Cloud Analytics Integration (Issue #146). Integrated Umami Cloud's privacy-first, cookie-less tracking into the marketing site layout (`BaseLayout.astro`) using `PUBLIC_UMAMI_WEBSITE_ID`. Instrumented high-signal interaction points including 'One-Liner' copy events in `SandboxSnippet.astro` and persona-split tab switching in `TieredTabs.astro`. Enhanced `scripts/pre-flight.sh` to include marketing site builds and pre-built Rust binaries for faster E2E cycles. Resolved `pharos-server` compilation and test regressions.
 - [x] Task 24.1: Planning: Engagement Measurement Strategy (Page Reads & Clicks) (Issue #145). Conducted a comprehensive engagement audit of the Astro-based marketing site, identifying high-signal interaction points (One-Liner copy events, Tiered Tab persona splits, and deep reads of technical specs). Designed a two-tier strategy favoring **Umami Cloud** for its privacy-first, cookie-less and lightweight (~2kB) approach. Created `artifacts/marketing-engagement-plan.md` documenting KPIs (CLI-Copy-Conversion, Persona-Split) and an implementation roadmap.
@@ -157,8 +157,8 @@
 ## AI Agent Instructions for Next Session
 1. Read `GEMINI.md` to internalize strict Zero-Host constraints, Clean Code philosophies, **TDD-first workflow**, and **Vertical Slice Architecture** mandates.
 2. Read `TODO.md` to understand the roadmap and the **Definition of Done (DoD)**.
-3. **Execute Task 1.13 (#151):**
-    - Integrate `cargo-audit` into `scripts/pre-flight.sh` to identify vulnerable Rust dependencies.
+3. **Execute Debt #06 (#147):**
+    - Upgrade protobuf to >= 3.7.2 to mitigate uncontrolled recursion DoS (RUSTSEC-2024-0437).
     - Ensure the integration runs within the Podman environment as per the Zero-Host mandate.
 4. Begin execution on the Active Task, utilizing Podman commands exclusively for execution.
 5. **Validation:** Verify the sandbox environment locally via Podman Compose.

@@ -24,6 +24,7 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     lld \
     ca-certificates \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Node.js 22 (LTS) for Web Console tests
@@ -48,6 +49,9 @@ RUN GITLEAKS_VERSION=$(curl -s https://api.github.com/repos/gitleaks/gitleaks/re
 # Install Rust via rustup
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
 ENV PATH="/root/.cargo/bin:${PATH}"
+
+# Install Cargo Audit for DevSecOps vulnerability scanning
+RUN cargo install cargo-audit
 
 # Set up working directory
 WORKDIR /workspace

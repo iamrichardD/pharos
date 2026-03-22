@@ -1,0 +1,5 @@
+[allowlist]
+paths = [
+  '''pharos-console-web/src/lib/pharos.test.ts''',
+  '''pharos-console-web/src/features/auth/jwt-logic.test.ts'''
+]

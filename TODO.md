@@ -21,7 +21,7 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Task 1.9 (Issue #88):** DevSecOps: Implement Automated DORA Metric Generator and \`docs/DORA.md\`. (HIGH PRIORITY)
 - [x] **Task 1.11 (Issue #112):** Advocacy/Debt: Create \`docs/CONFIGURATION.md\` as the centralized discovery point for all environment variables and their system impact. Update marketing site to expose this reference.
 - [x] **Task 1.12 (Issue #150):** DevSecOps: Integrate Gitleaks into `scripts/pre-flight.sh`. (HIGH PRIORITY)
-- [ ] **Task 1.13 (Issue #151):** DevSecOps: Integrate Cargo-Audit into \`scripts/pre-flight.sh\`. (HIGH PRIORITY)
+- [x] **Task 1.13 (Issue #151):** DevSecOps: Integrate Cargo-Audit into `scripts/pre-flight.sh`. (HIGH PRIORITY)
 
 ## Phase 2: Core Server (`pharos`) MVP
 - [x] **Task 2.1 (Issue #6):** Implement core TCP listener and base RFC 2378 (Ph) syntax parser.

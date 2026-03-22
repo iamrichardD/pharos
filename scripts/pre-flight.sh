@@ -28,6 +28,17 @@ else
     echo "⚠️ Gitleaks not found. Skipping scan."
 fi
 
+# --- 0.5 Dependency Auditing ---
+echo "--- [0.5/5] DevSecOps: Cargo Audit Scan ---"
+if command -v cargo-audit >/dev/null 2>&1 || cargo help audit >/dev/null 2>&1; then
+    # Ignoring known vulnerabilities tracked via issues:
+    # RUSTSEC-2024-0437 (protobuf): Tracked as Debt #06 (Issue #147)
+    # RUSTSEC-2023-0071 (rsa): Tracked as Bug #148 (Issue #148)
+    cargo audit --ignore RUSTSEC-2024-0437 --ignore RUSTSEC-2023-0071
+else
+    echo "⚠️ cargo-audit not found. Skipping scan."
+fi
+
 # --- 1. Rust Verification ---
 echo "--- [1/5] Rust: Building and Running Unit Tests ---"
 cargo test --verbose
