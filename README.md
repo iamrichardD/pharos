@@ -85,7 +85,7 @@ If you see an error related to `seccomp` and `bdflush` (common on Ubuntu 24.04 w
 | Metric | Status | Category |
 | :--- | :--- | :--- |
 | **Deployment Frequency** | 4 tags | Medium (monthly) |
-| **Change Failure Rate** | 1.0% | Elite |
+| **Change Failure Rate** | 2.0% | Elite |
 
 > [View Full DORA Report](docs/DORA.md)
 <!-- DORA_END -->
