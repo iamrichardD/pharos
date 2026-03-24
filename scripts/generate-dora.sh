@@ -95,22 +95,49 @@ cat <<EOF > "$OUTPUT_FILE"
 EOF
 
 # Update README.md if markers are present
-if [ -f "README.md" ] && grep -q "<!-- DORA_START -->" README.md; then
-    echo "Updating DORA summary in README.md..."
-    
-    # Create the summary block
-    SUMMARY_BLOCK="### 🚀 Project Velocity (DORA)\n"
-    SUMMARY_BLOCK+="| Metric | Status | Category |\n"
-    SUMMARY_BLOCK+="| :--- | :--- | :--- |\n"
-    SUMMARY_BLOCK+="| **Deployment Frequency** | $DEPLOY_COUNT tags | $DF_VALUE |\n"
-    SUMMARY_BLOCK+="| **Change Failure Rate** | $CFR_VALUE | Elite |\n\n"
-    SUMMARY_BLOCK+="> [View Full DORA Report](docs/DORA.md)"
+if [ -f "README.md" ]; then
+    if grep -q "<!-- BADGES_START -->" README.md; then
+        echo "Updating DORA badges in README.md..."
+        
+        # Define Colors based on Category
+        case "$DF_VALUE" in
+            *"Elite"*) DF_COLOR="brightgreen" ;;
+            *"High"*)  DF_COLOR="blue" ;;
+            *)         DF_COLOR="yellow" ;;
+        esac
 
-    # Use sed to replace content between markers
-    # We use a temporary file for safety
-    sed -i "/<!-- DORA_START -->/,/<!-- DORA_END -->/{ /<!-- DORA_START -->/{p; i\\
+        # Define CFR Color
+        if (( $(echo "$CFR_PERCENT < 5" | bc -l) )); then CFR_COLOR="brightgreen"; else CFR_COLOR="yellow"; fi
+
+        # URL Encode for Shield Badges
+        DF_LABEL=${DF_VALUE// /%20}
+        CFR_LABEL=${CFR_VALUE// /%20}
+
+        BADGE_BLOCK="  <img src=\"https://img.shields.io/badge/DORA:__Deployment-$DF_LABEL-$DF_COLOR\" alt=\"DORA: Deployment\" />\n"
+        BADGE_BLOCK+="  <img src=\"https://img.shields.io/badge/DORA:__Failure-$CFR_LABEL-$CFR_COLOR\" alt=\"DORA: Failure\" />"
+        
+        sed -i "/<!-- BADGES_START -->/,/<!-- BADGES_END -->/{ /<!-- BADGES_START -->/{p; i\\
+$BADGE_BLOCK
+}; /<!-- BADGES_END -->/p; d; }" README.md
+    fi
+
+    if grep -q "<!-- DORA_START -->" README.md; then
+        echo "Updating DORA summary in README.md..."
+        
+        # Create the summary block
+        SUMMARY_BLOCK="### 🚀 Project Velocity (DORA)\n"
+        SUMMARY_BLOCK+="| Metric | Status | Category |\n"
+        SUMMARY_BLOCK+="| :--- | :--- | :--- |\n"
+        SUMMARY_BLOCK+="| **Deployment Frequency** | $DEPLOY_COUNT tags | $DF_VALUE |\n"
+        SUMMARY_BLOCK+="| **Change Failure Rate** | $CFR_VALUE | Elite |\n\n"
+        SUMMARY_BLOCK+="> [View Full DORA Report](docs/DORA.md)"
+
+        # Use sed to replace content between markers
+        # We use a temporary file for safety
+        sed -i "/<!-- DORA_START -->/,/<!-- DORA_END -->/{ /<!-- DORA_START -->/{p; i\\
 $SUMMARY_BLOCK
 }; /<!-- DORA_END -->/p; d; }" README.md
+    fi
 fi
 
 echo "DORA report generated at $OUTPUT_FILE"
