@@ -114,8 +114,8 @@ if [ -f "README.md" ]; then
         CFR_LABEL=${CFR_VALUE// /%20}
         CFR_LABEL=${CFR_LABEL//%/%25}
 
-        BADGE_BLOCK="  <img src=\"https://img.shields.io/badge/DORA:__Deployment-$DF_LABEL-$DF_COLOR\" alt=\"DORA: Deployment\" />\n"
-        BADGE_BLOCK+="  <img src=\"https://img.shields.io/badge/DORA:__Failure-$CFR_LABEL-$CFR_COLOR\" alt=\"DORA: Failure\" />"
+        BADGE_BLOCK="  <a href=\"docs/DORA.md\"><img src=\"https://img.shields.io/badge/DORA:__Deployment-$DF_LABEL-$DF_COLOR\" alt=\"DORA: Deployment\" /></a>\n"
+        BADGE_BLOCK+="  <a href=\"docs/DORA.md\"><img src=\"https://img.shields.io/badge/DORA:__Failure-$CFR_LABEL-$CFR_COLOR\" alt=\"DORA: Failure\" /></a>"
         
         sed -i "/<!-- BADGES_START -->/,/<!-- BADGES_END -->/{ /<!-- BADGES_START -->/{p; i\\
 $BADGE_BLOCK

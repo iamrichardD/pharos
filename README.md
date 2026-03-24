@@ -2,11 +2,11 @@
 
 <p align="center">
 <!-- BADGES_START -->
-  <img src="https://img.shields.io/badge/DORA:__Deployment-Medium%20(monthly)-yellow" alt="DORA: Deployment" />
-  <img src="https://img.shields.io/badge/DORA:__Failure-3.0%25-brightgreen" alt="DORA: Failure" />
+  <a href="docs/DORA.md"><img src="https://img.shields.io/badge/DORA:__Deployment-Medium%20(monthly)-yellow" alt="DORA: Deployment" /></a>
+  <a href="docs/DORA.md"><img src="https://img.shields.io/badge/DORA:__Failure-3.0%25-brightgreen" alt="DORA: Failure" /></a>
 <!-- BADGES_END -->
-  <img src="https://img.shields.io/badge/Protocol-RFC_2378-orange" alt="Protocol: RFC 2378" />
-  <img src="https://img.shields.io/badge/Made%20with-Rust-black?logo=rust" alt="Made with Rust" />
+  <a href="artifacts/rfc2378.md"><img src="https://img.shields.io/badge/Protocol-RFC_2378-orange" alt="Protocol: RFC 2378" /></a>
+  <a href="https://www.rust-lang.org/"><img src="https://img.shields.io/badge/Made%20with-Rust-black?logo=rust" alt="Made with Rust" /></a>
 </p>
 
 **The Unified Source of Truth for Humans and AI Agents. Born in the Home Lab, Rooted in Enterprise Experience.**
