@@ -1,0 +1,31 @@
+# Pharos: Deterministic Infrastructure
+
+> The Unified Source of Truth for Humans and AI Agents. A high-rigor, read-optimized RFC 2378 implementation for deterministic infrastructure discovery.
+
+Pharos eliminates the "Hallucination Gap" in infrastructure discovery by providing a high-performance, verifiable grounding layer for network assets and human contacts.
+
+## Core Components
+- **pharos-server:** High-performance Rust backend implementing RFC 2378 (Phonebook Protocol) with SSH-key based authentication for write operations.
+- **pharos-console-web:** Astro-based orchestration interface providing the **webMCP Grounding Layer** for autonomous agents.
+- **ph & mdb:** Ultra-fast CLI clients for human contact (`ph`) and machine asset (`mdb`) management.
+
+## Technical Specifications
+- **Protocol:** RFC 2378 (TCP Port 2378). Supports `QUERY`, `ADD`, `DELETE`, and `UPDATE` operations.
+- **Architecture:** Vertical Slice Architecture (VSA) for feature isolation; Storage Tiering (Memory, File-level JSON, LDAP).
+- **Security:** Zero-Host Execution (Podman-first); SSH-key challenge-response for write authorization.
+- **Stack:** Rust (Server/CLI), Astro/TypeScript (Web), Podman (Containerization).
+
+## Key Workflows
+- **Discovery:** Query for assets using key-value syntax: `query hostname="srv-web-01"`.
+- **Grounding:** AI Agents use the **webMCP** endpoint to retrieve deterministic environmental state.
+- **Automation:** Proxmox/CI-CD hooks for real-time inventory registration.
+
+## Documentation & Resources
+- [Main Website](https://iamrichardd.com/pharos/)
+- [Architecture Deep-Dive](docs/ARCHITECTURE.md)
+- [Deployment Guide](docs/HOWTO.md)
+- [DORA Metrics](docs/DORA.md)
+- [API Reference (RFC 2378)](artifacts/rfc2378.md)
+
+---
+*This file is a machine-readable summary intended for LLMs and AI Agents.*
