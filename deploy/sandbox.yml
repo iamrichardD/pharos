@@ -18,8 +18,26 @@ services:
     container_name: pharos-certgen
     volumes:
       - pharos-pki:/certs
-      - ../scripts:/scripts:ro
-    command: ["/bin/sh", "-c", "apk add --no-cache openssl && sh /scripts/gen-sandbox-certs.sh /certs"]
+    command:
+      - /bin/sh
+      - -c
+      - |
+        apk add --no-cache openssl &&
+        D=/certs &&
+        if [ ! -f $$D/root-ca.crt ]; then
+          openssl genrsa -out $$D/root-ca.key 4096 &&
+          openssl req -x509 -new -nodes -key $$D/root-ca.key -sha256 -days 1 -out $$D/root-ca.crt -subj "/CN=Pharos Sandbox CA"
+        fi &&
+        for n in pharos-server pharos-web; do
+          if [ ! -f $$D/$$n.crt ]; then
+            openssl genrsa -out $$D/$$n.key 2048 &&
+            openssl req -new -key $$D/$$n.key -out $$D/$$n.csr -subj "/CN=$$n" &&
+            echo "subjectAltName=DNS:$$n,DNS:localhost,IP:127.0.0.1" > $$D/$$n.ext &&
+            openssl x509 -req -in $$D/$$n.csr -CA $$D/root-ca.crt -CAkey $$D/root-ca.key -CAcreateserial -out $$D/$$n.crt -days 1 -sha256 -extfile $$D/$$n.ext &&
+            rm $$D/$$n.csr $$D/$$n.ext
+          fi
+        done &&
+        echo "PKI Bootstrap Complete."
     security_opt:
       - seccomp:unconfined
 
