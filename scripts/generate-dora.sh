@@ -112,6 +112,7 @@ if [ -f "README.md" ]; then
         # URL Encode for Shield Badges
         DF_LABEL=${DF_VALUE// /%20}
         CFR_LABEL=${CFR_VALUE// /%20}
+        CFR_LABEL=${CFR_LABEL//%/%25}
 
         BADGE_BLOCK="  <img src=\"https://img.shields.io/badge/DORA:__Deployment-$DF_LABEL-$DF_COLOR\" alt=\"DORA: Deployment\" />\n"
         BADGE_BLOCK+="  <img src=\"https://img.shields.io/badge/DORA:__Failure-$CFR_LABEL-$CFR_COLOR\" alt=\"DORA: Failure\" />"
