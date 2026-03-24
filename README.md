@@ -63,9 +63,9 @@ We believe Home Labbers should have absolute, unfettered freedom to experiment, 
 ### Sandbox: "Connection Refused" to GHCR.io
 If the "One-Liner" fails with a `connection refused` error while pulling from `ghcr.io`, your DNS (e.g., Pi-hole, AdGuard, or corporate firewall) may be blocking the GitHub Container Registry.
 
-**Fix:** Ensure `ghcr.io` is whitelisted in your DNS, or try forcing a public DNS for the pull:
+**Fix:** Ensure `ghcr.io` is whitelisted in your DNS, or try forcing a public DNS for the pull (use `deploy/sandbox.yml` if you have cloned the repository):
 ```bash
-podman-compose --podman-pull-args="--dns 8.8.8.8" -f sandbox.yml up -d
+podman-compose --podman-pull-args="--dns 8.8.8.8" -f deploy/sandbox.yml up -d
 ```
 
 ### Sandbox: "403 Forbidden" from GHCR.io
