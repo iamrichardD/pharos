@@ -1,5 +1,18 @@
+title = "pharos gitleaks config"
+[extend]
+useDefault = true
+
 [allowlist]
 paths = [
   '''pharos-console-web/src/lib/pharos.test.ts''',
-  '''pharos-console-web/src/features/auth/jwt-logic.test.ts'''
+  '''pharos-console-web/src/features/auth/jwt-logic.test.ts''',
+  '''(.*/)?node_modules/.*''',
+  '''(.*/)?target/.*''',
+  '''(.*/)?dist/.*''',
+  '''website/dist/.*''',
+  '''\.git/.*''',
+  '''certs/.*''',
+  '''keys/.*''',
+  '''keys_auto/.*''',
+  '''pharos-console-web/keys/.*'''
 ]

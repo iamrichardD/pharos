@@ -20,10 +20,10 @@ echo "--- [0/5] DevSecOps: Gitleaks Scan ---"
 if command -v gitleaks >/dev/null 2>&1; then
     # Run gitleaks detect on the current directory
     # --source .  : scan current directory
+    # --no-git    : scan local workspace (uncommitted changes) instead of git history
     # --verbose   : show detail
     # --redact    : mask secrets in output
-    # --fail      : exit with code 1 if leaks found
-    gitleaks detect --source=. --verbose --redact
+    gitleaks detect --source=. --no-git --verbose --redact
 else
     echo "⚠️ Gitleaks not found. Skipping scan."
 fi
