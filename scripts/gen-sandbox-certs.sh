@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # ========================================================================
 # Project: pharos
 # Component: Sandbox Utility

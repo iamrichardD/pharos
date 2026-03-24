@@ -8,6 +8,7 @@ None
 **Blocked/Investigating:**
 
 ## Recent Completions
+- [x] Bug #150: Sandbox certgen fails with 'not found' error in Alpine container (Issue #152). Resolved by switching to \`#!/bin/sh\` for better Alpine compatibility and ensuring explicit \`sh\` invocation in \`sandbox.yml\`. Added explicit \`depends_on\` chains to ensure certificates are ready before dependent services start. Verified with Podman manual execution of the generator command.
 - [x] Bug #148: Mitigate RSA Marvin Attack in ssh-key (Issue #148). Transitioned to Ed25519-only authentication by restricting 'ssh-key' crate features and hardening 'pharos-server/src/auth.rs' to explicitly reject RSA keys. Verified with new regression test in Podman.
 - [x] Debt #07: Replace unmaintained fxhash dependency (Issue #149). Upgraded `inquire` from `0.7` to `0.9` in `pharos-scan` which drops the `fxhash` dependency completely in favor of standard hash maps. Verified with `scripts/pre-flight.sh` inside Podman.
 - [x] Debt #06: Upgrade protobuf to >= 3.7.2 (Issue #147). Mitigated uncontrolled recursion DoS (RUSTSEC-2024-0437) by disabling default features for the `prometheus` crate to drop the vulnerable `protobuf` dependency. Verified with `cargo tree` and `scripts/pre-flight.sh`.

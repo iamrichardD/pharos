@@ -16,7 +16,7 @@ services:
     volumes:
       - pharos-pki:/certs
       - ./scripts:/scripts:ro
-    command: /bin/sh -c "apk add --no-cache openssl bash && /scripts/gen-sandbox-certs.sh /certs"
+    command: ["/bin/sh", "-c", "apk add --no-cache openssl && sh /scripts/gen-sandbox-certs.sh /certs"]
     security_opt:
       - seccomp:unconfined
 
@@ -53,6 +53,8 @@ services:
       - PHAROS_SERVER=pharos-server:2378
       - PHAROS_CA_CERT=/etc/pharos/certs/root-ca.crt
     depends_on:
+      pharos-certgen:
+        condition: service_completed_successfully
       pharos-server:
         condition: service_healthy
     volumes:
@@ -75,6 +77,8 @@ services:
       - PHAROS_CA_CERT=/etc/pharos/certs/root-ca.crt
       - NODE_EXTRA_CA_CERTS=/etc/pharos/certs/root-ca.crt
     depends_on:
+      pharos-certgen:
+        condition: service_completed_successfully
       pharos-server:
         condition: service_healthy
     volumes:
