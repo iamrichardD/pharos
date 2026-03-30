@@ -103,7 +103,13 @@
 
  export async function executePharosQuery(clientId: string, queryStr: string, host?: string, port?: number): Promise<PharosResponse> {
     const hostEnv = host || process.env.PHAROS_HOST || '127.0.0.1';
-    const portEnv = port || parseInt(process.env.PHAROS_PORT || '2378', 10);
+    
+    // Debt #09: Validate PHAROS_PORT numeric type. (Issue #154)
+    const portRaw = port || (process.env.PHAROS_PORT ? parseInt(process.env.PHAROS_PORT, 10) : 2378);
+    if (isNaN(portRaw) || portRaw <= 0 || portRaw > 65535) {
+        throw new Error(`Invalid PHAROS_PORT: ${portRaw}. Must be a number between 1 and 65535.`);
+    }
+    const portEnv = portRaw;
     
     return new Promise((resolve, reject) => {
         const useTls = !!process.env.PHAROS_CA_CERT || !!process.env.PHAROS_TLS_CERT || process.env.PHAROS_SANDBOX === 'true';
@@ -324,10 +330,16 @@
  * Executes a stateless authentication check against the Pharos server.
  */
 export async function executeAuthCheck(publicKey: string, signature: string, challenge: string, hostParam?: string, portParam?: number): Promise<boolean> {
-    const host = hostParam || process.env.PHAROS_HOST || '127.0.0.1';
-    const port = portParam || parseInt(process.env.PHAROS_PORT || '2378', 10);
-    const useTls = !!process.env.PHAROS_CA_CERT || !!process.env.PHAROS_TLS_CERT || process.env.PHAROS_SANDBOX === 'true';
+   const host = hostParam || process.env.PHAROS_HOST || '127.0.0.1';
 
+   // Debt #09: Validate PHAROS_PORT numeric type. (Issue #154)
+   const portRaw = portParam || (process.env.PHAROS_PORT ? parseInt(process.env.PHAROS_PORT, 10) : 2378);
+   if (isNaN(portRaw) || portRaw <= 0 || portRaw > 65535) {
+       throw new Error(`Invalid PHAROS_PORT: ${portRaw}. Must be a number between 1 and 65535.`);
+   }
+   const port = portRaw;
+
+   const useTls = !!process.env.PHAROS_CA_CERT || !!process.env.PHAROS_TLS_CERT || process.env.PHAROS_SANDBOX === 'true';
     return new Promise((resolve, reject) => {
         let client: net.Socket;
         if (useTls) {

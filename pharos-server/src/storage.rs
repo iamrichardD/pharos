@@ -63,6 +63,8 @@ pub enum StorageError {
     Collision,
     #[error("Unauthorized: Record belongs to another team")]
     Unauthorized,
+    #[error("Invalid argument: {0}")]
+    InvalidArgument(String),
     #[error("Internal storage error: {0}")]
     Internal(String),
 }
@@ -70,7 +72,7 @@ pub enum StorageError {
 pub trait Storage: Send + Sync {
     fn record_count(&self) -> usize;
     fn add_record(&mut self, fields: HashMap<String, String>, fingerprint: Option<String>, team: Option<String>);
-    fn query(&self, selections: &[(Option<String>, String)], default_type: Option<RecordType>) -> Vec<Record>;
+    fn query(&self, selections: &[(Option<String>, String)], default_type: Option<RecordType>) -> Result<Vec<Record>, StorageError>;
     fn upsert_record(&mut self, fields: HashMap<String, String>, fingerprint: Option<String>, team: Option<String>) -> Result<(), StorageError>;
     fn delete_record(&mut self, selections: &[(Option<String>, String)], fingerprint: Option<String>, teams: &[String]) -> Result<usize, StorageError>;
 }
@@ -88,7 +90,7 @@ impl MemoryStorage {
         }
     }
 
-    fn matches(&self, field_val: &str, query_val: &str) -> bool {
+    fn matches(&self, field_val: &str, query_val: &str) -> Result<bool, StorageError> {
         let field_val_lower = field_val.to_lowercase();
         let query_val_lower = query_val.to_lowercase();
 
@@ -97,25 +99,50 @@ impl MemoryStorage {
         let query_words: Vec<&str> = query_val_lower.split_whitespace().collect();
         let field_words: Vec<&str> = field_val_lower.split(|c: char| c.is_whitespace() || c == ',' || c == ';' || c == ':').collect();
 
-        query_words.iter().all(|&qw| {
-            field_words.iter().any(|&fw| {
+        for qw in query_words {
+            let mut matched = false;
+            for fw in &field_words {
                 if qw.contains('*') || qw.contains('?') || qw.contains('+') {
-                    self.wildcard_match(fw, qw)
+                    if self.wildcard_match(fw, qw)? {
+                        matched = true;
+                        break;
+                    }
                 } else {
-                    fw == qw
+                    if fw == &qw {
+                        matched = true;
+                        break;
+                    }
                 }
-            })
-        })
+            }
+            if !matched {
+                return Ok(false);
+            }
+        }
+        Ok(true)
     }
 
-    fn wildcard_match(&self, word: &str, pattern: &str) -> bool {
-        // Very basic wildcard support for MVP: '*' only at the end
-        if pattern.ends_with('*') {
-            let prefix = &pattern[..pattern.len() - 1];
-            word.starts_with(prefix)
+    fn wildcard_match(&self, word: &str, pattern: &str) -> Result<bool, StorageError> {
+        // Debt #10: Support only suffix wildcards '*' for now.
+        // Return InvalidArgument for others to fail fast.
+        
+        if pattern.contains('?') || pattern.contains('+') {
+            return Err(StorageError::InvalidArgument(format!("Unsupported wildcard in '{}'", pattern)));
+        }
+
+        let star_count = pattern.chars().filter(|&c| c == '*').count();
+        if star_count > 1 {
+             return Err(StorageError::InvalidArgument(format!("Multiple wildcards not supported: '{}'", pattern)));
+        }
+
+        if star_count == 1 {
+            if pattern.ends_with('*') {
+                let prefix = &pattern[..pattern.len() - 1];
+                Ok(word.starts_with(prefix))
+            } else {
+                Err(StorageError::InvalidArgument(format!("Only suffix wildcards supported: '{}'", pattern)))
+            }
         } else {
-            // Fallback to exact match for unsupported wildcards
-            word == pattern
+            Ok(word == pattern)
         }
     }
 }
@@ -145,36 +172,54 @@ impl Storage for MemoryStorage {
     }
 
     #[instrument(skip(self))]
-    fn query(&self, selections: &[(Option<String>, String)], default_type: Option<RecordType>) -> Vec<Record> {
-        self.records.iter().filter(|record| {
+    fn query(&self, selections: &[(Option<String>, String)], default_type: Option<RecordType>) -> Result<Vec<Record>, StorageError> {
+        let mut results = Vec::new();
+        for record in &self.records {
             // Check discriminator
             if let Some(ref dt) = default_type {
                 if let Some(ref rt) = record.record_type {
                     if rt != dt && !selections.iter().any(|(f, _)| f.as_deref() == Some("type")) {
-                        return false;
+                        continue;
                     }
                 } else {
-                    return false;
+                    continue;
                 }
             }
 
-            selections.iter().all(|(field_opt, value)| {
+            let mut matches_all = true;
+            for (field_opt, value) in selections {
                 match field_opt {
                     Some(field_name) => {
-                        // Exact or wildcard match on specific field
                         if let Some(field_val) = record.fields.get(field_name) {
-                            self.matches(field_val, value)
+                            if !self.matches(field_val, value)? {
+                                matches_all = false;
+                                break;
+                            }
                         } else {
-                            false
+                            matches_all = false;
+                            break;
                         }
                     }
                     None => {
-                        // Search in any "searchable" field (for MVP, all fields)
-                        record.fields.values().any(|field_val| self.matches(field_val, value))
+                        let mut any_match = false;
+                        for field_val in record.fields.values() {
+                            if self.matches(field_val, value)? {
+                                any_match = true;
+                                break;
+                            }
+                        }
+                        if !any_match {
+                            matches_all = false;
+                            break;
+                        }
                     }
                 }
-            })
-        }).cloned().collect()
+            }
+            if matches_all {
+                results.push(record.clone());
+            }
+        }
+        Ok(results)
     }
 
     #[instrument(skip(self))]
@@ -228,26 +273,40 @@ impl Storage for MemoryStorage {
 
     #[instrument(skip(self))]
     fn delete_record(&mut self, selections: &[(Option<String>, String)], fingerprint: Option<String>, teams: &[String]) -> Result<usize, StorageError> {
-        let mut error = None;
         let mut to_delete_ids = Vec::new();
 
         for record in &self.records {
-            let matches = selections.iter().all(|(field_opt, value)| {
+            let mut matches_all = true;
+            for (field_opt, value) in selections {
                 match field_opt {
                     Some(field_name) => {
                         if let Some(field_val) = record.fields.get(field_name) {
-                            self.matches(field_val, value)
+                            if !self.matches(field_val, value)? {
+                                matches_all = false;
+                                break;
+                            }
                         } else {
-                            false
+                            matches_all = false;
+                            break;
                         }
                     }
                     None => {
-                        record.fields.values().any(|field_val| self.matches(field_val, value))
+                        let mut any_match = false;
+                        for field_val in record.fields.values() {
+                            if self.matches(field_val, value)? {
+                                any_match = true;
+                                break;
+                            }
+                        }
+                        if !any_match {
+                            matches_all = false;
+                            break;
+                        }
                     }
                 }
-            });
+            }
 
-            if matches {
+            if matches_all {
                 // Check authorization for deletion
                 let authorized = match (&record.owner_fingerprint, &record.owner_team) {
                     (Some(fp), _) if fingerprint.as_ref() == Some(fp) => true,
@@ -259,13 +318,9 @@ impl Storage for MemoryStorage {
                 if authorized {
                     to_delete_ids.push(record.id);
                 } else {
-                    error = Some(StorageError::Unauthorized);
+                    return Err(StorageError::Unauthorized);
                 }
             }
-        }
-
-        if let Some(e) = error {
-            return Err(e);
         }
 
         let deleted_count = to_delete_ids.len();
@@ -379,7 +434,7 @@ impl Storage for FileStorage {
         self.queue_persistence();
     }
 
-    fn query(&self, selections: &[(Option<String>, String)], default_type: Option<RecordType>) -> Vec<Record> {
+    fn query(&self, selections: &[(Option<String>, String)], default_type: Option<RecordType>) -> Result<Vec<Record>, StorageError> {
         self.memory.query(selections, default_type)
     }
 
@@ -482,7 +537,7 @@ impl Storage for LdapStorage {
     }
 
     #[instrument(skip(self))]
-    fn query(&self, selections: &[(Option<String>, String)], default_type: Option<RecordType>) -> Vec<Record> {
+    fn query(&self, selections: &[(Option<String>, String)], default_type: Option<RecordType>) -> Result<Vec<Record>, StorageError> {
         info!("Executing LDAP query...");
         
         let filter = self.build_filter(selections, default_type);
@@ -492,13 +547,13 @@ impl Storage for LdapStorage {
             Ok(conn) => conn,
             Err(e) => {
                 error!("Failed to connect to LDAP server: {}", e);
-                return Vec::new();
+                return Ok(Vec::new());
             }
         };
 
         if let Err(e) = ldap.simple_bind(&self.bind_dn, &self.bind_pw) {
             error!("Failed to bind to LDAP: {}", e);
-            return Vec::new();
+            return Ok(Vec::new());
         }
 
         let rs = match ldap.search(
@@ -511,12 +566,12 @@ impl Storage for LdapStorage {
                 Ok((entries, _)) => entries,
                 Err(e) => {
                     error!("LDAP search successful but returned error result: {}", e);
-                    return Vec::new();
+                    return Ok(Vec::new());
                 }
             },
             Err(e) => {
                 error!("LDAP search failed: {}", e);
-                return Vec::new();
+                return Ok(Vec::new());
             }
         };
 
@@ -553,7 +608,7 @@ impl Storage for LdapStorage {
             });
         }
 
-        records
+        Ok(records)
     }
 
     #[instrument(skip(self))]
@@ -580,7 +635,7 @@ mod tests {
         fields.insert("name".to_string(), "John Doe".to_string());
         storage.add_record(fields, None, None);
 
-        let results = storage.query(&[(Some("name".to_string()), "john".to_string())], None);
+        let results = storage.query(&[(Some("name".to_string()), "john".to_string())], None).unwrap();
         assert!(results[0].fields.contains_key("created_at"));
         assert!(results[0].fields.contains_key("last_seen_at"));
     }
@@ -592,7 +647,7 @@ mod tests {
         fields.insert("hostname".to_string(), "srv-01".to_string());
         storage.upsert_record(fields.clone(), None, None).unwrap();
 
-        let initial_results = storage.query(&[(Some("hostname".to_string()), "srv-01".to_string())], None);
+        let initial_results = storage.query(&[(Some("hostname".to_string()), "srv-01".to_string())], None).unwrap();
         let created_at = initial_results[0].fields.get("created_at").unwrap().clone();
 
         // Small sleep to ensure timestamp difference if it were second-based, 
@@ -602,7 +657,7 @@ mod tests {
         update_fields.insert("status".to_string(), "online".to_string());
         storage.upsert_record(update_fields, None, None).unwrap();
 
-        let updated_results = storage.query(&[(Some("hostname".to_string()), "srv-01".to_string())], None);
+        let updated_results = storage.query(&[(Some("hostname".to_string()), "srv-01".to_string())], None).unwrap();
         assert_eq!(updated_results[0].fields.get("created_at").unwrap(), &created_at);
         // last_seen_at should be updated (or at least present)
         assert!(updated_results[0].fields.contains_key("last_seen_at"));
@@ -617,7 +672,7 @@ mod tests {
         storage.add_record(fields, None, None);
 
         let selections = vec![(Some("name".to_string()), "john".to_string())];
-        let results = storage.query(&selections, None);
+        let results = storage.query(&selections, None).unwrap();
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].fields.get("email").unwrap(), "john@example.com");
     }
@@ -630,7 +685,7 @@ mod tests {
         storage.add_record(fields, None, None);
 
         let selections = vec![(Some("name".to_string()), "jane".to_string())];
-        let results = storage.query(&selections, None);
+        let results = storage.query(&selections, None).unwrap();
         assert_eq!(results.len(), 0);
     }
 
@@ -642,7 +697,7 @@ mod tests {
         storage.add_record(fields, None, None);
 
         let selections = vec![(Some("name".to_string()), "jo*".to_string())];
-        let results = storage.query(&selections, None);
+        let results = storage.query(&selections, None).unwrap();
         assert_eq!(results.len(), 1);
     }
 
@@ -655,7 +710,7 @@ mod tests {
         storage.add_record(fields, None, None);
 
         let selections = vec![(None, "jdoe".to_string())];
-        let results = storage.query(&selections, None);
+        let results = storage.query(&selections, None).unwrap();
         assert_eq!(results.len(), 1);
     }
 
@@ -675,7 +730,7 @@ mod tests {
             (Some("name".to_string()), "doe".to_string()),
             (Some("city".to_string()), "london".to_string()),
         ];
-        let results = storage.query(&selections, None);
+        let results = storage.query(&selections, None).unwrap();
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].fields.get("name").unwrap(), "Jane Doe");
     }
@@ -696,14 +751,14 @@ mod tests {
 
         let selections = vec![(Some("name".to_string()), "server".to_string())];
         
-        let results = storage.query(&selections, Some(RecordType::Person));
+        let results = storage.query(&selections, Some(RecordType::Person)).unwrap();
         assert_eq!(results.len(), 0);
 
-        let results = storage.query(&selections, Some(RecordType::Machine));
+        let results = storage.query(&selections, Some(RecordType::Machine)).unwrap();
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].fields.get("name").unwrap(), "Server Machine");
 
-        let results = storage.query(&selections, None);
+        let results = storage.query(&selections, None).unwrap();
         assert_eq!(results.len(), 1);
     }
 
@@ -716,7 +771,7 @@ mod tests {
         let fingerprint = Some("SHA256:abcd".to_string());
         storage.upsert_record(fields, fingerprint.clone(), None).unwrap();
         
-        let results = storage.query(&[(Some("hostname".to_string()), "server-01".to_string())], None);
+        let results = storage.query(&[(Some("hostname".to_string()), "server-01".to_string())], None).unwrap();
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].owner_fingerprint, fingerprint);
     }
@@ -747,7 +802,7 @@ mod tests {
         update_fields.insert("status".to_string(), "busy".to_string());
         storage.upsert_record(update_fields, fingerprint.clone(), None).unwrap();
         
-        let results = storage.query(&[(Some("hostname".to_string()), "server-01".to_string())], None);
+        let results = storage.query(&[(Some("hostname".to_string()), "server-01".to_string())], None).unwrap();
         assert_eq!(results[0].fields.get("status").unwrap(), "busy");
     }
 
@@ -773,7 +828,7 @@ mod tests {
         {
             let storage = FileStorage::new(storage_path.clone());
             assert_eq!(storage.record_count(), 1);
-            let results = storage.query(&[(Some("name".to_string()), "pete".to_string())], None);
+            let results = storage.query(&[(Some("name".to_string()), "pete".to_string())], None).unwrap();
             assert_eq!(results.len(), 1);
         }
 

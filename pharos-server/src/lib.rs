@@ -175,11 +175,25 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                             _ => None,
                         };
 
-                        let (records, count) = {
+                        let query_result = {
                             let lock = storage.read().map_err(|_| anyhow::anyhow!("Storage lock poisoned"))?;
-                            let results = lock.query(&selections, default_type);
-                            let count = results.len();
-                            (results, count)
+                            lock.query(&selections, default_type)
+                        };
+
+                        let (records, count) = match query_result {
+                            Ok(results) => {
+                                let count = results.len();
+                                (results, count)
+                            }
+                            Err(crate::storage::StorageError::InvalidArgument(msg)) => {
+                                writer.write_all(format!("421:Invalid argument: {}\n", msg).as_bytes()).await?;
+                                continue;
+                            }
+                            Err(e) => {
+                                error!("Query error: {}", e);
+                                writer.write_all(b"500:Internal storage error\n").await?;
+                                continue;
+                            }
                         };
 
                         let _ = crate::tui::EVENT_TX.send(format!("[{}] Queried records, matches: {}", context.peer_addr, count));

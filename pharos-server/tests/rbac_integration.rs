@@ -147,7 +147,7 @@ async fn test_should_enforce_team_authorization() {
     // Verify record ownership in storage
     {
         let lock = storage.read().unwrap();
-        let records = lock.query(&[(Some("hostname".to_string()), "prod-web-01".to_string())], None);
+        let records = lock.query(&[(Some("hostname".to_string()), "prod-web-01".to_string())], None).unwrap();
         assert_eq!(records.len(), 1);
         assert_eq!(records[0].owner_team, Some("devops".to_string()));
     }
@@ -184,7 +184,7 @@ async fn test_should_enforce_team_authorization() {
     
     {
         let lock = storage.read().unwrap();
-        let records = lock.query(&[(Some("hostname".to_string()), "prod-web-01".to_string())], None);
+        let records = lock.query(&[(Some("hostname".to_string()), "prod-web-01".to_string())], None).unwrap();
         assert_eq!(records[0].fields.get("status").unwrap(), "healthy");
     }
 }

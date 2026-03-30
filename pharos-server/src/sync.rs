@@ -58,11 +58,18 @@ pub async fn replicate_command(storage: Arc<RwLock<dyn Storage>>, command: Strin
     let peers = {
         let lock = storage.read().unwrap();
         let selections = vec![(Some("role".to_string()), "pharos-server".to_string())];
-        let records = lock.query(&selections, None);
-        records.into_iter()
-            .filter_map(|r| r.fields.get("hostname").cloned())
-            .filter(|addr| addr != &my_addr) // Don't push to self
-            .collect::<Vec<String>>()
+        match lock.query(&selections, None) {
+            Ok(records) => {
+                records.into_iter()
+                    .filter_map(|r| r.fields.get("hostname").cloned())
+                    .filter(|addr| addr != &my_addr) // Don't push to self
+                    .collect::<Vec<String>>()
+            }
+            Err(e) => {
+                error!("Sync peer discovery error: {}", e);
+                return;
+            }
+        }
     };
 
     if peers.is_empty() {

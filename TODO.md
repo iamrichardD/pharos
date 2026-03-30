@@ -216,3 +216,11 @@ A task is considered complete and may be marked `[x]` only when:
 ## Phase 24: Marketing Engagement & Analytics
 - [x] **Task 24.1 (Issue #145):** Planning: Engagement Measurement Strategy (Page Reads & Clicks).
 - [x] **Task 24.2 (Issue #146):** Engineering: Implement Umami Cloud Analytics Integration. Integrated privacy-first tracking into `BaseLayout.astro`, `SandboxSnippet.astro` (copy-sandbox), and `TieredTabs.astro` (view-homelab/enterprise). Verified with a full pre-flight run.
+
+## Phase 25: Fail Fast Architectural Debt
+- [ ] **Debt #08 (Issue #153):** Action: Require `ADMIN_PASSWORD` in production instead of silent default fallback.
+- [ ] **Debt #09 (Issue #154):** Action: Validate `PHAROS_PORT` with an `isNaN` check to prevent `NaN` propagation.
+- [ ] **Debt #10 (Issue #155):** Action: Return `ProtocolError::InvalidArgument` for unsupported wildcards instead of silent exact match fallback.
+- [ ] **Debt #11 (Issue #156):** Action: Log `error!` level messages for file system failures during key loading in `auth.rs`.
+- [ ] **Debt #12 (Issue #157):** Action: Refactor deeply nested `match` statements in `mdb/src/main.rs` using the `?` operator.
+- [ ] **Debt #13 (Issue #158):** Action: Implement MCP error mapping to distinguish between Parse, Invalid Request, and Internal Errors.

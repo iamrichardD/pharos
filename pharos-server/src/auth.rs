@@ -70,25 +70,31 @@ impl AuthManager {
 
         // 1. Initial Load
         if keys_dir.is_dir() {
-            if let Ok(entries) = fs::read_dir(keys_dir) {
-                for entry in entries.flatten() {
-                    let path = entry.path();
-                    if path.is_file() && path.extension().map(|s| s == "pub").unwrap_or(false) {
-                        if let Ok(content) = fs::read_to_string(&path) {
-                            match PublicKey::from_openssh(&content) {
-                                Ok(key) => {
-                                    if key.algorithm() == ssh_key::Algorithm::Ed25519 {
-                                        info!("Loaded authorized key from {:?}", path);
-                                        Self::register_key(&mut authorized_keys, &mut key_roles, &mut key_teams, &path, key);
-                                    } else {
-                                        error!("Skipping non-Ed25519 key in {:?}: {}", path, key.algorithm());
+            match fs::read_dir(keys_dir) {
+                Ok(entries) => {
+                    for entry in entries.flatten() {
+                        let path = entry.path();
+                        if path.is_file() && path.extension().map(|s| s == "pub").unwrap_or(false) {
+                            match fs::read_to_string(&path) {
+                                Ok(content) => {
+                                    match PublicKey::from_openssh(&content) {
+                                        Ok(key) => {
+                                            if key.algorithm() == ssh_key::Algorithm::Ed25519 {
+                                                info!("Loaded authorized key from {:?}", path);
+                                                Self::register_key(&mut authorized_keys, &mut key_roles, &mut key_teams, &path, key);
+                                            } else {
+                                                error!("Skipping non-Ed25519 key in {:?}: {}", path, key.algorithm());
+                                            }
+                                        }
+                                        Err(e) => error!("Failed to parse public key {:?}: {}", path, e),
                                     }
                                 }
-                                Err(e) => error!("Failed to parse public key {:?}: {}", path, e),
+                                Err(e) => error!("Failed to read public key file {:?}: {}", path, e),
                             }
                         }
                     }
                 }
+                Err(e) => error!("Failed to read keys directory {:?}: {}", keys_dir, e),
             }
         }
 

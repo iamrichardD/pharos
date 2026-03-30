@@ -29,14 +29,24 @@ export const server = {
             // Home Lab Mode (MVP): Simple credential check
             // Use the password store if it exists, otherwise fall back to environment variables.
             const storedVerification = await verifyStoredPassword(input.password);
-            const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin';
+            
+            // Debt #08: Require ADMIN_PASSWORD in production. (Issue #153)
+            const isProd = process.env.NODE_ENV === 'production';
+            const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+
+            if (isProd && (!ADMIN_PASSWORD || ADMIN_PASSWORD === 'admin')) {
+                console.error('CRITICAL: ADMIN_PASSWORD must be set to a non-default value in production.');
+                throw new Error('Server configuration error: ADMIN_PASSWORD is missing or insecure.');
+            }
+
+            const effectiveAdminPassword = ADMIN_PASSWORD || 'admin';
             
             let authenticated = false;
             let mustChangePassword = false;
 
             if (storedVerification === null) {
                 // First run: Use default password and enforce change
-                if (input.username === 'admin' && input.password === ADMIN_PASSWORD) {
+                if (input.username === 'admin' && input.password === effectiveAdminPassword) {
                     authenticated = true;
                     mustChangePassword = true;
                 }

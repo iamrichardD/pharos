@@ -60,21 +60,15 @@ async fn main() -> Result<()> {
 
     // Handle 'auth sign' locally without server connection
     if let Some(Commands::Auth { sub: AuthCommands::Sign { challenge } }) = &cli.command {
-        match PharosClient::sign_message_async(challenge).await {
-            Ok((pub_key, sig)) => {
-                println!("Public Key: {}", pub_key);
-                println!("Signature:  {}", sig);
-                return Ok(());
-            }
-            Err(e) => {
-                eprintln!("Error signing challenge: {}", e);
-                process::exit(1);
-            }
-        }
+        let (pub_key, sig) = PharosClient::sign_message_async(challenge).await
+            .context("Error signing challenge")?;
+        println!("Public Key: {}", pub_key);
+        println!("Signature:  {}", sig);
+        return Ok(());
     }
 
     // Legacy fallback/Direct query support
-    let query_string = if let Some(_) = &cli.command {
+    let query_string = if cli.command.is_some() {
         // If it was a recognized subcommand that didn't exit (none yet except auth)
         String::new() 
     } else if !cli.query.is_empty() {
@@ -113,39 +107,37 @@ async fn main() -> Result<()> {
         }
     };
 
-    match client.execute_authenticated(&cmd_to_send).await {
-        Ok(resp) => {
-            match resp {
-                PharosResponse::Ok(msg) => println!("{}", msg),
-                PharosResponse::Matches { records, .. } => {
-                    for record in records {
-                        for field in record.fields {
-                            let value = if cli.human {
-                                format_human(&field.key, &field.value)
-                            } else {
-                                field.value
-                            };
-                            println!("{:>15}: {}", field.key, value);
-                        }
-                    }
-                }
-                PharosResponse::Error { code, message } => {
-                    eprintln!("{}: {}", code, message);
-                    process::exit(1);
-                }
-                PharosResponse::AuthenticationRequired { .. } => {
-                    eprintln!("Authentication failed.");
-                    process::exit(1);
+    let resp = client.execute_authenticated(&cmd_to_send).await
+        .context("Error executing command")?;
+
+    handle_response(resp, cli.human)?;
+
+    let _ = client.quit().await;
+    Ok(())
+}
+
+fn handle_response(resp: PharosResponse, human: bool) -> Result<()> {
+    match resp {
+        PharosResponse::Ok(msg) => println!("{}", msg),
+        PharosResponse::Matches { records, .. } => {
+            for record in records {
+                for field in record.fields {
+                    let value = if human {
+                        format_human(&field.key, &field.value)
+                    } else {
+                        field.value
+                    };
+                    println!("{:>15}: {}", field.key, value);
                 }
             }
         }
-        Err(e) => {
-            eprintln!("Error: {}", e);
-            process::exit(1);
+        PharosResponse::Error { code, message } => {
+            anyhow::bail!("{}: {}", code, message);
+        }
+        PharosResponse::AuthenticationRequired { .. } => {
+            anyhow::bail!("Authentication failed.");
         }
     }
-
-    let _ = client.quit().await;
     Ok(())
 }
 
