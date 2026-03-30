@@ -44,7 +44,8 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
     // Public routes that don't require authentication
     // Note: /_actions must be allowed so that the login action can be called
-    const publicRoutes = ['/login', '/_actions', '/mdb', '/add-node'];
+    // Note: /mcp is public but individual methods enforce auth in mcp.ts
+    const publicRoutes = ['/login', '/_actions', '/mdb', '/add-node', '/mcp'];
     const isPublicRoute = (publicRoutes.some(route => url.pathname.startsWith(route)) || url.pathname === '/') && !url.pathname.startsWith('/mdb/add');
 
     if (isPublicRoute) {
@@ -52,17 +53,6 @@ export const onRequest = defineMiddleware(async (context, next) => {
     }
 
     if (!session) {
-        // Return 401 for /mcp API route instead of redirecting
-        if (url.pathname === '/mcp' || url.pathname === '/mcp/' || url.pathname === '/mcp.json' || url.pathname === '/mcp.json/') {
-            return new Response(JSON.stringify({
-                jsonrpc: '2.0',
-                error: { code: -32000, message: 'Unauthorized' },
-                id: null
-            }), { 
-                status: 401,
-                headers: { 'Content-Type': 'application/json' }
-            });
-        }
         // Redirect to login if unauthenticated on a protected route
         return redirect('/login');
     }

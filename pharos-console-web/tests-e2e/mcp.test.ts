@@ -23,7 +23,7 @@ test.describe('WebMCP Gateway', () => {
         }
     });
 
-    test('should return 401 if unauthenticated', async ({ request }) => {
+    test('should allow unauthenticated query_mdb', async ({ request }) => {
         const response = await request.post('/mcp', {
             data: {
                 jsonrpc: '2.0',
@@ -32,9 +32,23 @@ test.describe('WebMCP Gateway', () => {
                 id: 1
             }
         });
+        // It should NOT be 401. It might be 500 if the pharos-server is not running, 
+        // but it should definitely not be 401 from middleware.
+        expect(response.status()).not.toBe(401);
+    });
+
+    test('should return 401 for provision_node if unauthenticated', async ({ request }) => {
+        const response = await request.post('/mcp', {
+            data: {
+                jsonrpc: '2.0',
+                method: 'provision_node',
+                params: { hostname: 'test', ip: '1.2.3.4' },
+                id: 2
+            }
+        });
         expect(response.status()).toBe(401);
         const body = await response.json();
-        expect(body.error.message).toBe('Unauthorized');
+        expect(body.error.message).toContain('Unauthorized');
     });
 
     test('should execute query_mdb when authenticated', async ({ page, request }) => {

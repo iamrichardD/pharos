@@ -46,11 +46,6 @@ function errorResponse(code: number, message: string, id: any = null, status: nu
 export const POST: APIRoute = async ({ request, locals }) => {
     const session = locals.session;
     
-    // Safety check: Middleware should have caught this, but let's be explicit
-    if (!session) {
-        return errorResponse(RPC_ERRORS.UNAUTHORIZED, 'Unauthorized', null, 401);
-    }
-
     let body: any;
     try {
         body = await request.json();
@@ -73,10 +68,15 @@ export const POST: APIRoute = async ({ request, locals }) => {
             case 'query_mdb':
                 return await handleQueryMdb(params, id);
             case 'provision_node':
-                return await handleProvisionNode(params, id);
             case 'mcp.list_keys':
-                return await handleListKeys(id);
             case 'mcp.provision_key':
+                // Mutation/Management methods require authentication
+                if (!session) {
+                    return errorResponse(RPC_ERRORS.UNAUTHORIZED, 'Unauthorized (Authentication required for this method)', id, 401);
+                }
+                
+                if (method === 'provision_node') return await handleProvisionNode(params, id);
+                if (method === 'mcp.list_keys') return await handleListKeys(id);
                 return await handleProvisionKey(params, id);
             default:
                 return errorResponse(RPC_ERRORS.METHOD_NOT_FOUND, `Method not found: ${method}`, id, 404);
