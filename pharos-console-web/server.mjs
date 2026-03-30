@@ -68,7 +68,7 @@ async function startServer() {
     // 2. Create a small HTTP server just for redirects
     const redirectServer = http.createServer((req, res) => {
       const host = req.headers.host || `localhost:${PORT}`;
-      res.writeHead(301, { "Location": `https://${host}${req.url}` });
+      res.writeHead(308, { "Location": `https://${host}${req.url}` });
       res.end();
     });
 
