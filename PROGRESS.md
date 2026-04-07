@@ -6,6 +6,7 @@
 **Backlog:** 
 None
 **Blocked/Investigating:**
+- [x] Bug #160: GitHub Action DORA Pulse failure (Issue #160). Fixed `scripts/generate-dora.sh` calculation and `sed` logic. (COMPLETED)
 
 ## Recent Completions
 - [x] Bug #159: Allow unauthenticated read access for WebMCP gateway (Issue #159). Modified middleware to allow `/mcp` as a public route and updated the JSON-RPC gateway to only enforce authentication for mutation/management methods. Verified with unauthenticated `curl` requests in Podman.

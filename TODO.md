@@ -65,7 +65,9 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Debt #06 (Issue #147):** **Upgrade protobuf to >= 3.7.2**. Mitigate uncontrolled recursion DoS (RUSTSEC-2024-0437).
 - [x] **Bug #148 (Issue #148):** **Mitigate RSA Marvin Attack in ssh-key**. Side-channel timing attack for key recovery (RUSTSEC-2023-0071). (Remediation: Transitioned to Ed25519-only authentication and restricted ssh-key crate features).
 - [x] **Bug #150 (Issue #152):** **Sandbox certgen fails with 'not found' error**. Resolved by switching to \`#!/bin/sh\` for better Alpine compatibility and ensuring explicit \`sh\` invocation in \`sandbox.yml\`. (Remediation: Added explicit \`depends_on\` chains to eliminate race conditions).
-- [x] **Debt #07 (Issue #149):** **Replace unmaintained fxhash dependency**. Transition to ahash or rustc-hash for long-term support.
+- [x] **Debt #07 (Issue #149):** Replace unmaintained fxhash dependency. Transition to ahash or rustc-hash for long-term support.
+- [x] **Bug #160 (Issue #160):** **GitHub Action DORA Pulse failure**. Error in `scripts/generate-dora.sh` causing `sed` and `test` failures. (HIGH PRIORITY) (COMPLETED)
+
 
 - [x] **Debt #02 (Issue #84):** **Logic Duplication**. Move all authorization logic from `lib.rs` into `SecurityTierMiddleware`.
 - [x] **Debt #03 (Issue #85):** **Hardcoded Paths**. Transitioned SSH key paths to relative `PHAROS_KEYS_DIR`.

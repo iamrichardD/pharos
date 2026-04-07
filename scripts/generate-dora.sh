@@ -23,7 +23,7 @@ echo "Generating DORA metrics report..."
 
 # 1. Deployment Frequency
 # Count of tags in the last 30 days
-DEPLOY_COUNT=$(git tag -l --format='%(creatordate:iso8601)' | grep -c "^$(date -u -d "30 days ago" +%Y-%m)" || echo "0")
+DEPLOY_COUNT=$(git tag -l --format='%(creatordate:iso8601)' | grep -c "^$(date -u -d "30 days ago" +%Y-%m)" || true)
 if [ "$DEPLOY_COUNT" -gt 30 ]; then
     DF_VALUE="Elite (>1/day)"
 elif [ "$DEPLOY_COUNT" -gt 4 ]; then
@@ -51,9 +51,14 @@ fi
 
 # 3. Change Failure Rate
 # Count of 'fix:' commits vs total commits in last 30 days
-TOTAL_COMMITS=$(git rev-list --count --since="$THIRTY_DAYS_AGO" HEAD || echo "1")
+TOTAL_COMMITS=$(git rev-list --count --since="$THIRTY_DAYS_AGO" HEAD || echo "0")
 FIX_COMMITS=$(git rev-list --count --since="$THIRTY_DAYS_AGO" --grep="^fix:" HEAD || echo "0")
-CFR_PERCENT=$(echo "scale=2; ($FIX_COMMITS / $TOTAL_COMMITS) * 100" | bc || echo "0")
+
+# Ensure TOTAL_COMMITS is at least 1 to prevent division by zero in bc
+CALC_TOTAL_COMMITS=$TOTAL_COMMITS
+if [ "$CALC_TOTAL_COMMITS" -eq 0 ]; then CALC_TOTAL_COMMITS=1; fi
+
+CFR_PERCENT=$(echo "scale=2; ($FIX_COMMITS / $CALC_TOTAL_COMMITS) * 100" | bc || echo "0")
 CFR_VALUE="$(printf "%.1f" $CFR_PERCENT)%"
 
 # 4. Time to Restore (MTTR)
@@ -117,9 +122,15 @@ if [ -f "README.md" ]; then
         BADGE_BLOCK="  <a href=\"docs/DORA.md\"><img src=\"https://img.shields.io/badge/DORA:__Deployment-$DF_LABEL-$DF_COLOR\" alt=\"DORA: Deployment\" /></a>\n"
         BADGE_BLOCK+="  <a href=\"docs/DORA.md\"><img src=\"https://img.shields.io/badge/DORA:__Failure-$CFR_LABEL-$CFR_COLOR\" alt=\"DORA: Failure\" /></a>"
         
-        sed -i "/<!-- BADGES_START -->/,/<!-- BADGES_END -->/{ /<!-- BADGES_START -->/{p; i\\
-$BADGE_BLOCK
-}; /<!-- BADGES_END -->/p; d; }" README.md
+        BADGE_TMP=$(mktemp)
+        echo -e "$BADGE_BLOCK" > "$BADGE_TMP"
+        export BADGE_TMP
+        awk '
+            $0 ~ "<!-- BADGES_START -->" { print; system("cat " ENVIRON["BADGE_TMP"]); skip=1; next }
+            $0 ~ "<!-- BADGES_END -->" { skip=0; print; next }
+            !skip { print }
+        ' README.md > README.md.tmp && mv README.md.tmp README.md
+        rm "$BADGE_TMP"
     fi
 
     if grep -q "<!-- DORA_START -->" README.md; then
@@ -133,11 +144,15 @@ $BADGE_BLOCK
         SUMMARY_BLOCK+="| **Change Failure Rate** | $CFR_VALUE | Elite |\n\n"
         SUMMARY_BLOCK+="> [View Full DORA Report](docs/DORA.md)"
 
-        # Use sed to replace content between markers
-        # We use a temporary file for safety
-        sed -i "/<!-- DORA_START -->/,/<!-- DORA_END -->/{ /<!-- DORA_START -->/{p; i\\
-$SUMMARY_BLOCK
-}; /<!-- DORA_END -->/p; d; }" README.md
+        SUMMARY_TMP=$(mktemp)
+        echo -e "$SUMMARY_BLOCK" > "$SUMMARY_TMP"
+        export SUMMARY_TMP
+        awk '
+            $0 ~ "<!-- DORA_START -->" { print; system("cat " ENVIRON["SUMMARY_TMP"]); skip=1; next }
+            $0 ~ "<!-- DORA_END -->" { skip=0; print; next }
+            !skip { print }
+        ' README.md > README.md.tmp && mv README.md.tmp README.md
+        rm "$SUMMARY_TMP"
     fi
 fi
 
