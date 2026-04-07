@@ -1,13 +1,13 @@
 # DORA Metrics Report
 
-**Generated at:** 2026-03-30T02:07:44Z (Last 30 Days)
+**Generated at:** 2026-04-07T16:02:01Z (Last 30 Days)
 
 | Metric | Current Value | Performance Category |
 | :--- | :--- | :--- |
-| **Deployment Frequency** | 4 tags | Medium (monthly) |
+| **Deployment Frequency** | 0 tags | Medium (monthly) |
 | **Lead Time for Changes** | 0.1h | High |
-| **Change Failure Rate** | 6.0% | Elite |
-| **Time to Restore Service** | 3.9h | Elite |
+| **Change Failure Rate** | 10.0% | Elite |
+| **Time to Restore Service** | 3.8h | Elite |
 
 ## Definitions
 - **Deployment Frequency:** How often the organization successfully releases to production.
