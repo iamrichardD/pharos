@@ -77,6 +77,7 @@ export PHAROS_CA_CERT=/tmp/e2e-certs/root-ca.crt
 export NODE_EXTRA_CA_CERTS=/tmp/e2e-certs/root-ca.crt
 
 # Playwright config handles startup
+npx playwright install chromium
 npm run test:e2e
 cd ..
 

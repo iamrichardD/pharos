@@ -112,20 +112,20 @@ EOF
 # --- Installation Logic ---
 download_binary() {
     local component=$1
-    local target_triple=""
+    local platform_suffix=""
 
     case "${OS_NAME}" in
-        linux)   target_triple="${ARCH_NAME}-unknown-linux-gnu";;
-        macos)   target_triple="${ARCH_NAME}-apple-darwin";;
-        windows) target_triple="x86_64-pc-windows-msvc";;
+        linux)   platform_suffix="linux-${ARCH_NAME}";;
+        macos)   platform_suffix="macos-aarch64";;
+        windows) platform_suffix="windows-x86_64.exe";;
     esac
 
     # Note: In a real scenario, we'd fetch from GH releases. 
     # For now, we simulate the structure or use the local build if in dev mode.
-    local url="https://github.com/${REPO}/releases/download/v${VERSION}/${component}-${target_triple}.tar.gz"
+    local url="https://github.com/${REPO}/releases/download/v${VERSION}/${component}-${platform_suffix}"
     
-    log "Downloading ${component} (v${VERSION}) for ${target_triple}..."
-    # curl -sSL "${url}" | tar -xz -C "${INSTALL_DIR}"
+    log "Downloading ${component} (v${VERSION}) for ${platform_suffix}..."
+    # curl -sSL "${url}" -o "${INSTALL_DIR}/${component}"
     
     # Placeholder for actual download logic
     warn "Download URL: ${url} (Simulated for Task 21.2 implementation)"

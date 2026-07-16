@@ -44,14 +44,18 @@ For production use, we recommend a native installation in a Proxmox LXC containe
   <div slot="homelab">
 
     ### 🏠 Home Lab: Persistent JSON Storage
-    Perfect for Proxmox LXC containers. Pharos uses a simple, restart-survivable JSON file for your data.
+    Perfect for Proxmox LXC containers. Pharos uses a simple, restart-survivable JSON file for your data. The server binary is statically compiled and has no dependencies on Ubuntu-specific APIs, making Debian 13 ("Trixie") or Ubuntu 26.04 LTS ("Resolute Raccoon") equally excellent targets.
 
     #### 1. Prepare the LXC Container
-    Ubuntu 24.04 with 512MB RAM and 2GB Disk is recommended.
+    Configure the container with a minimum of **1 CPU (vCPU)**, **512MB RAM**, and **2GB Disk**.
 
     #### 2. Install the Pharos Server
     ```bash
-    wget https://github.com/iamrichardd/pharos/releases/download/v1.0.0/pharos-server-linux-x86_64
+    # Ensure curl is installed
+    apt-get update && apt-get install -y curl
+
+    # Download the Pharos Server binary (pre v1.0 release)
+    curl -sSL -O https://github.com/iamrichardd/pharos/releases/download/v0.1.0/pharos-server-linux-x86_64
     chmod +x pharos-server-linux-x86_64
     mv pharos-server-linux-x86_64 /usr/local/bin/pharos-server
     ```
