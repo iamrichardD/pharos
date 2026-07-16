@@ -91,10 +91,10 @@ For production use, we recommend a native installation in a Proxmox LXC containe
 
     #### 1. Configure LDAP details:
     ```bash
-    export PHAROS_LDAP_URL="ldap://ldap.enterprise.com:389"
-    export PHAROS_LDAP_BIND_DN="cn=pharos,ou=services,dc=enterprise,dc=com"
+    export PHAROS_LDAP_URL="ldap://ldap.example.com:389"
+    export PHAROS_LDAP_BIND_DN="cn=pharos,ou=services,dc=example,dc=com"
     export PHAROS_LDAP_BIND_PW="secret"
-    export PHAROS_LDAP_BASE_DN="dc=enterprise,dc=com"
+    export PHAROS_LDAP_BASE_DN="dc=example,dc=com"
     export PHAROS_SECURITY_MODE="scoped"
     ./pharos-server
     ```

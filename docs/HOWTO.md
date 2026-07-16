@@ -82,7 +82,7 @@ export PHAROS_STORAGE_PATH="/var/lib/pharos/data.json"
 ### Enterprise Tier (LDAP)
 Acts as a high-speed cache for your corporate directory.
 ```bash
-export PHAROS_LDAP_URL="ldap://ldap.enterprise.com:389"
+export PHAROS_LDAP_URL="ldap://ldap.example.com:389"
 ./pharos-server
 ```
 

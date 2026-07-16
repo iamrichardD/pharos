@@ -89,7 +89,7 @@ Pharos is designed for high-velocity DevSecOps teams. You can automate your infr
           - name: Update Machine Record
             env:
               SSH_KEY: ${{ secrets.PHAROS_SSH_KEY }}
-              PHAROS_SERVER: pharos.enterprise.com
+              PHAROS_SERVER: pharos.example.com
             run: |
               mkdir -p ~/.ssh
               echo "$SSH_KEY" > ~/.ssh/id_ed25519
