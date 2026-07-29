@@ -153,20 +153,36 @@ async fn main() -> anyhow::Result<()> {
         }
     }
 
-    // Initialize AuthManager
-    let keys_dir = env::var("PHAROS_KEYS_DIR").unwrap_or_else(|_| "./keys".to_string());
-    let auth_manager = Arc::new(AuthManager::new(Path::new(&keys_dir)));
-
-    // Initialize Middleware Chain
-    let mut middleware_chain = MiddlewareChain::new();
-    middleware_chain.add(Arc::new(LoggingMiddleware));
-
     let security_tier = match env::var("PHAROS_SECURITY_TIER").unwrap_or_else(|_| "open".to_string()).to_lowercase().as_str() {
         "protected" => SecurityTier::Protected,
         "scoped" => SecurityTier::Scoped,
         _ => SecurityTier::Open,
     };
     info!("Running with Security Tier: {:?}", security_tier);
+
+    // Initialize AuthManager
+    let keys_dir = env::var("PHAROS_KEYS_DIR").unwrap_or_else(|_| "./keys".to_string());
+    let auth_manager = Arc::new(AuthManager::new(Path::new(&keys_dir), security_tier));
+
+    // Key enrollment/rotation shouldn't require a restart: `systemctl reload pharos-server`
+    // (or `kill -HUP <pid>`) re-scans keys_dir and atomically swaps in the new key set.
+    #[cfg(unix)]
+    {
+        let reload_auth_manager = Arc::clone(&auth_manager);
+        let mut hangup = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::hangup())
+            .expect("failed to install SIGHUP handler");
+        tokio::spawn(async move {
+            loop {
+                hangup.recv().await;
+                info!("SIGHUP received, reloading authorized keys...");
+                reload_auth_manager.reload();
+            }
+        });
+    }
+
+    // Initialize Middleware Chain
+    let mut middleware_chain = MiddlewareChain::new();
+    middleware_chain.add(Arc::new(LoggingMiddleware));
 
     middleware_chain.add(Arc::new(SecurityTierMiddleware {
         default_tier: security_tier,

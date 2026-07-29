@@ -23,7 +23,7 @@ use tempfile::tempdir;
 async fn setup_test_server(middleware_chain: MiddlewareChain) -> (std::net::SocketAddr, Arc<RwLock<dyn Storage>>) {
     let storage: Arc<RwLock<dyn Storage>> = Arc::new(RwLock::new(MemoryStorage::new()));
     let temp_dir = tempdir().unwrap();
-    let auth_manager = Arc::new(AuthManager::new(temp_dir.path()));
+    let auth_manager = Arc::new(AuthManager::new(temp_dir.path(), SecurityTier::Open));
     
     let middleware_chain = Arc::new(middleware_chain);
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
@@ -96,7 +96,7 @@ async fn test_should_block_write_in_scoped_tier_without_admin_role() {
 async fn test_should_block_write_when_guest_id_provided() {
     let storage: Arc<RwLock<dyn Storage>> = Arc::new(RwLock::new(MemoryStorage::new()));
     let temp_dir = tempdir().unwrap();
-    let auth_manager = Arc::new(AuthManager::new(temp_dir.path()));
+    let auth_manager = Arc::new(AuthManager::new(temp_dir.path(), SecurityTier::Open));
     
     let mut middleware_chain = MiddlewareChain::new();
     middleware_chain.add(Arc::new(ReadOnlyMiddleware {
@@ -140,7 +140,7 @@ async fn test_should_block_write_when_guest_id_provided() {
 async fn test_should_allow_write_when_other_id_provided() {
     let storage: Arc<RwLock<dyn Storage>> = Arc::new(RwLock::new(MemoryStorage::new()));
     let temp_dir = tempdir().unwrap();
-    let auth_manager = Arc::new(AuthManager::new(temp_dir.path()));
+    let auth_manager = Arc::new(AuthManager::new(temp_dir.path(), SecurityTier::Open));
     
     let mut middleware_chain = MiddlewareChain::new();
     middleware_chain.add(Arc::new(SecurityTierMiddleware { default_tier: SecurityTier::Open }));
@@ -193,7 +193,7 @@ async fn test_should_verify_auth_check_command() {
     std::fs::write(&key_path, pub_key_openssh.as_bytes()).unwrap();
     
     let storage: Arc<RwLock<dyn Storage>> = Arc::new(RwLock::new(MemoryStorage::new()));
-    let auth_manager = Arc::new(AuthManager::new(temp_dir.path()));
+    let auth_manager = Arc::new(AuthManager::new(temp_dir.path(), SecurityTier::Open));
     let mut chain = MiddlewareChain::new();
     chain.add(Arc::new(SecurityTierMiddleware { default_tier: SecurityTier::Open }));
     let middleware_chain = Arc::new(chain);

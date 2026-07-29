@@ -53,7 +53,7 @@ impl TestUser {
 
 async fn setup_rbac_server(keys_dir: &std::path::Path) -> (std::net::SocketAddr, Arc<RwLock<dyn Storage>>) {
     let storage: Arc<RwLock<dyn Storage>> = Arc::new(RwLock::new(MemoryStorage::new()));
-    let auth_manager = Arc::new(AuthManager::new(keys_dir));
+    let auth_manager = Arc::new(AuthManager::new(keys_dir, SecurityTier::Open));
     
     let mut chain = MiddlewareChain::new();
     chain.add(Arc::new(SecurityTierMiddleware { default_tier: SecurityTier::Open }));

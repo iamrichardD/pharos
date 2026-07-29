@@ -225,6 +225,7 @@ After=network.target
 
 [Service]
 ExecStart=${INSTALL_DIR}/pharos-server
+ExecReload=/bin/kill -HUP \$MAINPID
 Restart=always
 User=pharos
 Group=pharos
