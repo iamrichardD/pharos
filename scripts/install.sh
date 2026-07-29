@@ -232,6 +232,7 @@ Environment=PHAROS_TLS_CERT=${PHAROS_DIR}/certs/pharos-server.crt
 Environment=PHAROS_TLS_KEY=${PHAROS_DIR}/certs/pharos-server.key
 Environment=PHAROS_STORAGE_PATH=${PHAROS_DIR}/data.json
 Environment=PHAROS_KEYS_DIR=${PHAROS_DIR}/keys
+Environment=RUST_LOG=info
 
 [Install]
 WantedBy=multi-user.target

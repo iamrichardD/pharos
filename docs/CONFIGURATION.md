@@ -18,6 +18,7 @@ This document serves as the centralized discovery point for all environment vari
 | `PHAROS_LDAP_URL` | URL of the LDAP server for Enterprise tier. | Unset | External Auth. |
 | `PHAROS_CPU_THRESHOLD`| CPU usage percentage for health alerts. | `90.0` | Monitoring. |
 | `PHAROS_MEM_THRESHOLD_GB`| Memory usage (GB) for health alerts. | `1` | Monitoring. |
+| `RUST_LOG` | Log verbosity (`error`/`warn`/`info`/`debug`/`trace`, optionally per-module e.g. `pharos_server=debug`). Standard Rust ecosystem convention, not Pharos-prefixed. A value that doesn't match any known module (including plain typos) silently disables all output with no warning — if logs go quiet after setting this, check for typos first. | `info` | Observability. |
 
 ## CLI Client Configuration (`ph`, `mdb`)
 
@@ -50,4 +51,4 @@ This document serves as the centralized discovery point for all environment vari
 | `PHAROS_PUBLIC_KEY` | Public key associated with the private key. | Unset | Authorization. |
 
 ---
-*Last Updated: March 2026*
+*Last Updated: July 2026*

@@ -84,7 +84,19 @@ async fn main() -> anyhow::Result<()> {
 
     // Initialize tracing for observability only if TUI is not taking over stdout
     if !use_tui {
-        tracing_subscriber::fmt::init();
+        // `from_default_env()` would default to ERROR-only when RUST_LOG is unset; use the
+        // builder directly so the existing INFO-level default is preserved when it's unset or
+        // fails to parse entirely. Note: a RUST_LOG value that parses as a *valid* but irrelevant
+        // target filter (e.g. a plain typo like "pharos_serverr") silently disables all output
+        // with no warning — this is standard tracing_subscriber::EnvFilter behavior, not
+        // something this fallback can catch.
+        tracing_subscriber::fmt()
+            .with_env_filter(
+                tracing_subscriber::EnvFilter::builder()
+                    .with_default_directive(tracing_subscriber::filter::LevelFilter::INFO.into())
+                    .from_env_lossy(),
+            )
+            .init();
     }
 
     info!("Performing environment sanity checks...");

@@ -227,3 +227,4 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Debt #12 (Issue #157):** Action: Refactor deeply nested `match` statements in `mdb/src/main.rs` using the `?` operator.
 - [x] **Debt #13 (Issue #158):** Action: Implement MCP error mapping to distinguish between Parse, Invalid Request, and Internal Errors.
 - [x] **Bug #159 (Issue #159):** Action: Allow unauthenticated read access for WebMCP gateway.
+- [ ] **Debt #14 (Issue #161):** Action: Redact `Auth`/`AuthCheck` signature and challenge material from `LoggingMiddleware`'s INFO-level request logging.
