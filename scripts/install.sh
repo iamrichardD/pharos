@@ -124,9 +124,10 @@ setup_pki() {
     ensure_openssl
 
     ${SUDO} mkdir -p "${cert_dir}"
-    ${SUDO} chmod 700 "${cert_dir}"
+    ${SUDO} chown root:pharos "${cert_dir}"
+    ${SUDO} chmod 750 "${cert_dir}"
 
-    if [[ -f "${cert_dir}/${cert_name}.crt" ]]; then
+    if ${SUDO} test -f "${cert_dir}/${cert_name}.crt"; then
         log "Existing certificate found for ${cert_name}. Skipping generation."
         ${SUDO} chown pharos:pharos "${cert_dir}/${cert_name}.key" "${cert_dir}/${cert_name}.crt"
         ${SUDO} chmod 600 "${cert_dir}/${cert_name}.key"
@@ -137,10 +138,11 @@ setup_pki() {
     log "Generating self-signed SSL certificate for ${cert_name} (${dns_name})..."
     
     # Generate a Root CA if it doesn't exist (for local trust)
-    if [[ ! -f "${cert_dir}/pharos-ca.crt" ]]; then
+    if ! ${SUDO} test -f "${cert_dir}/pharos-ca.crt"; then
         log "Creating local Pharos Root CA..."
         ${SUDO} openssl genrsa -out "${cert_dir}/pharos-ca.key" 4096
         ${SUDO} openssl req -x509 -new -nodes -key "${cert_dir}/pharos-ca.key" -sha256 -days 3650 -out "${cert_dir}/pharos-ca.crt" -subj "/C=US/ST=Local/L=Pharos/O=Pharos Ecosystem/CN=Pharos Local Root CA"
+        ${SUDO} chmod 600 "${cert_dir}/pharos-ca.key"
     fi
 
     # Generate and sign the service certificate
@@ -200,6 +202,7 @@ download_binary() {
     chmod +x "${tmp_file}"
     ${SUDO} install -m 755 "${tmp_file}" "${INSTALL_DIR}/${component}"
     rm -f "${tmp_file}"
+    trap - EXIT
     log "Installed ${component} to ${INSTALL_DIR}/${component}"
 }
 
@@ -321,6 +324,9 @@ main() {
         echo -e "1. Configure keys in ${PHAROS_DIR}/keys"
         echo -e "2. Verify the server is running: ${SUDO} systemctl status pharos-server"
         echo -e "3. Access the Web Console via container (see 'Server Setup' docs for container Quick Start)."
+    elif [[ "${target}" == "server" ]]; then
+        echo -e "1. Configure keys in ${PHAROS_DIR}/keys"
+        echo -e "2. Verify the server is running: ${SUDO} systemctl status pharos-server"
     elif [[ "${target}" == "node" || "${target}" == "pulse" ]]; then
         echo -e "1. Verify the pulse agent is running: ${SUDO} systemctl status pharos-pulse"
         echo -e "2. Check logs: ${SUDO} journalctl -u pharos-pulse -f"
