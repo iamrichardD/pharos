@@ -6,6 +6,9 @@ on:
     tags: [ 'v*' ]
   pull_request:
     branches: [ main ]
+  # Manual re-run of this pipeline against current main or a tag created after this line exists.
+  # Does NOT work against refs that predate this trigger: workflow_dispatch is resolved from the
+  # target ref's own copy of this file, not from main, so it can't retroactively fix old tags.
   workflow_dispatch:
 
 env:
