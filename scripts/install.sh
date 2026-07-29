@@ -33,6 +33,12 @@ log() { echo -e "${GREEN}[INFO]${NC} $1"; }
 warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 error() { echo -e "${RED}[ERROR]${NC} $1" >&2; exit 1; }
 
+activate_systemd_service() {
+    local service_name=$1
+    ${SUDO} systemctl daemon-reload
+    ${SUDO} systemctl enable --now "${service_name}"
+}
+
 # --- Environment Detection ---
 detect_os() {
     OS="$(uname -s)"
@@ -55,11 +61,58 @@ detect_arch() {
 
 check_dependencies() {
     log "Checking dependencies..."
-    for cmd in curl tar; do
+    for cmd in curl; do
         if ! command -v "${cmd}" >/dev/null 2>&1; then
             error "Missing dependency: ${cmd}. Please install it and try again."
         fi
     done
+
+    if [[ "${EUID}" -eq 0 ]]; then
+        SUDO=""
+    elif command -v sudo >/dev/null 2>&1; then
+        SUDO="sudo"
+    else
+        error "This installer needs root privileges. Re-run as root, or install 'sudo' and try again."
+    fi
+}
+
+# --- System User Setup ---
+ensure_system_user() {
+    [[ "${OS_NAME}" == "linux" ]] || error "This installation target requires a systemd-based Linux host (detected: ${OS_NAME})."
+    [[ -d /run/systemd/system ]] || error "This installation target requires systemd as the running init system (not detected). Common on minimal containers or WSL without systemd enabled."
+    command -v useradd >/dev/null 2>&1 || error "Missing dependency: useradd. Install your distribution's shadow-utils/passwd package and try again."
+
+    if ! id -u pharos &>/dev/null; then
+        log "Creating dedicated 'pharos' system user..."
+        local nologin_shell="" candidate
+        for candidate in /usr/sbin/nologin /sbin/nologin "$(command -v nologin 2>/dev/null)"; do
+            if [[ -n "${candidate}" && -x "${candidate}" ]]; then
+                nologin_shell="${candidate}"
+                break
+            fi
+        done
+        [[ -n "${nologin_shell}" ]] || error "Could not locate a 'nologin' shell binary on this system."
+        ${SUDO} useradd --system --no-create-home --shell "${nologin_shell}" pharos
+    fi
+}
+
+# --- Dependency Auto-Install ---
+ensure_openssl() {
+    command -v openssl >/dev/null 2>&1 && return
+
+    warn "openssl not found — attempting to install it automatically..."
+    if command -v apt-get >/dev/null 2>&1; then
+        ${SUDO} apt-get update -qq || true
+        ${SUDO} apt-get install -y openssl || true
+    elif command -v dnf >/dev/null 2>&1; then
+        ${SUDO} dnf install -y openssl || true
+    elif command -v yum >/dev/null 2>&1; then
+        ${SUDO} yum install -y openssl || true
+    else
+        error "Missing dependency: openssl, and no supported package manager (apt/dnf/yum/pacman/apk) was found to install it automatically. Please install openssl manually (e.g. 'pacman -S openssl' or 'apk add openssl') and try again."
+    fi
+
+    command -v openssl >/dev/null 2>&1 || error "Failed to install openssl automatically. Please install it manually and try again."
 }
 
 # --- PKI Setup ---
@@ -68,11 +121,16 @@ setup_pki() {
     local dns_name=$2
     local cert_dir="${PHAROS_DIR}/certs"
 
-    sudo mkdir -p "${cert_dir}"
-    sudo chmod 700 "${cert_dir}"
+    ensure_openssl
+
+    ${SUDO} mkdir -p "${cert_dir}"
+    ${SUDO} chmod 700 "${cert_dir}"
 
     if [[ -f "${cert_dir}/${cert_name}.crt" ]]; then
         log "Existing certificate found for ${cert_name}. Skipping generation."
+        ${SUDO} chown pharos:pharos "${cert_dir}/${cert_name}.key" "${cert_dir}/${cert_name}.crt"
+        ${SUDO} chmod 600 "${cert_dir}/${cert_name}.key"
+        ${SUDO} chmod 644 "${cert_dir}/${cert_name}.crt"
         return
     fi
 
@@ -81,15 +139,15 @@ setup_pki() {
     # Generate a Root CA if it doesn't exist (for local trust)
     if [[ ! -f "${cert_dir}/pharos-ca.crt" ]]; then
         log "Creating local Pharos Root CA..."
-        sudo openssl genrsa -out "${cert_dir}/pharos-ca.key" 4096
-        sudo openssl req -x509 -new -nodes -key "${cert_dir}/pharos-ca.key" -sha256 -days 3650 -out "${cert_dir}/pharos-ca.crt" -subj "/C=US/ST=Local/L=Pharos/O=Pharos Ecosystem/CN=Pharos Local Root CA"
+        ${SUDO} openssl genrsa -out "${cert_dir}/pharos-ca.key" 4096
+        ${SUDO} openssl req -x509 -new -nodes -key "${cert_dir}/pharos-ca.key" -sha256 -days 3650 -out "${cert_dir}/pharos-ca.crt" -subj "/C=US/ST=Local/L=Pharos/O=Pharos Ecosystem/CN=Pharos Local Root CA"
     fi
 
     # Generate and sign the service certificate
-    sudo openssl genrsa -out "${cert_dir}/${cert_name}.key" 2048
-    sudo openssl req -new -key "${cert_dir}/${cert_name}.key" -out "${cert_dir}/${cert_name}.csr" -subj "/CN=${dns_name}"
+    ${SUDO} openssl genrsa -out "${cert_dir}/${cert_name}.key" 2048
+    ${SUDO} openssl req -new -key "${cert_dir}/${cert_name}.key" -out "${cert_dir}/${cert_name}.csr" -subj "/CN=${dns_name}"
     
-    cat <<EOF | sudo tee "${cert_dir}/${cert_name}.ext" > /dev/null
+    cat <<EOF | ${SUDO} tee "${cert_dir}/${cert_name}.ext" > /dev/null
 [v3_req]
 authorityKeyIdentifier=keyid,issuer
 basicConstraints=CA:FALSE
@@ -102,10 +160,14 @@ DNS.2 = localhost
 IP.1 = 127.0.0.1
 EOF
 
-    sudo openssl x509 -req -in "${cert_dir}/${cert_name}.csr" -CA "${cert_dir}/pharos-ca.crt" -CAkey "${cert_dir}/pharos-ca.key" \
+    ${SUDO} openssl x509 -req -in "${cert_dir}/${cert_name}.csr" -CA "${cert_dir}/pharos-ca.crt" -CAkey "${cert_dir}/pharos-ca.key" \
     -CAcreateserial -out "${cert_dir}/${cert_name}.crt" -days 365 -sha256 -extfile "${cert_dir}/${cert_name}.ext" -extensions v3_req
-    
-    sudo rm "${cert_dir}/${cert_name}.csr" "${cert_dir}/${cert_name}.ext"
+
+    ${SUDO} rm "${cert_dir}/${cert_name}.csr" "${cert_dir}/${cert_name}.ext"
+
+    ${SUDO} chown pharos:pharos "${cert_dir}/${cert_name}.key" "${cert_dir}/${cert_name}.crt"
+    ${SUDO} chmod 600 "${cert_dir}/${cert_name}.key"
+    ${SUDO} chmod 644 "${cert_dir}/${cert_name}.crt"
     log "Certificate generated: ${cert_dir}/${cert_name}.crt"
 }
 
@@ -120,72 +182,98 @@ download_binary() {
         windows) platform_suffix="windows-x86_64.exe";;
     esac
 
-    # Note: In a real scenario, we'd fetch from GH releases. 
-    # For now, we simulate the structure or use the local build if in dev mode.
     local url="https://github.com/${REPO}/releases/download/v${VERSION}/${component}-${platform_suffix}"
-    
+
+    local tmp_file
+    tmp_file="$(mktemp)"
+    trap 'rm -f "${tmp_file}"' EXIT
+
     log "Downloading ${component} (v${VERSION}) for ${platform_suffix}..."
-    # curl -sSL "${url}" -o "${INSTALL_DIR}/${component}"
-    
-    # Placeholder for actual download logic
-    warn "Download URL: ${url} (Simulated for Task 21.2 implementation)"
+    if ! curl -fsSL --retry 3 --retry-delay 2 --connect-timeout 10 -o "${tmp_file}" "${url}"; then
+        error "Failed to download ${component} from ${url}. Check that release v${VERSION} has an asset for ${platform_suffix}."
+    fi
+
+    if [[ ! -s "${tmp_file}" ]]; then
+        error "Downloaded file for ${component} is empty: ${url}"
+    fi
+
+    chmod +x "${tmp_file}"
+    ${SUDO} install -m 755 "${tmp_file}" "${INSTALL_DIR}/${component}"
+    rm -f "${tmp_file}"
+    log "Installed ${component} to ${INSTALL_DIR}/${component}"
 }
 
 install_server() {
+    ensure_system_user
     log "Installing Pharos Server..."
     download_binary "pharos-server"
-    
+
     setup_pki "pharos-server" "pharos-server"
 
+    ${SUDO} mkdir -p "${PHAROS_DIR}/keys"
+    ${SUDO} chown pharos:pharos "${PHAROS_DIR}/keys"
+    ${SUDO} chmod 700 "${PHAROS_DIR}/keys"
+
     log "Configuring Systemd service for Pharos Server..."
-    # sudo mkdir -p "${PHAROS_DIR}"
-    # cat <<EOF | sudo tee /etc/systemd/system/pharos-server.service
-    # [Unit]
-    # Description=Pharos Protocol Server
-    # After=network.target
+    cat <<EOF | ${SUDO} tee /etc/systemd/system/pharos-server.service > /dev/null
+[Unit]
+Description=Pharos Protocol Server
+After=network.target
 
-    # [Service]
-    # ExecStart=${INSTALL_DIR}/pharos-server
-    # Restart=always
-    # User=pharos
-    # Environment=PHAROS_CONFIG_DIR=${PHAROS_DIR}
-    # Environment=PHAROS_TLS_CERT=${PHAROS_DIR}/certs/pharos-server.crt
-    # Environment=PHAROS_TLS_KEY=${PHAROS_DIR}/certs/pharos-server.key
+[Service]
+ExecStart=${INSTALL_DIR}/pharos-server
+Restart=always
+User=pharos
+Group=pharos
+Environment=PHAROS_TLS_CERT=${PHAROS_DIR}/certs/pharos-server.crt
+Environment=PHAROS_TLS_KEY=${PHAROS_DIR}/certs/pharos-server.key
+Environment=PHAROS_STORAGE_PATH=${PHAROS_DIR}/data.json
+Environment=PHAROS_KEYS_DIR=${PHAROS_DIR}/keys
 
-    # [Install]
-    # WantedBy=multi-user.target
-    # EOF
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    activate_systemd_service "pharos-server"
 }
 
 install_pulse() {
+    local host_arg="${1:-}"
+    ensure_system_user
+
+    local host="${host_arg:-${PHAROS_HOST:-127.0.0.1:2378}}"
+    if [[ ! "${host}" =~ ^[A-Za-z0-9.-]+(:[0-9]+)?$ ]]; then
+        error "Invalid host value for Pharos Pulse: '${host}'"
+    fi
+
     log "Installing Pharos Pulse Agent..."
     download_binary "pharos-pulse"
-    
+
     log "Configuring Systemd service for Pharos Pulse..."
+    cat <<EOF | ${SUDO} tee /etc/systemd/system/pharos-pulse.service > /dev/null
+[Unit]
+Description=Pharos Pulse Agent
+After=network.target
+
+[Service]
+ExecStart=${INSTALL_DIR}/pharos-pulse
+Restart=always
+User=pharos
+Environment=PHAROS_SERVER=${host}
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    activate_systemd_service "pharos-pulse"
 }
 
 install_web_console() {
+    ensure_system_user
     log "Installing Pharos Web Console..."
-    # download_binary "pharos-web"
     setup_pki "pharos-web" "pharos-web"
-    
-    log "Configuring Systemd service for Pharos Web Console..."
-    # cat <<EOF | sudo tee /etc/systemd/system/pharos-web.service
-    # [Unit]
-    # Description=Pharos Web Console
-    # After=network.target
 
-    # [Service]
-    # ExecStart=node ${INSTALL_DIR}/server.mjs
-    # Restart=always
-    # User=pharos
-    # Environment=PHAROS_TLS_CERT=${PHAROS_DIR}/certs/pharos-web.crt
-    # Environment=PHAROS_TLS_KEY=${PHAROS_DIR}/certs/pharos-web.key
-    # Environment=PORT=3000
-
-    # [Install]
-    # WantedBy=multi-user.target
-    # EOF
+    warn "Pharos Web Console ships as a container image (ghcr.io/<owner>/pharos-console-web) — see the Server Setup docs' container Quick Start to run it. Native binary/systemd installation is not available yet."
 }
 
 install_toolbelt() {
@@ -204,6 +292,7 @@ main() {
     detect_arch
 
     local target=${1:-"node"}
+    local host_override=${2:-}
 
     log "Starting Pharos Installation: ${target} (${OS_NAME}/${ARCH_NAME})"
 
@@ -216,12 +305,12 @@ main() {
             ;;
         node)
             log "Installing Pharos Node (Pulse + ph + mdb)..."
-            install_pulse
+            install_pulse "${host_override}"
             download_binary "ph"
             download_binary "mdb"
             ;;
         server)   install_server;;
-        pulse)    install_pulse;;
+        pulse)    install_pulse "${host_override}";;
         toolbelt) install_toolbelt;;
         *)        error "Unknown target: ${target}. Use hub, node, server, pulse, or toolbelt.";;
     esac
@@ -230,11 +319,11 @@ main() {
     echo -e "Next Steps:"
     if [[ "${target}" == "hub" ]]; then
         echo -e "1. Configure keys in ${PHAROS_DIR}/keys"
-        echo -e "2. Start the server: sudo systemctl start pharos-server"
-        echo -e "3. Access the Web Console on port 3000 (if installed)."
+        echo -e "2. Verify the server is running: ${SUDO} systemctl status pharos-server"
+        echo -e "3. Access the Web Console via container (see 'Server Setup' docs for container Quick Start)."
     elif [[ "${target}" == "node" || "${target}" == "pulse" ]]; then
-        echo -e "1. Set PHAROS_HOST environment variable."
-        echo -e "2. Start the pulse agent: sudo systemctl start pharos-pulse"
+        echo -e "1. Verify the pulse agent is running: ${SUDO} systemctl status pharos-pulse"
+        echo -e "2. Check logs: ${SUDO} journalctl -u pharos-pulse -f"
     else
         echo -e "1. Try running 'ph search' or 'mdb status'"
     fi
