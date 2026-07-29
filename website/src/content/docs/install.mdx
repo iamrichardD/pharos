@@ -50,9 +50,9 @@ Replace `[hub|node]` with the appropriate role for your machine:
     ```
 
     #### 2. Set Up Nodes (Managed Machines)
-    Run this on every machine or container you want Pharos to track:
+    Run this on every machine or container you want Pharos to track, passing your hub's address as the second argument:
     ```bash
-    PHAROS_HOST="192.168.1.5" curl -sSL https://raw.githubusercontent.com/iamrichardD/pharos/main/scripts/install.sh | bash -s -- node
+    curl -sSL https://raw.githubusercontent.com/iamrichardD/pharos/main/scripts/install.sh | bash -s -- node 192.168.1.5
     ```
 
   </div>
@@ -69,7 +69,7 @@ Replace `[hub|node]` with the appropriate role for your machine:
 
     #### 2. Mass Deploy Pulse Agents
     ```bash
-    PHAROS_HOST="pharos.example.com" curl -sSL https://raw.githubusercontent.com/iamrichardD/pharos/main/scripts/install.sh | bash -s -- pulse
+    curl -sSL https://raw.githubusercontent.com/iamrichardD/pharos/main/scripts/install.sh | bash -s -- pulse pharos.example.com
     ```
 
     #### 3. Install the Toolbelt (Workstations)
@@ -98,7 +98,7 @@ After running the installer, verify your setup:
 
 - [ ] **Server**: `sudo systemctl status pharos-server` should be `active (running)`.
 - [ ] **Pulse**: `sudo systemctl status pharos-pulse` should be `active (running)`.
-- [ ] **Agent-Native Control Plane**: Access `https://your-server-ip:3000` to verify the Web Console UI.
+- [ ] **Agent-Native Control Plane**: The Web Console ships as a container image and isn't started automatically by `hub` — run it separately (see [Server Setup](/pharos/docs/server-setup)), then access `https://your-server-ip:3000`.
 - [ ] **CLIs**: Run `mdb status` to verify CLI path injection.
 
 ---
@@ -107,6 +107,6 @@ After running the installer, verify your setup:
 
 If your environment is air-gapped or restricted, you can download the binaries directly from our [GitHub Releases](https://github.com/iamrichardD/pharos/releases).
 
-1. Download the appropriate `.tar.gz` for your OS/Arch.
-2. Extract to `/usr/local/bin`.
+1. Download the binary for your OS/Arch (e.g. `pharos-server-linux-x86_64`) — these are plain executables, not archives.
+2. `chmod +x` it and move it to `/usr/local/bin`.
 3. (Optional) Configure systemd services manually as described in [Server Setup](/pharos/docs/server-setup).

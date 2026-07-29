@@ -83,7 +83,7 @@ Pharos is designed for high-velocity DevSecOps teams. You can automate your infr
           - uses: actions/checkout@v4
           - name: Deploy Pharos CLI
             run: |
-              curl -sSL -O https://github.com/iamrichardd/pharos/releases/download/v0.1.0/mdb-linux-x86_64
+              curl -sSL -O https://github.com/iamrichardd/pharos/releases/latest/download/mdb-linux-x86_64
               chmod +x mdb-linux-x86_64
               mv mdb-linux-x86_64 /usr/local/bin/mdb
           - name: Update Machine Record

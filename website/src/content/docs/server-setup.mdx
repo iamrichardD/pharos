@@ -30,9 +30,23 @@ The `pharos-server` is an **Invisible High-Performance Engine** optimized for Li
 Reach a success state in under 180 seconds. No installation required if you have Podman/Docker.
 
 ```bash
+# TLS is mandatory — generate a throwaway self-signed cert for the demo
+mkdir -p ./pharos-demo-certs
+openssl req -x509 -newkey rsa:2048 -nodes -days 365 \
+  -keyout ./pharos-demo-certs/server.key -out ./pharos-demo-certs/server.crt \
+  -subj "/CN=pharos-demo" -addext "subjectAltName=DNS:localhost,IP:127.0.0.1"
+chmod 600 ./pharos-demo-certs/server.key
+
 # Start the Pharos Server in the background
-podman run -d --name pharos-demo -p 2378:2378 -p 9090:9090 ghcr.io/iamrichardd/pharos:latest
+podman run -d --name pharos-demo \
+  -p 2378:2378 -p 9090:9090 \
+  -v ./pharos-demo-certs:/certs:Z \
+  -e PHAROS_TLS_CERT=/certs/server.crt \
+  -e PHAROS_TLS_KEY=/certs/server.key \
+  ghcr.io/iamrichardd/pharos-server:latest
 ```
+
+Didn't come up? Check `podman logs pharos-demo` — `pharos-server` refuses to start without a readable cert/key pair.
 
 ---
 
@@ -51,16 +65,28 @@ For production use, we recommend a native installation in a Proxmox LXC containe
 
     #### 2. Install the Pharos Server
     ```bash
-    # Ensure curl is installed
-    apt-get update && apt-get install -y curl
+    # Ensure curl and openssl are installed
+    apt-get update && apt-get install -y curl openssl
 
-    # Download the Pharos Server binary (pre v1.0 release)
-    curl -sSL -O https://github.com/iamrichardd/pharos/releases/download/v0.1.0/pharos-server-linux-x86_64
+    # Download the Pharos Server binary (always resolves to the latest release)
+    curl -sSL -O https://github.com/iamrichardd/pharos/releases/latest/download/pharos-server-linux-x86_64
     chmod +x pharos-server-linux-x86_64
     mv pharos-server-linux-x86_64 /usr/local/bin/pharos-server
     ```
 
-    #### 3. Configure as a Systemd Service
+    #### 3. Generate a TLS Certificate
+    `PHAROS_TLS_CERT`/`PHAROS_TLS_KEY` are **mandatory** — the server refuses to start without them. A self-signed pair is enough for a Home Lab. Include a SAN entry (not just CN) — modern TLS clients ignore CN for hostname verification:
+    ```bash
+    mkdir -p /etc/pharos/certs
+    openssl req -x509 -newkey rsa:2048 -nodes -days 365 \
+      -keyout /etc/pharos/certs/pharos-server.key \
+      -out /etc/pharos/certs/pharos-server.crt \
+      -subj "/CN=pharos-server" \
+      -addext "subjectAltName=DNS:pharos-server,DNS:localhost,IP:127.0.0.1"
+    chmod 600 /etc/pharos/certs/pharos-server.key
+    ```
+
+    #### 4. Configure as a Systemd Service
     ```bash
     cat <<EOF > /etc/systemd/system/pharos.service
     [Unit]
@@ -69,8 +95,10 @@ For production use, we recommend a native installation in a Proxmox LXC containe
 
     [Service]
     ExecStart=/usr/local/bin/pharos-server
+    Environment=PHAROS_TLS_CERT=/etc/pharos/certs/pharos-server.crt
+    Environment=PHAROS_TLS_KEY=/etc/pharos/certs/pharos-server.key
     Environment=PHAROS_STORAGE_PATH=/var/lib/pharos/data.json
-    Environment=PHAROS_SECURITY_MODE=open
+    Environment=PHAROS_SECURITY_TIER=open
     Restart=always
     User=root
 
@@ -81,6 +109,11 @@ For production use, we recommend a native installation in a Proxmox LXC containe
     systemctl daemon-reload
     systemctl enable --now pharos
     ```
+    Didn't come up? Check `journalctl -u pharos -f`.
+
+    :::tip
+    This example runs as `root` for simplicity. Prefer a dedicated unprivileged service user with proper certificate permissions handled for you? Use the [Automated Installation Guide](./install) instead — `curl -sSL .../install.sh | bash -s -- server`.
+    :::
 
   </div>
 
@@ -95,7 +128,7 @@ For production use, we recommend a native installation in a Proxmox LXC containe
     export PHAROS_LDAP_BIND_DN="cn=pharos,ou=services,dc=example,dc=com"
     export PHAROS_LDAP_BIND_PW="secret"
     export PHAROS_LDAP_BASE_DN="dc=example,dc=com"
-    export PHAROS_SECURITY_MODE="scoped"
+    export PHAROS_SECURITY_TIER="scoped"
     ./pharos-server
     ```
 
