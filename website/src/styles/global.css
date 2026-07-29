@@ -111,6 +111,36 @@
   }
   
   /* Animation utilities removed - content appears immediately */
+
+  /* Doc admonitions (:::tip / :::note / :::caution / :::warning / :::danger) */
+  .admonition {
+    @apply my-4 px-4 py-3 rounded-lg border-l-4;
+  }
+
+  .admonition-title {
+    @apply font-semibold mb-1;
+  }
+
+  .admonition p:last-child {
+    @apply mb-0;
+  }
+
+  .admonition-tip,
+  .admonition-note {
+    @apply bg-primary-50 border-primary-500 text-primary-900;
+    @apply dark:bg-primary-950 dark:border-primary-400 dark:text-primary-100;
+  }
+
+  .admonition-caution,
+  .admonition-warning {
+    @apply bg-yellow-50 border-yellow-500 text-yellow-900;
+    @apply dark:bg-yellow-950 dark:border-yellow-400 dark:text-yellow-100;
+  }
+
+  .admonition-danger {
+    @apply bg-red-50 border-red-500 text-red-900;
+    @apply dark:bg-red-950 dark:border-red-400 dark:text-red-100;
+  }
 }
 
 @layer utilities {

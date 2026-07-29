@@ -74,18 +74,18 @@ To enable the **Tri-State Presence Model** (ONLINE, OFFLINE, UNREACHABLE), Pharo
 - **Standardization**: All timestamps are stored as **ISO8601 UTC strings**.
 - **Naming**: We use `_at` suffix (e.g., `created_at`) rather than `_datetime` to align with modern REST and Graph APIs.
 
+## 6. Troubleshooting Connectivity
+If a connection fails, follow this decision path:
+
+1.  **Validate Keys:** Does the `PHAROS_KEYS_DIR` contain your `.pub` key?
+2.  **Check for a fail-closed lockout:** `protected`/`scoped` tiers never self-generate an admin credential (only `open` does). If that directory was empty when the tier was switched, the server is running but rejecting every authenticated command — look for `SECURITY: ... tier requires an operator-provisioned key` in the logs. Enroll a key and `systemctl reload pharos-server` (or `kill -HUP`) to fix it without a restart.
+
 ## 7. Human-Readable CLI Output (MDB)
 To balance "Script-First" interoperability with "Human-First" readability, the `mdb` CLI implements a transform layer for display.
 
 - **IF** The `--human` (or `-H`) flag is used **THEN** Raw values are transformed into human-friendly formats.
 - **IF** The flag is omitted **THEN** Values are displayed in their raw, machine-readable protocol format (e.g., ISO8601, KB).
 - **Success Factor:** Use `clap` for standardized argument parsing and `chrono` for precise temporal transformations.
-
-
-## 6. Troubleshooting Connectivity
-If a connection fails, follow this decision path:
-
-3.  **Validate Keys:** Does the `PHAROS_KEYS_DIR` contain your `.pub` key?
 
 ## 8. Regional Date Formatting (Web Console)
 To balance "Protocol Consistency" (UTC) with "Human Readability" (Regional), the Web Console implements a deferred formatting strategy.

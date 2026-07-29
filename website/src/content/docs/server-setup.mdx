@@ -88,13 +88,14 @@ For production use, we recommend a native installation in a Proxmox LXC containe
 
     #### 4. Configure as a Systemd Service
     ```bash
-    cat <<EOF > /etc/systemd/system/pharos.service
+    cat <<'EOF' > /etc/systemd/system/pharos.service
     [Unit]
     Description=Pharos Infrastructure Server
     After=network.target
 
     [Service]
     ExecStart=/usr/local/bin/pharos-server
+    ExecReload=/bin/kill -HUP $MAINPID
     Environment=PHAROS_TLS_CERT=/etc/pharos/certs/pharos-server.crt
     Environment=PHAROS_TLS_KEY=/etc/pharos/certs/pharos-server.key
     Environment=PHAROS_STORAGE_PATH=/var/lib/pharos/data.json
@@ -152,12 +153,25 @@ Pharos implements a tiered security model to balance accessibility and safety.
 | `protected` | Default for remote access. | Requires authorized SSH key. |
 | `scoped` | For multi-tenant Enterprise teams. | Requires SSH key + LDAP group matching. |
 
+:::caution[Provision a key before switching tiers]
+`protected` and `scoped` refuse to self-generate an admin credential — that convenience shortcut only exists for `open`. If you set `PHAROS_SECURITY_TIER` to `protected` or `scoped` while `PHAROS_KEYS_DIR` is empty, the server **starts successfully but rejects every authenticated command** (queries, adds, deletes — everything except `status`/`login`). It won't crash or refuse to boot, so there's no obvious signal beyond one log line: `SECURITY: ... tier requires an operator-provisioned key`.
+
+Enroll a key **before** switching tiers, or switch and enroll immediately after — either way, no restart is needed (see below).
+:::
+
 ### Enrolling SSH Keys
 To authorize a user for write access, place their public key in the keys directory:
 ```bash
 mkdir -p /etc/pharos/keys
 cp ~/.ssh/id_ed25519.pub /etc/pharos/keys/admin.pub
 export PHAROS_KEYS_DIR="/etc/pharos/keys"
+```
+
+This takes effect immediately — no restart required. `pharos-server` re-scans `PHAROS_KEYS_DIR` on `SIGHUP` and atomically swaps in the new key set (if the directory is unreadable or transiently empty mid-copy, the previous key set is kept — reload never leaves you with zero authorized keys):
+```bash
+systemctl reload pharos            # manual systemd setup above (unit name: pharos)
+systemctl reload pharos-server     # Automated Installation Guide (unit name: pharos-server)
+kill -HUP $(pgrep pharos-server)   # or send it directly, regardless of unit name
 ```
 
 ---

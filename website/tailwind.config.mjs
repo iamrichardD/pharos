@@ -12,6 +12,14 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./src/**/*.{astro,html,js,jsx,md,mdx,svelte,ts,tsx,vue}'],
+  // Admonition classes (admonition-tip, admonition-caution, etc.) are built with a
+  // template literal in src/utils/remarkAdmonitions.mjs, so the content scanner above
+  // never sees them as literal strings and would otherwise purge them as unused.
+  safelist: [
+    'admonition',
+    'admonition-title',
+    { pattern: /^admonition-(tip|note|caution|warning|danger)$/ },
+  ],
   theme: {
     extend: {
       colors: {

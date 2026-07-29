@@ -93,6 +93,12 @@ mkdir -p /etc/pharos/keys
 cp ~/.ssh/id_ed25519.pub /etc/pharos/keys/admin.pub
 export PHAROS_KEYS_DIR="/etc/pharos/keys"
 ```
+Enrolling or rotating a key takes effect immediately, no restart needed — `pharos-server` re-scans `PHAROS_KEYS_DIR` on `SIGHUP`:
+```bash
+systemctl reload pharos-server   # or: kill -HUP $(pgrep pharos-server)
+```
+
+**Note:** `protected`/`scoped` tiers refuse to self-generate an admin credential (that only happens for `open`). If you switch to `protected`/`scoped` with an empty keys directory, the server starts but rejects every authenticated command until you enroll a key and reload.
 
 ---
 
