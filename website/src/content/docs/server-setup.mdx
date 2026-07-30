@@ -86,7 +86,7 @@ For production use, we recommend a native installation in a Proxmox LXC containe
       -addext "subjectAltName=DNS:pharos-server,DNS:localhost,IP:127.0.0.1${LAN_IP:+,IP:$LAN_IP}"
     chmod 600 /etc/pharos/certs/pharos-server.key
     ```
-    If any [Pulse agents](./install) will connect to this server by its LAN IP rather than from `localhost`, that IP **must** be in the SAN above (the `$(hostname -I ...)` substitution adds the primary one; append more `IP:x.x.x.x` entries for additional interfaces) — otherwise remote nodes pass CA trust but fail hostname verification with `certificate not valid for name`. The [Automated Installation Guide](./install) handles this for every detected interface automatically.
+    If any [Pulse agents](./install) will connect to this server by its LAN IP rather than from `localhost`, that IP **must** be in the SAN above (the `$(hostname -I ...)` substitution adds the primary one; append more `IP:x.x.x.x` entries for additional interfaces) — otherwise remote nodes pass CA trust but fail hostname verification with `certificate not valid for name`. The [Automated Installation Guide](./install) handles this for every detected interface automatically; or, for a custom domain instead of just an IP, `install.sh -- server your.domain.com` adds it to the certificate automatically.
 
     #### 4. Configure as a Systemd Service
     ```bash

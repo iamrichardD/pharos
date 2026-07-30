@@ -49,6 +49,11 @@ Replace `[hub|node]` with the appropriate role for your machine:
     curl -sSL https://raw.githubusercontent.com/iamrichardD/pharos/main/scripts/install.sh | bash -s -- hub
     ```
 
+    Reachable at a real domain instead of just a LAN IP? Pass it as a second argument to include it in the server's certificate:
+    ```bash
+    curl -sSL https://raw.githubusercontent.com/iamrichardD/pharos/main/scripts/install.sh | bash -s -- hub pharos-01.example.com
+    ```
+
     #### 2. Set Up Nodes (Managed Machines)
     Run this on every machine or container you want Pharos to track, passing your hub's address as the second argument:
     ```bash
@@ -84,6 +89,11 @@ Replace `[hub|node]` with the appropriate role for your machine:
     #### 1. Deploy the Protocol Server
     ```bash
     curl -sSL https://raw.githubusercontent.com/iamrichardD/pharos/main/scripts/install.sh | bash -s -- server
+    ```
+
+    Reachable at a real domain instead of just a LAN IP? Pass it as a second argument to include it in the server's certificate:
+    ```bash
+    curl -sSL https://raw.githubusercontent.com/iamrichardD/pharos/main/scripts/install.sh | bash -s -- server pharos.example.com
     ```
 
     #### 2. Mass Deploy Pulse Agents

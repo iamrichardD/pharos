@@ -119,6 +119,7 @@ ensure_openssl() {
 setup_pki() {
     local cert_name=$1
     local dns_name=$2
+    local extra_hostname="${3:-}"
     local cert_dir="${PHAROS_DIR}/certs"
 
     ensure_openssl
@@ -165,7 +166,12 @@ setup_pki() {
         echo ""
         echo "[alt_names]"
         echo "DNS.1 = ${dns_name}"
-        echo "DNS.2 = localhost"
+        local dns_index=2
+        if [[ -n "${extra_hostname}" ]]; then
+            echo "DNS.${dns_index} = ${extra_hostname}"
+            dns_index=$((dns_index + 1))
+        fi
+        echo "DNS.${dns_index} = localhost"
         echo "IP.1 = 127.0.0.1"
         local ip_index=2
         for ip in ${lan_ips}; do
@@ -219,12 +225,20 @@ download_binary() {
 }
 
 install_server() {
+    local hostname_arg="${1:-}"
+    # Run under LC_ALL=C in a subshell: under a UTF-8 locale, [A-Za-z0-9] becomes
+    # locale-collation-aware and can accept non-ASCII characters (e.g. accented
+    # letters) that look like they should be rejected — a well-known bash/glibc
+    # gotcha. Scoped to a subshell so it doesn't affect the rest of the script.
+    if [[ -n "${hostname_arg}" ]] && ! ( LC_ALL=C; [[ "${hostname_arg}" =~ ^[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)*$ ]] ); then
+        error "Invalid hostname for Pharos Server: '${hostname_arg}'"
+    fi
     tier="open"
     ensure_system_user
     log "Installing Pharos Server..."
     download_binary "pharos-server"
 
-    setup_pki "pharos-server" "pharos-server"
+    setup_pki "pharos-server" "pharos-server" "${hostname_arg}"
 
     ${SUDO} mkdir -p "${PHAROS_DIR}/keys"
     ${SUDO} chown pharos:pharos "${PHAROS_DIR}/keys"
@@ -330,7 +344,7 @@ main() {
     case "${target}" in
         hub)
             log "Installing Pharos Hub (Server + Console + Scan)..."
-            install_server
+            install_server "${host_override}"
             install_web_console
             download_binary "pharos-scan"
             ;;
@@ -340,7 +354,7 @@ main() {
             download_binary "ph"
             download_binary "mdb"
             ;;
-        server)   install_server;;
+        server)   install_server "${host_override}";;
         pulse)    install_pulse "${host_override}";;
         toolbelt) install_toolbelt;;
         *)        error "Unknown target: ${target}. Use hub, node, server, pulse, or toolbelt.";;
@@ -353,12 +367,20 @@ main() {
         echo -e "2. On a fresh install, a root-equivalent admin key was auto-generated at ${PHAROS_DIR}/keys/admin_id_ed25519 — treat it accordingly."
         echo -e "3. To use your own key instead: add it to ${PHAROS_DIR}/keys and run ${SUDO} systemctl reload pharos-server"
         echo -e "4. Verify the server is running: ${SUDO} systemctl status pharos-server"
-        echo -e "5. Access the Web Console via container (see 'Server Setup' docs for container Quick Start)."
+        local next_num=5
+        if [[ -n "${host_override}" ]]; then
+            echo -e "${next_num}. TLS: certificate SAN includes ${host_override} — clients can connect using that hostname."
+            next_num=$((next_num + 1))
+        fi
+        echo -e "${next_num}. Access the Web Console via container (see 'Server Setup' docs for container Quick Start)."
     elif [[ "${target}" == "server" ]]; then
         echo -e "1. Security tier: ${tier} (unauthenticated reads; writes always need a key — see server-setup.mdx to change tiers)"
         echo -e "2. On a fresh install, a root-equivalent admin key was auto-generated at ${PHAROS_DIR}/keys/admin_id_ed25519 — treat it accordingly."
         echo -e "3. To use your own key instead: add it to ${PHAROS_DIR}/keys and run ${SUDO} systemctl reload pharos-server"
         echo -e "4. Verify the server is running: ${SUDO} systemctl status pharos-server"
+        if [[ -n "${host_override}" ]]; then
+            echo -e "5. TLS: certificate SAN includes ${host_override} — clients can connect using that hostname."
+        fi
     elif [[ "${target}" == "node" || "${target}" == "pulse" ]]; then
         if [[ "${pulse_ca_found:-no}" == "yes" ]]; then
             echo -e "1. TLS: found a local Pharos CA at ${PHAROS_DIR}/certs/pharos-ca.crt — pulse trusts it automatically."

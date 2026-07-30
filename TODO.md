@@ -231,3 +231,5 @@ A task is considered complete and may be marked `[x]` only when:
 - [ ] **Debt #15 (Issue #162):** Action: Detect and warn on TLS SAN/IP drift in `setup_pki()`'s existing-cert skip path instead of silently reusing a stale certificate.
 - [ ] **Debt #16 (Issue #163):** Action: Wire `PHAROS_PORT` into `pharos-server`'s actual bind address, or correct docs stating it controls the listening port (only `PHAROS_ADDR` does).
 - [ ] **Debt #17 (Issue #164):** Action: Fix `DECISIONS.md`'s security-boundary diagram to show `Status`/`Id`/`Login`/`Auth`/`Quit` bypassing the tier auth check in every tier.
+- [x] **Debt #18 (Issue #165):** Action: Give `install_server`/`hub` a way to add an operator-supplied FQDN to `setup_pki()`'s certificate SAN — no path exists today, so any client connecting by DNS name (not bare IP or `localhost`) fails TLS hostname verification unconditionally.
+- [ ] **Debt #19 (Issue #166):** Action: Extend `pharos-server`'s SIGHUP-reload pattern to also re-read `PHAROS_TLS_CERT`/`PHAROS_TLS_KEY`, so integrators using an externally-managed renewing certificate (e.g. Let's Encrypt) have a restart-free path to pick up renewals.
