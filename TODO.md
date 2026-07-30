@@ -228,3 +228,4 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Debt #13 (Issue #158):** Action: Implement MCP error mapping to distinguish between Parse, Invalid Request, and Internal Errors.
 - [x] **Bug #159 (Issue #159):** Action: Allow unauthenticated read access for WebMCP gateway.
 - [ ] **Debt #14 (Issue #161):** Action: Redact `Auth`/`AuthCheck` signature and challenge material from `LoggingMiddleware`'s INFO-level request logging.
+- [ ] **Debt #15 (Issue #162):** Action: Detect and warn on TLS SAN/IP drift in `setup_pki()`'s existing-cert skip path instead of silently reusing a stale certificate.

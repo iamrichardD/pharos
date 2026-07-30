@@ -55,6 +55,25 @@ Replace `[hub|node]` with the appropriate role for your machine:
     curl -sSL https://raw.githubusercontent.com/iamrichardD/pharos/main/scripts/install.sh | bash -s -- node 192.168.1.5
     ```
 
+    :::caution[Copy the hub's CA certificate first]
+    The hub's TLS certificate is signed by a private, self-signed CA — the node needs to trust it before pulse can report in, or you'll see `TLS handshake failed: UnknownIssuer` in `journalctl -u pharos-pulse`. The installer's own "Next Steps" output tells you whether this step is needed — skip it if it already found a local CA (e.g. this node is also a hub).
+
+    This is a one-time copy, not a live sync: if the hub's CA is ever regenerated later, remote nodes won't pick up the change automatically and this step will need repeating.
+    :::
+
+    ```bash
+    # From the node — copy the hub's CA cert over SSH (adjust user@host for your setup):
+    sudo mkdir -p /etc/pharos/certs
+    scp youruser@192.168.1.5:/etc/pharos/certs/pharos-ca.crt /tmp/hub-ca.crt
+    sudo mv /tmp/hub-ca.crt /etc/pharos/certs/hub-ca.crt
+
+    # Point pulse at it — inserted into [Service], not appended to the end of the file,
+    # since a plain append would land after [Install] and be silently ignored:
+    sudo sed -i '/Environment=PHAROS_SERVER=/a Environment=PHAROS_CA_CERT=/etc/pharos/certs/hub-ca.crt' /etc/systemd/system/pharos-pulse.service
+    sudo systemctl daemon-reload
+    sudo systemctl restart pharos-pulse
+    ```
+
   </div>
 
   <div slot="enterprise">

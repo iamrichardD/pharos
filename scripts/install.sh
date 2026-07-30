@@ -149,18 +149,30 @@ setup_pki() {
     ${SUDO} openssl genrsa -out "${cert_dir}/${cert_name}.key" 2048
     ${SUDO} openssl req -new -key "${cert_dir}/${cert_name}.key" -out "${cert_dir}/${cert_name}.csr" -subj "/CN=${dns_name}"
     
-    cat <<EOF | ${SUDO} tee "${cert_dir}/${cert_name}.ext" > /dev/null
-[v3_req]
-authorityKeyIdentifier=keyid,issuer
-basicConstraints=CA:FALSE
-keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
-subjectAltName = @alt_names
+    # Include the host's actual LAN IP(s) in the SAN, not just localhost/127.0.0.1 —
+    # otherwise a remote pulse node connecting by IP (the documented usage, e.g.
+    # `install.sh -- node 192.168.1.5`) passes CA trust but fails hostname
+    # verification against a cert that's only ever valid for this machine itself.
+    local lan_ips
+    lan_ips="$(hostname -I 2>/dev/null || true)"
 
-[alt_names]
-DNS.1 = ${dns_name}
-DNS.2 = localhost
-IP.1 = 127.0.0.1
-EOF
+    {
+        echo "[v3_req]"
+        echo "authorityKeyIdentifier=keyid,issuer"
+        echo "basicConstraints=CA:FALSE"
+        echo "keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment"
+        echo "subjectAltName = @alt_names"
+        echo ""
+        echo "[alt_names]"
+        echo "DNS.1 = ${dns_name}"
+        echo "DNS.2 = localhost"
+        echo "IP.1 = 127.0.0.1"
+        local ip_index=2
+        for ip in ${lan_ips}; do
+            echo "IP.${ip_index} = ${ip}"
+            ip_index=$((ip_index + 1))
+        done
+    } | ${SUDO} tee "${cert_dir}/${cert_name}.ext" > /dev/null
 
     ${SUDO} openssl x509 -req -in "${cert_dir}/${cert_name}.csr" -CA "${cert_dir}/pharos-ca.crt" -CAkey "${cert_dir}/pharos-ca.key" \
     -CAcreateserial -out "${cert_dir}/${cert_name}.crt" -days 365 -sha256 -extfile "${cert_dir}/${cert_name}.ext" -extensions v3_req
@@ -256,6 +268,17 @@ install_pulse() {
     log "Installing Pharos Pulse Agent..."
     download_binary "pharos-pulse"
 
+    # If this host already has an install.sh-provisioned CA (i.e. it also runs a
+    # server/hub, or one was manually copied here), trust it automatically — pulse
+    # otherwise has no way to trust the exact kind of certificate install.sh generates.
+    local ca_cert_line=""
+    if ${SUDO} test -f "${PHAROS_DIR}/certs/pharos-ca.crt"; then
+        ca_cert_line="Environment=PHAROS_CA_CERT=${PHAROS_DIR}/certs/pharos-ca.crt"
+        pulse_ca_found="yes"
+    else
+        pulse_ca_found="no"
+    fi
+
     log "Configuring Systemd service for Pharos Pulse..."
     cat <<EOF | ${SUDO} tee /etc/systemd/system/pharos-pulse.service > /dev/null
 [Unit]
@@ -267,6 +290,7 @@ ExecStart=${INSTALL_DIR}/pharos-pulse
 Restart=always
 User=pharos
 Environment=PHAROS_SERVER=${host}
+${ca_cert_line}
 
 [Install]
 WantedBy=multi-user.target
@@ -336,8 +360,13 @@ main() {
         echo -e "3. To use your own key instead: add it to ${PHAROS_DIR}/keys and run ${SUDO} systemctl reload pharos-server"
         echo -e "4. Verify the server is running: ${SUDO} systemctl status pharos-server"
     elif [[ "${target}" == "node" || "${target}" == "pulse" ]]; then
-        echo -e "1. Verify the pulse agent is running: ${SUDO} systemctl status pharos-pulse"
-        echo -e "2. Check logs: ${SUDO} journalctl -u pharos-pulse -f"
+        if [[ "${pulse_ca_found:-no}" == "yes" ]]; then
+            echo -e "1. TLS: found a local Pharos CA at ${PHAROS_DIR}/certs/pharos-ca.crt — pulse trusts it automatically."
+        else
+            echo -e "1. TLS: no local Pharos CA found. If ${host_override:-your server} is a REMOTE host, copy ITS ${PHAROS_DIR}/certs/pharos-ca.crt to this machine, add 'Environment=PHAROS_CA_CERT=<path-to-copied-file>' to /etc/systemd/system/pharos-pulse.service, then run: ${SUDO} systemctl daemon-reload && ${SUDO} systemctl restart pharos-pulse"
+        fi
+        echo -e "2. Verify the pulse agent is running: ${SUDO} systemctl status pharos-pulse"
+        echo -e "3. Check logs: ${SUDO} journalctl -u pharos-pulse -f"
     else
         echo -e "1. Try running 'ph search' or 'mdb status'"
     fi
