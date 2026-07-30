@@ -97,6 +97,7 @@ Replace `[hub|node]` with the appropriate role for your machine:
 After running the installer, verify your setup:
 
 - [ ] **Server**: `sudo systemctl status pharos-server` should be `active (running)`.
+- [ ] **Security tier**: `hub`/`server` installs default to `open` (unauthenticated reads, writes always need a key) — the installer's own "Next Steps" output states this, or check with `systemctl cat pharos-server`. See [Server Setup](/pharos/docs/server-setup) before exposing the server beyond a trusted local network.
 - [ ] **Pulse**: `sudo systemctl status pharos-pulse` should be `active (running)`.
 - [ ] **Agent-Native Control Plane**: The Web Console ships as a container image and isn't started automatically by `hub` — run it separately (see [Server Setup](/pharos/docs/server-setup)), then access `https://your-server-ip:3000`.
 - [ ] **CLIs**: Run `mdb status` to verify CLI path injection.

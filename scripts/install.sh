@@ -207,6 +207,7 @@ download_binary() {
 }
 
 install_server() {
+    tier="open"
     ensure_system_user
     log "Installing Pharos Server..."
     download_binary "pharos-server"
@@ -233,6 +234,7 @@ Environment=PHAROS_TLS_CERT=${PHAROS_DIR}/certs/pharos-server.crt
 Environment=PHAROS_TLS_KEY=${PHAROS_DIR}/certs/pharos-server.key
 Environment=PHAROS_STORAGE_PATH=${PHAROS_DIR}/data.json
 Environment=PHAROS_KEYS_DIR=${PHAROS_DIR}/keys
+Environment=PHAROS_SECURITY_TIER=${tier}
 Environment=RUST_LOG=info
 
 [Install]
@@ -323,12 +325,16 @@ main() {
     echo -e "\n${GREEN}Successfully installed Pharos ${target}!${NC}"
     echo -e "Next Steps:"
     if [[ "${target}" == "hub" ]]; then
-        echo -e "1. Configure keys in ${PHAROS_DIR}/keys"
-        echo -e "2. Verify the server is running: ${SUDO} systemctl status pharos-server"
-        echo -e "3. Access the Web Console via container (see 'Server Setup' docs for container Quick Start)."
+        echo -e "1. Security tier: ${tier} (unauthenticated reads; writes always need a key — see server-setup.mdx to change tiers)"
+        echo -e "2. On a fresh install, a root-equivalent admin key was auto-generated at ${PHAROS_DIR}/keys/admin_id_ed25519 — treat it accordingly."
+        echo -e "3. To use your own key instead: add it to ${PHAROS_DIR}/keys and run ${SUDO} systemctl reload pharos-server"
+        echo -e "4. Verify the server is running: ${SUDO} systemctl status pharos-server"
+        echo -e "5. Access the Web Console via container (see 'Server Setup' docs for container Quick Start)."
     elif [[ "${target}" == "server" ]]; then
-        echo -e "1. Configure keys in ${PHAROS_DIR}/keys"
-        echo -e "2. Verify the server is running: ${SUDO} systemctl status pharos-server"
+        echo -e "1. Security tier: ${tier} (unauthenticated reads; writes always need a key — see server-setup.mdx to change tiers)"
+        echo -e "2. On a fresh install, a root-equivalent admin key was auto-generated at ${PHAROS_DIR}/keys/admin_id_ed25519 — treat it accordingly."
+        echo -e "3. To use your own key instead: add it to ${PHAROS_DIR}/keys and run ${SUDO} systemctl reload pharos-server"
+        echo -e "4. Verify the server is running: ${SUDO} systemctl status pharos-server"
     elif [[ "${target}" == "node" || "${target}" == "pulse" ]]; then
         echo -e "1. Verify the pulse agent is running: ${SUDO} systemctl status pharos-pulse"
         echo -e "2. Check logs: ${SUDO} journalctl -u pharos-pulse -f"

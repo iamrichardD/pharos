@@ -149,9 +149,15 @@ Pharos implements a tiered security model to balance accessibility and safety.
 
 | Mode | Description | Write Security |
 | :--- | :--- | :--- |
-| `open` | For local-only Home Labs. | Anyone can add/edit. |
+| `open` | For local-only Home Labs. | Reads are unauthenticated; writes always require the auto-generated or an authorized key. |
 | `protected` | Default for remote access. | Requires authorized SSH key. |
 | `scoped` | For multi-tenant Enterprise teams. | Requires SSH key + LDAP group matching. |
+
+:::caution[The installer's default is `open`]
+Both the [Automated Installation Guide](./install)'s `server`/`hub` targets and this page's manual systemd example ship `PHAROS_SECURITY_TIER=open` — that means **anyone who can reach the port can read your data unauthenticated**; writes still require a key, always, in every tier. `open` is intended for a self-contained Home Lab with no untrusted network access, not as a general-purpose default — if you're exposing the server beyond a trusted local network, switch to `protected` (see below for provisioning a key first, since `protected` refuses to self-generate one).
+
+Next Steps output from the installer tells you which tier is active; `systemctl cat pharos-server` shows it directly (`Environment=PHAROS_SECURITY_TIER=...`) on any install.
+:::
 
 :::caution[Provision a key before switching tiers]
 `protected` and `scoped` refuse to self-generate an admin credential — that convenience shortcut only exists for `open`. If you set `PHAROS_SECURITY_TIER` to `protected` or `scoped` while `PHAROS_KEYS_DIR` is empty, the server **starts successfully but rejects every authenticated command** (queries, adds, deletes — everything except `status`/`login`). It won't crash or refuse to boot, so there's no obvious signal beyond one log line: `SECURITY: ... tier requires an operator-provisioned key`.
