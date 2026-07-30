@@ -14,7 +14,7 @@
 
 use thiserror::Error;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(PartialEq, Eq)]
 pub enum Command {
     Status,
     SiteInfo,
@@ -52,6 +52,54 @@ pub enum Command {
         challenge: String,
     },
     Quit,
+}
+
+impl std::fmt::Debug for Command {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Command::Status => write!(f, "Status"),
+            Command::SiteInfo => write!(f, "SiteInfo"),
+            Command::Fields(v) => f.debug_tuple("Fields").field(v).finish(),
+            Command::Id(v) => f.debug_tuple("Id").field(v).finish(),
+            Command::Set(v) => f.debug_tuple("Set").field(v).finish(),
+            Command::Login(v) => f.debug_tuple("Login").field(v).finish(),
+            Command::Logout => write!(f, "Logout"),
+            Command::Answer(v) => f.debug_tuple("Answer").field(v).finish(),
+            Command::Clear(v) => f.debug_tuple("Clear").field(v).finish(),
+            Command::Email(v) => f.debug_tuple("Email").field(v).finish(),
+            Command::XLogin(a, b) => f.debug_tuple("XLogin").field(a).field(b).finish(),
+            Command::Add(v) => f.debug_tuple("Add").field(v).finish(),
+            Command::Query { selections, returns } => f
+                .debug_struct("Query")
+                .field("selections", selections)
+                .field("returns", returns)
+                .finish(),
+            Command::Delete(v) => f.debug_tuple("Delete").field(v).finish(),
+            Command::Change { selections, modifications, force } => f
+                .debug_struct("Change")
+                .field("selections", selections)
+                .field("modifications", modifications)
+                .field("force", force)
+                .finish(),
+            Command::Help { target, topics } => f
+                .debug_struct("Help")
+                .field("target", target)
+                .field("topics", topics)
+                .finish(),
+            Command::Auth { public_key, signature: _ } => f
+                .debug_struct("Auth")
+                .field("public_key", public_key)
+                .field("signature", &"<redacted>")
+                .finish(),
+            Command::AuthCheck { public_key, signature: _, challenge: _ } => f
+                .debug_struct("AuthCheck")
+                .field("public_key", public_key)
+                .field("signature", &"<redacted>")
+                .field("challenge", &"<redacted>")
+                .finish(),
+            Command::Quit => write!(f, "Quit"),
+        }
+    }
 }
 
 #[derive(Error, Debug, PartialEq, Eq)]
@@ -318,5 +366,56 @@ mod tests {
     #[test]
     fn test_should_return_error_when_quotes_unclosed() {
         assert_eq!(parse_command("query name=\"unclosed"), Err(ProtocolError::SyntaxError));
+    }
+
+    #[test]
+    fn test_should_parse_auth_command() {
+        let cmd = parse_command("auth mypubkey123 mysignature456").unwrap();
+        assert_eq!(cmd, Command::Auth {
+            public_key: "mypubkey123".to_string(),
+            signature: "mysignature456".to_string(),
+        });
+    }
+
+    #[test]
+    fn test_should_parse_auth_check_command() {
+        let cmd = parse_command("auth-check mypubkey123 mysignature456 mychallenge789").unwrap();
+        assert_eq!(cmd, Command::AuthCheck {
+            public_key: "mypubkey123".to_string(),
+            signature: "mysignature456".to_string(),
+            challenge: "mychallenge789".to_string(),
+        });
+    }
+
+    #[test]
+    fn test_should_redact_signature_from_auth_debug_output() {
+        let cmd = Command::Auth {
+            public_key: "mypubkey123".to_string(),
+            signature: "TOP-SECRET-SIGNATURE".to_string(),
+        };
+        let debug_str = format!("{:?}", cmd);
+        assert!(debug_str.contains("mypubkey123"), "public_key should remain visible: {debug_str}");
+        assert!(!debug_str.contains("TOP-SECRET-SIGNATURE"), "signature must not appear in Debug output: {debug_str}");
+        assert!(debug_str.contains("<redacted>"), "expected a redaction marker: {debug_str}");
+    }
+
+    #[test]
+    fn test_should_redact_signature_and_challenge_from_auth_check_debug_output() {
+        let cmd = Command::AuthCheck {
+            public_key: "mypubkey123".to_string(),
+            signature: "TOP-SECRET-SIGNATURE".to_string(),
+            challenge: "TOP-SECRET-CHALLENGE".to_string(),
+        };
+        let debug_str = format!("{:?}", cmd);
+        assert!(debug_str.contains("mypubkey123"), "public_key should remain visible: {debug_str}");
+        assert!(!debug_str.contains("TOP-SECRET-SIGNATURE"), "signature must not appear in Debug output: {debug_str}");
+        assert!(!debug_str.contains("TOP-SECRET-CHALLENGE"), "challenge must not appear in Debug output: {debug_str}");
+    }
+
+    #[test]
+    fn test_should_not_redact_non_auth_command_debug_output() {
+        let cmd = Command::Add(vec![("name".to_string(), "Jane Smith".to_string())]);
+        let debug_str = format!("{:?}", cmd);
+        assert!(debug_str.contains("Jane Smith"), "Add field values must NOT be redacted (out of scope for #161): {debug_str}");
     }
 }
