@@ -66,7 +66,7 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
             continue;
         }
 
-        info!("Received command: {}", input);
+        info!("Received command: {}", crate::protocol::redact_wire_line_for_logging(input));
 
         match parse_command(input) {
             Ok(mut command) => {

@@ -330,6 +330,18 @@ fn tokenize(line: &str) -> Result<Vec<String>, ProtocolError> {
     Ok(tokens)
 }
 
+/// Redacts the argument portion of `auth`/`auth-check` wire lines for logging, so raw signature
+/// and challenge material is never written to logs verbatim. Uses a cheap first-word check
+/// (not full tokenization) so a malformed line (e.g. unclosed quotes) can never bypass redaction
+/// by failing to tokenize — this must be infallible.
+pub fn redact_wire_line_for_logging(line: &str) -> String {
+    let first_word = line.split_whitespace().next().unwrap_or("").to_lowercase();
+    match first_word.as_str() {
+        "auth" | "auth-check" => format!("{} <redacted>", first_word),
+        _ => line.to_string(),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -417,5 +429,47 @@ mod tests {
         let cmd = Command::Add(vec![("name".to_string(), "Jane Smith".to_string())]);
         let debug_str = format!("{:?}", cmd);
         assert!(debug_str.contains("Jane Smith"), "Add field values must NOT be redacted (out of scope for #161): {debug_str}");
+    }
+
+    #[test]
+    fn test_should_redact_auth_wire_line() {
+        let redacted = redact_wire_line_for_logging("auth mypubkey123 TOP-SECRET-SIGNATURE");
+        assert!(!redacted.contains("TOP-SECRET-SIGNATURE"), "raw signature must not appear: {redacted}");
+        assert!(!redacted.contains("mypubkey123"), "public_key is also dropped for this raw-line case: {redacted}");
+        assert_eq!(redacted, "auth <redacted>");
+    }
+
+    #[test]
+    fn test_should_redact_auth_check_wire_line() {
+        let redacted = redact_wire_line_for_logging("auth-check mypubkey123 TOP-SECRET-SIG TOP-SECRET-CHALLENGE");
+        assert!(!redacted.contains("TOP-SECRET-SIG"), "raw signature must not appear: {redacted}");
+        assert!(!redacted.contains("TOP-SECRET-CHALLENGE"), "raw challenge must not appear: {redacted}");
+        assert_eq!(redacted, "auth-check <redacted>");
+    }
+
+    #[test]
+    fn test_should_redact_auth_wire_line_case_insensitively() {
+        let redacted = redact_wire_line_for_logging("AUTH mypubkey123 TOP-SECRET-SIGNATURE");
+        assert!(!redacted.contains("TOP-SECRET-SIGNATURE"), "raw signature must not appear regardless of case: {redacted}");
+    }
+
+    #[test]
+    fn test_should_not_redact_non_auth_wire_line() {
+        let line = "add name=\"Jane Smith\" mail=\"jane@example.com\"";
+        let redacted = redact_wire_line_for_logging(line);
+        assert_eq!(redacted, line, "non-auth wire lines must be logged unchanged");
+    }
+
+    #[test]
+    fn test_should_handle_malformed_auth_wire_line_without_panicking() {
+        // Unclosed quote / garbage input must still redact cleanly, not panic, not leak.
+        let redacted = redact_wire_line_for_logging("auth-check \"unclosed TOP-SECRET-CHALLENGE");
+        assert!(!redacted.contains("TOP-SECRET-CHALLENGE"), "must redact even on malformed input: {redacted}");
+    }
+
+    #[test]
+    fn test_should_handle_empty_line_without_panicking() {
+        let redacted = redact_wire_line_for_logging("");
+        assert_eq!(redacted, "");
     }
 }
