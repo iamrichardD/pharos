@@ -71,7 +71,7 @@ async fn main() -> Result<()> {
     let query_string = if let Some(_) = &cli.command {
         String::new() 
     } else if !cli.query.is_empty() {
-        cli.query.join(" ")
+        pharos_client::join_wire_args(&cli.query)
     } else {
         eprintln!("Usage: ph <query>");
         process::exit(1);

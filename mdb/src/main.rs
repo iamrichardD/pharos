@@ -72,7 +72,7 @@ async fn main() -> Result<()> {
         // If it was a recognized subcommand that didn't exit (none yet except auth)
         String::new() 
     } else if !cli.query.is_empty() {
-        cli.query.join(" ")
+        pharos_client::join_wire_args(&cli.query)
     } else {
         // No command provided
         eprintln!("Usage: mdb [-H] <query>");

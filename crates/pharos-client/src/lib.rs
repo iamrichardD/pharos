@@ -57,6 +57,41 @@ pub enum PharosResponse {
     },
 }
 
+/// Reconstructs a single RFC 2378 wire command string from CLI argv tokens.
+///
+/// By the time `ph`/`mdb` see `cli.query`, the shell has already split on
+/// whitespace and stripped whatever quotes the user typed — `name="Jane Smith"`
+/// arrives as one argv element, `name=Jane Smith`, with the quotes gone but the
+/// space still inside it. A naive `.join(" ")` sends that space to the server
+/// unprotected, and the server's tokenizer (which splits on unquoted whitespace)
+/// re-splits it into two tokens, breaking the command. This re-quotes any
+/// `key=value` pair (or bare token) whose content contains whitespace so it
+/// round-trips correctly.
+pub fn join_wire_args(args: &[String]) -> String {
+    args.iter()
+        .map(|arg| quote_wire_arg(arg))
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+fn quote_wire_arg(arg: &str) -> String {
+    match arg.split_once('=') {
+        Some((key, value)) if needs_quoting(value) => {
+            format!("{}=\"{}\"", key, escape_wire_value(value))
+        }
+        None if needs_quoting(arg) => format!("\"{}\"", escape_wire_value(arg)),
+        _ => arg.to_string(),
+    }
+}
+
+fn needs_quoting(s: &str) -> bool {
+    s.chars().any(|c| c.is_whitespace())
+}
+
+fn escape_wire_value(s: &str) -> String {
+    s.replace('\\', "\\\\").replace('"', "\\\"")
+}
+
 pub struct PharosClient {
     stream: BufReader<TlsStream<TcpStream>>,
     client_id: String,
@@ -362,6 +397,39 @@ impl PharosClient {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
+    #[test]
+    fn test_should_join_args_unchanged_when_no_value_contains_whitespace() {
+        let args = vec!["add".to_string(), "hostname=db-01".to_string(), "ip=10.0.0.5".to_string()];
+        assert_eq!(join_wire_args(&args), "add hostname=db-01 ip=10.0.0.5");
+    }
+
+    #[test]
+    fn test_should_requote_value_when_shell_stripped_quotes_around_whitespace() {
+        // Simulates argv after the shell has already parsed `name="Jane Smith"`:
+        // one element, quotes gone, space still inside.
+        let args = vec!["add".to_string(), "name=Jane Smith".to_string(), "type=person".to_string()];
+        assert_eq!(join_wire_args(&args), r#"add name="Jane Smith" type=person"#);
+    }
+
+    #[test]
+    fn test_should_quote_bare_multiword_token_without_a_key() {
+        let args = vec!["query".to_string(), "Jane Smith".to_string()];
+        assert_eq!(join_wire_args(&args), r#"query "Jane Smith""#);
+    }
+
+    #[test]
+    fn test_should_escape_embedded_quotes_and_backslashes_in_value() {
+        let args = vec![r#"name=Jane "JJ" Smith\Jones"#.to_string()];
+        assert_eq!(join_wire_args(&args), r#"name="Jane \"JJ\" Smith\\Jones""#);
+    }
+
+    #[test]
+    fn test_should_leave_value_containing_equals_sign_unquoted_when_no_whitespace() {
+        let args = vec!["filter=a=b".to_string()];
+        assert_eq!(join_wire_args(&args), "filter=a=b");
+    }
 
     #[test]
     fn test_should_correctly_sign_challenge_when_key_exists() {

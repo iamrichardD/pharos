@@ -30,13 +30,13 @@ Pharos provides two specialized clients to handle different types of data, both 
 The `ph` tool is optimized for human contact management. Use it to quickly find colleagues, team members, or external partners.
 
 *   **Primary Use Case**: Directory lookups, contact management, and team attribution.
-*   **Authentication**: Read operations are open; updates require an authorized SSH key.
+*   **Authentication**: Read operations are open on the default (`open`) security tier; updates always require an authorized SSH key. `protected`/`scoped` tiers require authentication for reads too — see [Server Setup](./server-setup).
 
 ### `mdb`: The Machine Database
 The `mdb` tool is your infrastructure's source of truth. It manages everything from physical servers and LXC containers to cloud instances and network equipment.
 
 *   **Primary Use Case**: Infrastructure inventory, automated provisioning, and service discovery.
-*   **Authentication**: Read operations are open; updates require an authorized SSH key.
+*   **Authentication**: Read operations are open on the default (`open`) security tier; updates always require an authorized SSH key. `protected`/`scoped` tiers require authentication for reads too — see [Server Setup](./server-setup).
 
 ---
 
@@ -56,6 +56,11 @@ mdb hostname="srv-web-01"
 
 # Search by IP address
 mdb ip="192.168.1.50"
+```
+
+`mdb` also accepts a `-H`/`--human` flag, converting raw byte/KB fields and ISO8601 timestamps into human-friendly units for terminal reading — omit it (the default) when piping output to scripts, since that raw machine-readable format is what the pipe-friendly examples below expect:
+```bash
+mdb -H hostname="srv-web-01"
 ```
 
 ### Adding Records
@@ -93,7 +98,8 @@ Configure your client behavior without passing repetitive flags.
 | :--- | :--- | :--- |
 | `PHAROS_HOST` | The IP or hostname of your Pharos server. | `127.0.0.1` |
 | `PHAROS_PORT` | The port the server is listening on. | `2378` |
-| `SSH_KEY_PATH` | Path to your private SSH key for authentication. | `~/.ssh/id_ed25519` |
+| `PHAROS_SERVER` | Combined `host:port` — overrides `PHAROS_HOST`/`PHAROS_PORT` if set. | Unset |
+| `PHAROS_PRIVATE_KEY` | Path to your private SSH key for authentication. | `~/.ssh/id_ed25519` |
 
 ### Pipe-Friendly Output
 Pharos clients output clean, structured text that is easy to parse with standard Unix tools like `grep`, `awk`, or `jq`.
