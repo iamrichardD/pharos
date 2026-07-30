@@ -78,13 +78,15 @@ For production use, we recommend a native installation in a Proxmox LXC containe
     `PHAROS_TLS_CERT`/`PHAROS_TLS_KEY` are **mandatory** — the server refuses to start without them. A self-signed pair is enough for a Home Lab. Include a SAN entry (not just CN) — modern TLS clients ignore CN for hostname verification:
     ```bash
     mkdir -p /etc/pharos/certs
+    LAN_IP="$(hostname -I | awk '{print $1}')"
     openssl req -x509 -newkey rsa:2048 -nodes -days 365 \
       -keyout /etc/pharos/certs/pharos-server.key \
       -out /etc/pharos/certs/pharos-server.crt \
       -subj "/CN=pharos-server" \
-      -addext "subjectAltName=DNS:pharos-server,DNS:localhost,IP:127.0.0.1"
+      -addext "subjectAltName=DNS:pharos-server,DNS:localhost,IP:127.0.0.1${LAN_IP:+,IP:$LAN_IP}"
     chmod 600 /etc/pharos/certs/pharos-server.key
     ```
+    If any [Pulse agents](./install) will connect to this server by its LAN IP rather than from `localhost`, that IP **must** be in the SAN above (the `$(hostname -I ...)` substitution adds the primary one; append more `IP:x.x.x.x` entries for additional interfaces) — otherwise remote nodes pass CA trust but fail hostname verification with `certificate not valid for name`. The [Automated Installation Guide](./install) handles this for every detected interface automatically.
 
     #### 4. Configure as a Systemd Service
     ```bash
@@ -150,7 +152,7 @@ Pharos implements a tiered security model to balance accessibility and safety.
 | Mode | Description | Write Security |
 | :--- | :--- | :--- |
 | `open` | For local-only Home Labs. | Reads are unauthenticated; writes always require the auto-generated or an authorized key. |
-| `protected` | Default for remote access. | Requires authorized SSH key. |
+| `protected` | Recommended for remote access (not the default). | Requires authorized SSH key. |
 | `scoped` | For multi-tenant Enterprise teams. | Requires SSH key + LDAP group matching. |
 
 :::caution[The installer's default is `open`]

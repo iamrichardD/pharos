@@ -229,3 +229,5 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Bug #159 (Issue #159):** Action: Allow unauthenticated read access for WebMCP gateway.
 - [ ] **Debt #14 (Issue #161):** Action: Redact `Auth`/`AuthCheck` signature and challenge material from `LoggingMiddleware`'s INFO-level request logging.
 - [ ] **Debt #15 (Issue #162):** Action: Detect and warn on TLS SAN/IP drift in `setup_pki()`'s existing-cert skip path instead of silently reusing a stale certificate.
+- [ ] **Debt #16 (Issue #163):** Action: Wire `PHAROS_PORT` into `pharos-server`'s actual bind address, or correct docs stating it controls the listening port (only `PHAROS_ADDR` does).
+- [ ] **Debt #17 (Issue #164):** Action: Fix `DECISIONS.md`'s security-boundary diagram to show `Status`/`Id`/`Login`/`Auth`/`Quit` bypassing the tier auth check in every tier.

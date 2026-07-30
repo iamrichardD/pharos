@@ -87,6 +87,8 @@ export PHAROS_LDAP_URL="ldap://ldap.example.com:389"
 ```
 
 ### Security Configuration
+**Note:** a fresh install defaults to the `open` security tier — unauthenticated reads are allowed over the network; writes always require a key, in every tier. If you're exposing the server beyond a trusted local network, set `PHAROS_SECURITY_TIER=protected` (see below for provisioning a key first, since `protected`/`scoped` refuse to self-generate one).
+
 Authorize SSH keys for write access:
 ```bash
 mkdir -p /etc/pharos/keys
@@ -115,6 +117,9 @@ If your environment requires a custom port, set the environment variable:
 ```bash
 export PHAROS_PORT=2378
 ```
+
+### Quiet or Missing Logs
+Set `RUST_LOG` to control verbosity (`error`/`warn`/`info`/`debug`/`trace`, default `info`). **Careful with typos** — a value that doesn't match any known module (including a plain typo) silently disables all output with no warning, not even at the default level.
 
 ### Authentication Failures
 If `403 Forbidden` or `401 Authentication Required` occurs:

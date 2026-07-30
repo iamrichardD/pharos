@@ -43,7 +43,8 @@ This document serves as the centralized discovery point for all environment vari
 
 | Variable | Description | Default | Impact |
 | :--- | :--- | :--- | :--- |
-| `PHAROS_SERVER_URL` | URL of the backend Pharos server. | `https://localhost:2378` | Backend connectivity. |
+| `PHAROS_HOST` | Hostname or IP of the backend Pharos server. | `127.0.0.1` | Backend connectivity. |
+| `PHAROS_CA_CERT` | Path to CA certificate for trusting the backend's TLS. | Unset | Security. |
 | `PHAROS_SANDBOX` | Enable Sandbox-specific UI hints. | `false` | UX/UI. |
 | `PHAROS_TLS_CERT` | Path to SSL/TLS certificate for Web. | Unset | Security (HTTPS). |
 | `PHAROS_TLS_KEY` | Path to SSL/TLS private key for Web. | Unset | Security (HTTPS). |
