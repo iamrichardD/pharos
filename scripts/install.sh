@@ -16,7 +16,7 @@
 set -euo pipefail
 
 # --- Configuration ---
-VERSION="1.3.6"
+VERSION="1.3.7"
 REPO="iamrichardD/pharos"
 INSTALL_DIR="/usr/local/bin"
 PHAROS_DIR="/etc/pharos"
