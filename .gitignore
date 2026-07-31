@@ -21,7 +21,9 @@ keys/
 /.ai/
 /keys_auto/
 /.gemini/*
-!/.gemini/skills/
+!/.gemini/skills
+/.claude/*
+!/.claude/skills
 /certs/
 /semgrep-results.json
 

@@ -42,7 +42,16 @@ Avoid hardcoding specific tools. Instead, evaluate the task and select the best 
 - Prefer lightweight, specialized images over large generic ones.
 
 ## Security Constraints
-- **Zero-Host**: NO code execution or auditing tools on the host OS.
+- **Zero-Host, with a narrow review carve-out**: SAST/DAST tooling and the "Break-to-Fix" TDD
+  cycle above (Reproduction/Mitigation/Validation) are implementation work — they stay Podman-only,
+  no exception. The one thing that MAY run directly on the host is *independent live verification
+  of an already-completed fix* (re-running a builder's tests yourself, starting a real server,
+  real network/TLS checks against it) — and only when the host's Rust toolchain matches the exact
+  version pinned in `rust-toolchain.toml` (`rustc --version`). If it doesn't match, host review is
+  not an option for that session — fall back to Podman for review too. See `AGENTS.md`'s
+  "plan → builder → panel → remediate" section for why this specific stage benefits from host
+  execution: a container's isolation can mask exactly the kind of real-environment gap review is
+  meant to catch (e.g. behavior that only differs under the host's actual network configuration).
 - **Traceability**: All audit findings MUST be logged in the corresponding GitHub Issue via `skill-pharos-sync`.
 - **Non-Literal**: Use professional terminology. Avoid "Hacker" language; prefer "Structural Vulnerability Analysis" and "Exploitation Validation."
 

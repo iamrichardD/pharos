@@ -1,6 +1,6 @@
 ---
 name: skill-pharos-sync
-description: Synchronize Pharos project state between @TODO.md, @PROGRESS.md, and GitHub Issues. Use this skill when starting new tasks, completing work, or performing end-of-session state reconciliation. Also use this skill as a GATEKEEPER when a prompt starts with "bug report", "feature request", or "feature update request" to enforce documentation before implementation.
+description: Synchronize Pharos project state between @TODO.md, @PROGRESS.md, and GitHub Issues. Use this skill when starting new tasks, completing work, performing end-of-session state reconciliation, or when asked whether local tracking is in sync with GitHub. Also use this skill as a GATEKEEPER when a prompt starts with "bug report", "feature request", or "feature update request" to enforce documentation before implementation.
 ---
 
 # Pharos Synchronization Protocol
@@ -46,12 +46,28 @@ When a task meets the "Definition of Done":
 - **TODO**: Mark the checkbox `[x]` in `@TODO.md`.
 
 ### 4. Reconciliation Sweep (`sync-audit`)
-Before concluding a session:
-- **Compare**: List all open/closed issues on GitHub and compare them against `@TODO.md` and `@PROGRESS.md`.
+Before concluding a session, or whenever asked whether local tracking is in sync with GitHub —
+don't assume `@TODO.md` is current just because it's usually kept up to date:
+- **Compare**: `gh issue list --state open --limit 50 --json number,title,labels`, then for each
+  open issue number grep `@TODO.md` for it (`grep -n "Issue #NNN" @TODO.md`) to check its checkbox
+  state. Present findings as a table (issue #, title, TODO status, GH status), not prose.
 - **Repair**:
   - If GH is closed but TODO is `[ ]`, mark TODO complete.
-  - If TODO is `[x]` but GH is open, close the GH issue with a summary.
+  - If TODO is `[x]` but GH is open, **do not blindly close the GH issue to match TODO** — first
+    check *why* it's open. Two different situations look identical at a glance but need opposite
+    handling:
+    - The work was genuinely done and the issue was just never explicitly closed (e.g. no `Fixes
+      #NNN` commit ever landed) → close it now with a resolution comment citing the actual
+      evidence (commit hash, verified behavior) — don't close blind off the checkbox alone, check
+      the real code/behavior first.
+    - The issue was reopened on purpose because review/live-verification found the original fix
+      incomplete (check the issue's comment history for this) → leave it open; this is a known,
+      legitimate state, not drift. Confirm a follow-up fix is tracked instead.
   - If prefixes are missing from GH titles, add them using `gh issue edit`.
+- **When a fix is found incomplete during review** (not just during the periodic sweep above): do
+  both of the following immediately, in the same breath, not just one — `gh issue reopen NNN` with
+  a comment explaining what the follow-up gap is, **and** flip `@TODO.md`'s checkbox for that item
+  back to `[ ]`. Forgetting either half is exactly the drift this sweep exists to catch.
 
 ## Standards & Formatting
 

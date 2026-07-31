@@ -56,8 +56,10 @@ We follow a structured Git Flow tied to GitHub Issues.
 
 ## 📐 Engineering Standards
 
-### Zero-Host Execution (Strict)
-All code execution, package management, and testing **MUST** occur inside a Podman container. This ensures environment parity and security.
+### Zero-Host Execution (default, with a local-dev carve-out)
+By default, all code execution, package management, and testing **MUST** occur inside a Podman container. This ensures environment parity and security for PRs from external contributors and for CI, where the machine running the code is unknown or untrusted.
+
+**Local-dev carve-out (review/audit only):** writing code and running its tests always happens in Podman — no exception. The one stage that may run directly on the host is independent review/live-verification of already-implemented work (re-running a builder's tests, starting a real server, live TLS/network checks), and only when the host's Rust toolchain matches the exact version pinned in `rust-toolchain.toml` (check with `rustc --version` first). This exists because that specific stage — independently re-verifying a fix — has caught real bugs in this project's history that a container's isolation would have masked just as easily as reproduced. Once review identifies a remediation, that remediation is implementation work again and goes back through Podman. This never applies to PRs from outside contributors or CI, where toolchain parity can't be assumed. See `AGENTS.md` for the full engineering process this fits into.
 
 ### Standardized File Prologue
 Every source file must begin with the standardized header block. Refer to `GEMINI.md` for the exact format.

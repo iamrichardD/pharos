@@ -1,0 +1,10 @@
+# Pins the exact Rust toolchain for this project so host and container
+# execution stay reproducible and identical. rustup automatically honors
+# this file for any cargo/rustc invocation run from within this directory
+# tree (see AGENTS.md's Zero-Host carve-out).
+#
+# Keep this in sync with the `FROM rust:X.Y-slim` tag in every Containerfile
+# that builds a Rust binary (pharos-server/Containerfile, pharos-scan/Containerfile,
+# crates/pharos-pulse/Containerfile).
+[toolchain]
+channel = "1.96.0"
