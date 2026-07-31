@@ -32,14 +32,29 @@ async fn main() -> Result<()> {
     info!("Starting pharos-scan...");
 
     let engine = ScannerEngine::default();
-    
-    // 1. Discover nodes via mDNS
-    let mut nodes = engine.discover_mdns().await?;
-    if nodes.is_empty() {
-        warn!("No nodes discovered via mDNS.");
-        return Ok(());
-    }
-    info!("Found {} nodes via mDNS", nodes.len());
+
+    // 1. Discover nodes: an optional CIDR subnet argument (e.g. `pharos-scan 192.168.1.0/24`)
+    // switches to a TCP-probe-based subnet scan; with no argument, the default mDNS discovery
+    // behavior below (unchanged) is used.
+    let args: Vec<String> = env::args().collect();
+    let mut nodes = if let Some(subnet) = args.get(1) {
+        info!("Scanning subnet {}...", subnet);
+        let found = engine.scan_subnet(subnet).await?;
+        if found.is_empty() {
+            warn!("No live hosts found in subnet {}.", subnet);
+            return Ok(());
+        }
+        info!("Found {} live host(s) in {}", found.len(), subnet);
+        found
+    } else {
+        let found = engine.discover_mdns().await?;
+        if found.is_empty() {
+            warn!("No nodes discovered via mDNS.");
+            return Ok(());
+        }
+        info!("Found {} nodes via mDNS", found.len());
+        found
+    };
 
     // 2. Connect to Pharos to check for existing records
     let host = env::var("PHAROS_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
@@ -111,6 +126,10 @@ async fn main() -> Result<()> {
                 
                 if let Some(ref role) = node.role {
                     add_cmd.push_str(&format!(" notes=\"{}\"", role));
+                }
+                
+                if let Some(ref mac) = node.mac {
+                    add_cmd.push_str(&format!(" mac=\"{}\"", mac));
                 }
 
                 match c.execute_authenticated(&add_cmd).await {

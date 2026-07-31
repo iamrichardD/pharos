@@ -16,7 +16,7 @@ order: 5
  * Related to Task 10.1-10.4 (Issue #39-42), implements pharos-scan.
  * ======================================================================== */
 
-Stop manually typing IP addresses. `pharos-scan` is the high-performance network discovery tool built for the Pharos ecosystem. It uses mDNS, ARP, and intelligent port fingerprinting to identify every node in your lab and provision them into your registry with a single keystroke.
+Stop manually typing IP addresses. `pharos-scan` is the high-performance network discovery tool built for the Pharos ecosystem. It uses mDNS and intelligent TCP-based port fingerprinting to identify every node in your lab and provision them into your registry with a single keystroke.
 
 ## How it Works
 
@@ -60,12 +60,16 @@ Output all discovered nodes as a JSON stream for further processing.
 ```
 
 ### Targeted Scans
-Limit the scan to specific network interfaces or CIDR blocks.
+When mDNS discovery isn't enough (e.g. devices that don't advertise mDNS services), scan a
+specific CIDR block directly by passing it as an argument:
 
 ```bash
-# Scan only the management VLAN
-./pharos-scan --interface eth1 --cidr 10.10.10.0/24
+# Scan the management VLAN directly
+./pharos-scan 10.10.10.0/24
 ```
+
+This probes every address in the subnet for common ports (22, 80, 443, 8006, 32400) instead of
+waiting for mDNS announcements — a host with none of those ports open won't be detected this way.
 
 ---
 
