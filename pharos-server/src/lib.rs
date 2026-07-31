@@ -221,6 +221,43 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                             writer.write_all(b"200:Ok\n").await?;
                         }
                     }
+                    Command::Change { selections, modifications, force: _ } => {
+                        // `force` is parsed but has no effect: it exists in the RFC to permit
+                        // overriding fields marked "Encrypt", a concept Pharos's Record/Storage
+                        // model doesn't have. Nothing to force-override yet.
+                        let result = {
+                            let mut lock = storage.write().map_err(|_| anyhow::anyhow!("Storage lock poisoned"))?;
+                            lock.change_record(selections, modifications, context.fingerprint.clone(), &context.teams)
+                        };
+
+                        match result {
+                            Ok(count) => {
+                                if count > 0 {
+                                    let noun = if count == 1 { "entry" } else { "entries" };
+                                    writer.write_all(format!("200:{} {} changed.\n", count, noun).as_bytes()).await?;
+
+                                    // Replicate change to peers
+                                    if !my_addr.is_empty() {
+                                        let storage_clone = Arc::clone(&storage);
+                                        let cmd_str = input.to_string();
+                                        let my_addr_clone = my_addr.clone();
+                                        tokio::spawn(async move {
+                                            crate::sync::replicate_command(storage_clone, cmd_str, my_addr_clone).await;
+                                        });
+                                    }
+                                } else {
+                                    writer.write_all(b"501:No matches to change\n").await?;
+                                }
+                            }
+                            Err(crate::storage::StorageError::Unauthorized) => {
+                                writer.write_all(b"403:Forbidden: Unauthorized record modification\n").await?;
+                            }
+                            Err(e) => {
+                                error!("Storage error: {}", e);
+                                writer.write_all(b"500:Internal storage error\n").await?;
+                            }
+                        }
+                    }
                     Command::Delete(selections) => {
                         let result = {
                             let mut lock = storage.write().map_err(|_| anyhow::anyhow!("Storage lock poisoned"))?;

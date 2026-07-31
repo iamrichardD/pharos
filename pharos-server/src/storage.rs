@@ -75,6 +75,10 @@ pub trait Storage: Send + Sync {
     fn query(&self, selections: &[(Option<String>, String)], default_type: Option<RecordType>) -> Result<Vec<Record>, StorageError>;
     fn upsert_record(&mut self, fields: HashMap<String, String>, fingerprint: Option<String>, team: Option<String>) -> Result<(), StorageError>;
     fn delete_record(&mut self, selections: &[(Option<String>, String)], fingerprint: Option<String>, teams: &[String]) -> Result<usize, StorageError>;
+    /// Purpose (The "Why"): Modifies matching and authorized records' fields in-place.
+    /// This matches selections, authorizes modifications using fingerprint/team checks,
+    /// and applies field modifications.
+    fn change_record(&mut self, selections: &[(Option<String>, String)], modifications: &[(String, String)], fingerprint: Option<String>, teams: &[String]) -> Result<usize, StorageError>;
 }
 
 pub struct MemoryStorage {
@@ -328,6 +332,73 @@ impl Storage for MemoryStorage {
 
         Ok(deleted_count)
     }
+
+    /// Purpose (The "Why"): Performs selection matching and authorized in-place modification
+    /// of records. It iterates over existing records, validates ownership fingerprint or team
+    /// matches, and inserts or updates fields as specified by modifications.
+    #[instrument(skip(self))]
+    fn change_record(&mut self, selections: &[(Option<String>, String)], modifications: &[(String, String)], fingerprint: Option<String>, teams: &[String]) -> Result<usize, StorageError> {
+        let mut to_change_ids = Vec::new();
+
+        for record in &self.records {
+            let mut matches_all = true;
+            for (field_opt, value) in selections {
+                match field_opt {
+                    Some(field_name) => {
+                        if let Some(field_val) = record.fields.get(field_name) {
+                            if !self.matches(field_val, value)? {
+                                matches_all = false;
+                                break;
+                            }
+                        } else {
+                            matches_all = false;
+                            break;
+                        }
+                    }
+                    None => {
+                        let mut any_match = false;
+                        for field_val in record.fields.values() {
+                            if self.matches(field_val, value)? {
+                                any_match = true;
+                                break;
+                            }
+                        }
+                        if !any_match {
+                            matches_all = false;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if matches_all {
+                // Check authorization for modification - identical policy to delete_record
+                let authorized = match (&record.owner_fingerprint, &record.owner_team) {
+                    (Some(fp), _) if fingerprint.as_ref() == Some(fp) => true,
+                    (_, Some(team)) if teams.contains(team) => true,
+                    (None, None) => true, // System records?
+                    _ => false,
+                };
+
+                if authorized {
+                    to_change_ids.push(record.id);
+                } else {
+                    return Err(StorageError::Unauthorized);
+                }
+            }
+        }
+
+        let changed_count = to_change_ids.len();
+        for record in self.records.iter_mut() {
+            if to_change_ids.contains(&record.id) {
+                for (field, value) in modifications {
+                    record.fields.insert(field.clone(), value.clone());
+                }
+            }
+        }
+
+        Ok(changed_count)
+    }
 }
 
 pub struct FileStorage {
@@ -446,6 +517,16 @@ impl Storage for FileStorage {
 
     fn delete_record(&mut self, selections: &[(Option<String>, String)], fingerprint: Option<String>, teams: &[String]) -> Result<usize, StorageError> {
         let count = self.memory.delete_record(selections, fingerprint, teams)?;
+        if count > 0 {
+            self.queue_persistence();
+        }
+        Ok(count)
+    }
+
+    /// Purpose (The "Why"): Delegates modification to MemoryStorage and triggers storage
+    /// persistence when modifications are actually applied.
+    fn change_record(&mut self, selections: &[(Option<String>, String)], modifications: &[(String, String)], fingerprint: Option<String>, teams: &[String]) -> Result<usize, StorageError> {
+        let count = self.memory.change_record(selections, modifications, fingerprint, teams)?;
         if count > 0 {
             self.queue_persistence();
         }
@@ -621,6 +702,13 @@ impl Storage for LdapStorage {
     fn delete_record(&mut self, _selections: &[(Option<String>, String)], _fingerprint: Option<String>, _teams: &[String]) -> Result<usize, StorageError> {
         error!("LDAP storage is currently read-only");
         Err(StorageError::Internal("LDAP delete not implemented".to_string()))
+    }
+
+    /// Purpose (The "Why"): Enforces read-only behavior for LDAP storage when changes are attempted.
+    #[instrument(skip(self))]
+    fn change_record(&mut self, _selections: &[(Option<String>, String)], _modifications: &[(String, String)], _fingerprint: Option<String>, _teams: &[String]) -> Result<usize, StorageError> {
+        error!("LDAP storage is currently read-only (Write operations pending Task 4.3)");
+        Err(StorageError::Internal("LDAP storage is read-only".to_string()))
     }
 }
 
@@ -833,5 +921,73 @@ mod tests {
         }
 
         let _ = std::fs::remove_file(&storage_path);
+    }
+
+    /// Why: This test ensures that an authorized client can modify specific fields of a record
+    /// that matches the query selections, and that the updated values are correctly applied.
+    /// This prevents regressions in record modification correctness.
+    #[test]
+    fn test_should_change_matching_record_when_authorized() {
+        let mut storage = MemoryStorage::new();
+        let mut fields = HashMap::new();
+        fields.insert("hostname".to_string(), "vm1".to_string());
+        fields.insert("status".to_string(), "up".to_string());
+        storage.add_record(fields, Some("fp1".to_string()), None);
+
+        let selections = vec![(Some("hostname".to_string()), "vm1".to_string())];
+        let modifications = vec![("status".to_string(), "down".to_string())];
+        let result = storage.change_record(&selections, &modifications, Some("fp1".to_string()), &[]);
+
+        assert_eq!(result.unwrap(), 1);
+        let updated = storage.query(&selections, None).unwrap();
+        assert_eq!(updated[0].fields.get("status").unwrap(), "down");
+    }
+
+    /// Why: This test verifies that if the client is not authorized to edit a record,
+    /// the change command fails with `StorageError::Unauthorized` rather than editing the record.
+    /// This prevents security bypass regressions.
+    #[test]
+    fn test_should_reject_change_when_unauthorized() {
+        let mut storage = MemoryStorage::new();
+        let mut fields = HashMap::new();
+        fields.insert("hostname".to_string(), "vm1".to_string());
+        storage.add_record(fields, Some("fp1".to_string()), None);
+
+        let selections = vec![(Some("hostname".to_string()), "vm1".to_string())];
+        let modifications = vec![("status".to_string(), "down".to_string())];
+        // Different fingerprint, no shared team
+        let result = storage.change_record(&selections, &modifications, Some("someone-else".to_string()), &[]);
+
+        assert!(matches!(result, Err(StorageError::Unauthorized)));
+    }
+
+    /// Why: This test ensures that when no records match the selection, the return count is 0
+    /// and no errors or unintended modifications occur.
+    /// This prevents false success reporting on non-existent records.
+    #[test]
+    fn test_should_return_zero_when_no_matches_to_change() {
+        let mut storage = MemoryStorage::new();
+        let selections = vec![(Some("hostname".to_string()), "does-not-exist".to_string())];
+        let modifications = vec![("status".to_string(), "down".to_string())];
+        let result = storage.change_record(&selections, &modifications, None, &[]);
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    /// Why: This test ensures that when multiple records match the selection query, all of them
+    /// are successfully modified.
+    /// This prevents regression where only a subset of matching records is changed.
+    #[test]
+    fn test_should_change_multiple_matching_records() {
+        let mut storage = MemoryStorage::new();
+        for i in 0..3 {
+            let mut fields = HashMap::new();
+            fields.insert("type".to_string(), "machine".to_string());
+            fields.insert("hostname".to_string(), format!("vm{}", i));
+            storage.add_record(fields, None, None);
+        }
+        let selections = vec![(Some("type".to_string()), "machine".to_string())];
+        let modifications = vec![("status".to_string(), "maintenance".to_string())];
+        let result = storage.change_record(&selections, &modifications, None, &[]);
+        assert_eq!(result.unwrap(), 3);
     }
 }

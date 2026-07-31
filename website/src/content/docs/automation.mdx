@@ -41,7 +41,10 @@ fi
 
 if [ "$PHASE" == "pre-stop" ]; then
     HOSTNAME=$(pct exec $VMID -- hostname)
-    mdb change hostname="$HOSTNAME" status="down"
+    # "change" requires the "make" clause per RFC 2378 §3.10 - the selection clause (before
+    # "make") and the modification clause (after it) are otherwise indistinguishable, and this
+    # would silently match zero records instead of updating status.
+    mdb change hostname="$HOSTNAME" make status="down"
 fi
 ```
 
