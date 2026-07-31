@@ -114,10 +114,12 @@ If you see "Connection Refused", ensure your client and server are using the sta
 - **Default Port:** `2378`
 - **Web Console Port:** `3000`
 
-If your environment requires a custom port, set the environment variable:
-```bash
-export PHAROS_PORT=2378
-```
+These are two different variables for two different components — setting one does not affect the
+other:
+- To change which port **`pharos-server` listens on**, set `PHAROS_ADDR` (host *and* port
+  together), e.g. `export PHAROS_ADDR=0.0.0.0:9999`.
+- To tell **`ph`/`mdb`/`pharos-scan`** which port to connect to, set `PHAROS_PORT`, e.g.
+  `export PHAROS_PORT=9999`. This has no effect on the server itself.
 
 ### Quiet or Missing Logs
 Set `RUST_LOG` to control verbosity (`error`/`warn`/`info`/`debug`/`trace`, default `info`). **Careful with typos** — a value that doesn't match any known module (including a plain typo) silently disables all output with no warning, not even at the default level.

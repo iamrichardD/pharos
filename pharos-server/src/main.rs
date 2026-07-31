@@ -80,10 +80,6 @@ fn validate_env() -> anyhow::Result<()> {
         }
     }
 
-    if let Ok(port) = env::var("PHAROS_PORT") {
-        port.parse::<u16>().map_err(|_| anyhow::anyhow!("PHAROS_PORT must be a valid u16"))?;
-    }
-
     Ok(())
 }
 

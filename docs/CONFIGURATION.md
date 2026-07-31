@@ -7,7 +7,6 @@ This document serves as the centralized discovery point for all environment vari
 | Variable | Description | Default | Impact |
 | :--- | :--- | :--- | :--- |
 | `PHAROS_ADDR` | The IP and port the server binds to. | `0.0.0.0:2378` | Network accessibility. |
-| `PHAROS_PORT` | The TCP port the server listens on. | `2378` | Network accessibility. |
 | `PHAROS_TLS_CERT` | **(Mandatory)** Path to the SSL/TLS certificate. | None | Security (SSL). |
 | `PHAROS_TLS_KEY` | **(Mandatory)** Path to the SSL/TLS private key. | None | Security (SSL). |
 | `PHAROS_STORAGE_PATH`| Path to the JSON file for persistent storage. | Unset (Memory) | Data persistence. |
