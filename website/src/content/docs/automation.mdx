@@ -119,7 +119,16 @@ To minimize network overhead and CPU impact, the Pulse agent employs a two-tier 
 Pharos automatically tracks the lifecycle of your nodes based on agent signals:
 - **ONLINE**: Node has recently sent a baseline or heartbeat signal.
 - **OFFLINE**: Node has gracefully shut down and sent a final `SIGTERM` signal.
-- **UNREACHABLE**: (Inferred) Node hasn't been seen by the server for over 70 minutes.
+
+### Dead Man's Switch Alerting
+Not every failure is graceful — a crash, `kill -9`, or network partition never sends an OFFLINE
+signal, so a node can go silent with no explicit signal at all. `pharos-server` watches every
+machine's heartbeat freshness continuously: if a node hasn't reported in for longer than
+`PHAROS_PRESENCE_ALERT_THRESHOLD_SECONDS` (default 2 hours) without ever sending OFFLINE, it fires
+a configured webhook POST and/or a local recovery script — see the
+[Configuration Reference](./configuration) for `PHAROS_ALERT_WEBHOOK_URL` and
+`PHAROS_ALERT_SCRIPT`. This is an external alert your automation can act on, not a status field
+written back onto the record itself.
 
 ### Agent-Native Inventory Dashboard
 Use the [Pharos Console](./console) — your lab's **Agent-Native Control Plane** — to visualize your entire hardware and software fleet. Click any node to see its deep-linkable **Resource-First Identity Card**, featuring manufacturer serial numbers and specific kernel versions—essential for security audits and hardware lifecycle management.

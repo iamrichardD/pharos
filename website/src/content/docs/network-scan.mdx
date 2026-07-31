@@ -71,6 +71,11 @@ specific CIDR block directly by passing it as an argument:
 This probes every address in the subnet for common ports (22, 80, 443, 8006, 32400) instead of
 waiting for mDNS announcements — a host with none of those ports open won't be detected this way.
 
+Every live host found this way is automatically enriched, best-effort, with its **MAC address**
+(read from the OS's ARP cache — no raw sockets or elevated privileges needed), **manufacturer**
+(resolved from the MAC's OUI prefix), and **hostname** (reverse DNS) when available, alongside the
+same port-fingerprinting used for mDNS-discovered nodes.
+
 ---
 
 ## Next Steps
