@@ -181,6 +181,7 @@ systemctl reload pharos            # manual systemd setup above (unit name: phar
 systemctl reload pharos-server     # Automated Installation Guide (unit name: pharos-server)
 kill -HUP $(pgrep pharos-server)   # or send it directly, regardless of unit name
 ```
+The same reload also picks up a renewed `PHAROS_TLS_CERT`/`PHAROS_TLS_KEY` pair, if you're using an externally renewed certificate — no restart needed for that either.
 
 ---
 

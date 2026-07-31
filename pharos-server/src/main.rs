@@ -48,6 +48,16 @@ fn load_key(path: &Path) -> anyhow::Result<PrivateKeyDer<'static>> {
     Ok(key)
 }
 
+fn build_tls_acceptor(cert_path: &Path, key_path: &Path) -> anyhow::Result<TlsAcceptor> {
+    let certs = load_certs(cert_path)?;
+    let key = load_key(key_path)?;
+    let config = ServerConfig::builder()
+        .with_no_client_auth()
+        .with_single_cert(certs, key)
+        .map_err(|e| anyhow::anyhow!("Failed to create TLS config: {}", e))?;
+    Ok(TlsAcceptor::from(Arc::new(config)))
+}
+
 use std::time::Instant;
 
 async fn wait_for_files(paths: &[&Path], timeout: Duration) -> anyhow::Result<()> {
@@ -115,15 +125,8 @@ async fn main() -> anyhow::Result<()> {
     wait_for_files(&[cert_path, key_path], Duration::from_secs(30)).await?;
 
     info!("Loading TLS certificates from {:?} and {:?}", cert_path, key_path);
-    let certs = load_certs(cert_path)?;
-    let key = load_key(key_path)?;
-
-
-    let config = ServerConfig::builder()
-        .with_no_client_auth()
-        .with_single_cert(certs, key)
-        .map_err(|e| anyhow::anyhow!("Failed to create TLS config: {}", e))?;
-    let acceptor = TlsAcceptor::from(Arc::new(config));
+    let acceptor = build_tls_acceptor(cert_path, key_path)?;
+    let tls_acceptor: Arc<RwLock<TlsAcceptor>> = Arc::new(RwLock::new(acceptor));
 
     // Determine storage backend based on environment variables
     let storage: Arc<RwLock<dyn Storage>> = if let Ok(url) = env::var("PHAROS_LDAP_URL") {
@@ -169,6 +172,9 @@ async fn main() -> anyhow::Result<()> {
     #[cfg(unix)]
     {
         let reload_auth_manager = Arc::clone(&auth_manager);
+        let reload_tls_acceptor = Arc::clone(&tls_acceptor);
+        let reload_cert_path = cert_path_str.clone();
+        let reload_key_path = key_path_str.clone();
         let mut hangup = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::hangup())
             .expect("failed to install SIGHUP handler");
         tokio::spawn(async move {
@@ -176,6 +182,21 @@ async fn main() -> anyhow::Result<()> {
                 hangup.recv().await;
                 info!("SIGHUP received, reloading authorized keys...");
                 reload_auth_manager.reload();
+
+                info!("SIGHUP received, reloading TLS certificate/key...");
+                match build_tls_acceptor(Path::new(&reload_cert_path), Path::new(&reload_key_path)) {
+                    Ok(new_acceptor) => match reload_tls_acceptor.write() {
+                        Ok(mut guard) => {
+                            *guard = new_acceptor;
+                            info!("TLS certificate/key reloaded successfully.");
+                        }
+                        Err(e) => error!("Failed to acquire write lock while reloading TLS certificate/key: {}", e),
+                    },
+                    Err(e) => error!(
+                        "Failed to reload TLS certificate/key ({}); continuing to serve the previous certificate.",
+                        e
+                    ),
+                }
             }
         });
     }
@@ -272,7 +293,13 @@ async fn main() -> anyhow::Result<()> {
                         let storage_ref: Arc<RwLock<dyn Storage>> = Arc::clone(&storage);
                         let auth_ref = Arc::clone(&auth_manager);
                         let middleware_ref = Arc::clone(&middleware_chain);
-                        let acceptor = acceptor.clone();
+                        let acceptor = match tls_acceptor.read() {
+                            Ok(guard) => guard.clone(),
+                            Err(e) => {
+                                error!("TLS acceptor lock poisoned ({}), dropping connection from {}", e, peer_addr);
+                                continue;
+                            }
+                        };
                         tokio::spawn(async move {
                             match acceptor.accept(socket).await {
                                 Ok(tls_stream) => {
@@ -307,7 +334,13 @@ async fn main() -> anyhow::Result<()> {
                     let storage_ref: Arc<RwLock<dyn Storage>> = Arc::clone(&storage);
                     let auth_ref = Arc::clone(&auth_manager);
                     let middleware_ref = Arc::clone(&middleware_chain);
-                    let acceptor = acceptor.clone();
+                    let acceptor = match tls_acceptor.read() {
+                        Ok(guard) => guard.clone(),
+                        Err(e) => {
+                            error!("TLS acceptor lock poisoned ({}), dropping connection from {}", e, peer_addr);
+                            continue;
+                        }
+                    };
                     tokio::spawn(async move {
                         match acceptor.accept(socket).await {
                             Ok(tls_stream) => {
@@ -340,4 +373,61 @@ async fn main() -> anyhow::Result<()> {
 
     info!("Pharos Server shutdown complete.");
     Ok(())
+}
+
+#[cfg(test)]
+mod tls_reload_tests {
+    use super::*;
+    use std::process::Command;
+
+    fn generate_self_signed(dir: &std::path::Path, name: &str) -> (std::path::PathBuf, std::path::PathBuf) {
+        let key_path = dir.join(format!("{name}.key"));
+        let crt_path = dir.join(format!("{name}.crt"));
+        let status = Command::new("openssl")
+            .args([
+                "req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "1",
+                "-keyout", key_path.to_str().unwrap(),
+                "-out", crt_path.to_str().unwrap(),
+                "-subj", "/CN=test",
+            ])
+            .status()
+            .expect("failed to run openssl - is it installed?");
+        assert!(status.success(), "openssl cert generation failed");
+        (crt_path, key_path)
+    }
+
+    #[test]
+    fn test_should_build_acceptor_from_valid_cert_and_key() {
+        let dir = std::env::temp_dir().join(format!("pharos-tls-test-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let (crt, key) = generate_self_signed(&dir, "valid");
+
+        let result = build_tls_acceptor(&crt, &key);
+        assert!(result.is_ok(), "expected Ok, got: {:?}", result.err());
+
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn test_should_reject_mismatched_cert_and_key() {
+        let dir = std::env::temp_dir().join(format!("pharos-tls-test-mismatch-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let (crt_a, _key_a) = generate_self_signed(&dir, "a");
+        let (_crt_b, key_b) = generate_self_signed(&dir, "b");
+
+        // cert from pair A, key from pair B - must not silently succeed
+        let result = build_tls_acceptor(&crt_a, &key_b);
+        assert!(result.is_err(), "expected Err for mismatched cert/key pair, got Ok");
+
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn test_should_error_on_missing_files() {
+        let result = build_tls_acceptor(
+            std::path::Path::new("/nonexistent/path.crt"),
+            std::path::Path::new("/nonexistent/path.key"),
+        );
+        assert!(result.is_err());
+    }
 }

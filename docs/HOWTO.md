@@ -99,6 +99,7 @@ Enrolling or rotating a key takes effect immediately, no restart needed — `pha
 ```bash
 systemctl reload pharos-server   # or: kill -HUP $(pgrep pharos-server)
 ```
+The same reload also picks up a renewed `PHAROS_TLS_CERT`/`PHAROS_TLS_KEY` pair, if you're using an externally renewed certificate — no restart needed for that either.
 
 **Note:** `protected`/`scoped` tiers refuse to self-generate an admin credential (that only happens for `open`). If you switch to `protected`/`scoped` with an empty keys directory, the server starts but rejects every authenticated command until you enroll a key and reload.
 
