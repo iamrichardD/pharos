@@ -115,6 +115,50 @@ ensure_openssl() {
     command -v openssl >/dev/null 2>&1 || error "Failed to install openssl automatically. Please install it manually and try again."
 }
 
+# Warns (does not fail) if an existing certificate's SAN no longer covers the host's current LAN
+# IP(s) — e.g. after a DHCP renewal or NIC change. Never auto-regenerates; the fix requires an
+# operator to delete the stale cert and re-run the installer, since silently rotating a cert an
+# operator didn't ask to change could itself be a surprise.
+check_cert_ip_drift() {
+    local cert_path=$1
+    local cert_label=$2
+    local current_ips san_ips missing_ips=""
+
+    current_ips="$(hostname -I 2>/dev/null || true)"
+    if [[ -z "${current_ips}" ]]; then
+        return
+    fi
+
+    san_ips="$(${SUDO} openssl x509 -in "${cert_path}" -noout -ext subjectAltName 2>/dev/null \
+        | grep -o 'IP Address:[0-9.]*' | cut -d: -f2 || true)"
+
+    local ip
+    for ip in ${current_ips}; do
+        if [[ "${ip}" == "127.0.0.1" ]]; then
+            continue
+        fi
+        # IPv6 addresses are intentionally out of scope for this drift check: openssl normalizes
+        # IPv6 SAN entries to uppercase while `hostname -I` returns lowercase, and the SAN-extraction
+        # regex above only captures dotted-decimal IPv4 — naively comparing IPv6 entries produces a
+        # false-positive "drift" warning on every host with IPv6 networking (nearly all real hosts)
+        # even with zero actual drift. The documented pulse/node-by-IP workflow this check protects
+        # is IPv4-only in practice.
+        if [[ ! "${ip}" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            continue
+        fi
+        if ! grep -qx "${ip}" <<< "${san_ips}"; then
+            missing_ips="${missing_ips} ${ip}"
+        fi
+    done
+
+    if [[ -n "${missing_ips}" ]]; then
+        warn "Certificate '${cert_label}' (${cert_path}) does not cover this host's current LAN IP(s):${missing_ips}"
+        warn "This can happen after a DHCP lease renewal, subnet change, or NIC reconfiguration since the certificate was generated."
+        warn "Remote clients connecting via${missing_ips} will fail TLS hostname verification (\"certificate not valid for name\")."
+        warn "To fix: remove ${cert_path} and its .key, then re-run this installer to regenerate the certificate with the current IP(s)."
+    fi
+}
+
 # --- PKI Setup ---
 setup_pki() {
     local cert_name=$1
@@ -130,6 +174,7 @@ setup_pki() {
 
     if ${SUDO} test -f "${cert_dir}/${cert_name}.crt"; then
         log "Existing certificate found for ${cert_name}. Skipping generation."
+        check_cert_ip_drift "${cert_dir}/${cert_name}.crt" "${cert_name}"
         ${SUDO} chown pharos:pharos "${cert_dir}/${cert_name}.key" "${cert_dir}/${cert_name}.crt"
         ${SUDO} chmod 600 "${cert_dir}/${cert_name}.key"
         ${SUDO} chmod 644 "${cert_dir}/${cert_name}.crt"
