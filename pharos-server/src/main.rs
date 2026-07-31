@@ -17,6 +17,7 @@ use pharos_server::auth::{AuthManager, SecurityTier};
 use pharos_server::middleware::{MiddlewareChain, LoggingMiddleware, ReadOnlyMiddleware, SecurityTierMiddleware};
 use pharos_server::handle_connection;
 use pharos_server::sync;
+use pharos_server::alerting::{self, AlertState};
 use tokio::net::TcpListener;
 use tracing::{info, error};
 use tracing_subscriber;
@@ -49,6 +50,7 @@ fn load_key(path: &Path) -> anyhow::Result<PrivateKeyDer<'static>> {
 }
 
 fn build_tls_acceptor(cert_path: &Path, key_path: &Path) -> anyhow::Result<TlsAcceptor> {
+    let _ = tokio_rustls::rustls::crypto::ring::default_provider().install_default();
     let certs = load_certs(cert_path)?;
     let key = load_key(key_path)?;
     let config = ServerConfig::builder()
@@ -232,6 +234,7 @@ async fn main() -> anyhow::Result<()> {
     tokio::spawn(async move {
         let mut sys = System::new_all();
         let pid = sysinfo::Pid::from_u32(std::process::id());
+        let mut alert_state = AlertState::default();
         
         loop {
             // Update system and process info
@@ -264,6 +267,21 @@ async fn main() -> anyhow::Result<()> {
                 .unwrap_or(1024 * 1024 * 1024); // Default 1GB
 
             check_health_thresholds(cpu_threshold, mem_threshold);
+
+            // Advanced Pulse Alerting (Dead Man's Switch) - Task 15.3
+            let presence_threshold = env::var("PHAROS_PRESENCE_ALERT_THRESHOLD_SECONDS")
+                .ok()
+                .and_then(|v| v.parse::<i64>().ok())
+                .unwrap_or(7200); // Default 2 hours (2x the pulse agent's 1-hour heartbeat)
+            let webhook_url = env::var("PHAROS_ALERT_WEBHOOK_URL").ok();
+            let script_path = env::var("PHAROS_ALERT_SCRIPT").ok();
+            alerting::check_presence(
+                &storage_for_monitor,
+                &mut alert_state,
+                presence_threshold,
+                webhook_url.as_deref(),
+                script_path.as_deref(),
+            ).await;
 
             tokio::time::sleep(Duration::from_secs(5)).await;
         }

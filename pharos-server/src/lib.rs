@@ -18,6 +18,7 @@ pub mod auth;
 pub mod middleware;
 pub mod tui;
 pub mod sync;
+pub mod alerting;
 
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader, AsyncRead, AsyncWrite};
 use tracing::{info, error, instrument};
