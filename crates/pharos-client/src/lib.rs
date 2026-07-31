@@ -100,6 +100,16 @@ pub struct PharosClient {
 impl PharosClient {
     /// Connects to a Pharos server at the given address.
     pub async fn connect(addr: &str, client_id: &str) -> Result<Self> {
+        // Explicitly select a default rustls CryptoProvider before building any TLS config.
+        // Workspace-wide Cargo feature unification means any crate in this workspace enabling
+        // an alternate provider (e.g. reqwest's rustls-tls, added to pharos-server for Issue #61)
+        // can leave more than one candidate provider linked into every binary that depends on
+        // pharos-client - not just pharos-server - with none selected as the process default.
+        // rustls then panics on the first TLS config build instead of picking one. install_default()
+        // is safe to call more than once per process (e.g. once per PharosClient::connect call) -
+        // it simply returns an Err, which is discarded, if a provider was already installed.
+        let _ = tokio_rustls::rustls::crypto::ring::default_provider().install_default();
+
         let tcp_stream = TcpStream::connect(addr).await
             .with_context(|| format!("Failed to connect to Pharos server at {}", addr))?;
 
