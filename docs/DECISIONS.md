@@ -59,6 +59,13 @@ flowchart TD
     Role -- None --> Execute
 ```
 
+**Always-exempt commands:** `Status`, `Id`, `Login`, `Auth`, and `Quit` bypass the tier/auth check
+shown above entirely, in every security tier — including `Protected` and `Scoped`. They never
+reach `AuthCheck` regardless of `Tier`. The diagram's "Query/Status" branch reflects the general
+`Query` command's path through the tier check; these five commands are unconditionally allowed
+instead. See `SecurityTierMiddleware::is_auth_bypassed` in `pharos-server/src/middleware.rs` for
+the authoritative, current list.
+
 ## 4. Mandatory Password Rotation (Home Lab)
 To balance "Frictionless Setup" with "Day 1 Security," Pharos enforces a mandatory password update policy for the Web Console.
 
