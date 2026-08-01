@@ -130,5 +130,16 @@ a configured webhook POST and/or a local recovery script — see the
 `PHAROS_ALERT_SCRIPT`. This is an external alert your automation can act on, not a status field
 written back onto the record itself.
 
+### Webhook Notifications for Record Changes
+Separately from Dead Man's Switch alerting above (which only fires when a node goes silent),
+`pharos-server` can also push a real-time notification on **every successful `add`, `change`, or
+`delete`** — useful for a live audit feed of inventory changes, not just failure alerts. Set
+`PHAROS_WEBHOOK_URL` to activate it, and `PHAROS_WEBHOOK_FORMAT` to pick a payload shape: `generic`
+(structured JSON for a custom endpoint, the default), `slack`, or `discord`. See the
+[Configuration Reference](./configuration) for both variables. Because `pharos-pulse`'s 60-minute
+heartbeat is itself an `add`, expect a notification on every heartbeat too if you enable this on a
+heartbeat-heavy fleet — there's no built-in filtering to distinguish a meaningful inventory change
+from routine heartbeat noise yet.
+
 ### Agent-Native Inventory Dashboard
 Use the [Pharos Console](./console) — your lab's **Agent-Native Control Plane** — to visualize your entire hardware and software fleet. Click any node to see its deep-linkable **Resource-First Identity Card**, featuring manufacturer serial numbers and specific kernel versions—essential for security audits and hardware lifecycle management.

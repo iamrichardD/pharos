@@ -98,6 +98,10 @@ Pharos implements the Phonebook Protocol with extensions for modern infrastructu
 3. **AUTH (if Write):** Server issues an SSH challenge. Client signs and returns.
 4. **RESPONSE:** Server returns records in Ph format.
 
+`ADD`, `CHANGE`, and `DELETE` all follow the same AUTH-then-commit flow shown below for `ADD` —
+`CHANGE` additionally requires a `make` (or `force`) clause to separate its selection criteria from
+the fields it modifies, per RFC 2378 §3.10.
+
 ```mermaid
 sequenceDiagram
     participant Client
@@ -138,6 +142,13 @@ The backend engine handling connection lifecycle, protocol parsing, and storage 
 - **Development:** Zero-configuration in-memory storage.
 - **Home Lab:** File-level, restart-survivable JSON storage (optimized for LXC).
 - **Enterprise:** LDAP-backed storage utilizing standard schemas (`inetOrgPerson`, `ipHost`).
+
+### 4. Multi-Server Synchronization
+Set `PHAROS_SYNC_ADDR` to have a node advertise itself as a replication peer and relay its own
+`add`/`change`/`delete` writes to every other peer it's aware of. Set `PHAROS_BOOTSTRAP_PEER`
+alongside it to pull an existing peer's full record set on startup. Peer awareness today is
+gained through bootstrapping, not announced automatically in both directions — see the
+[Server Setup guide](./server-setup) before relying on this for a production multi-node cluster.
 
 ## Multi-Tenant & Triple-Tier Security
 

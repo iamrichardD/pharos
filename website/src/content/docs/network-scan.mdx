@@ -49,16 +49,6 @@ The best way to use the scanner is via its interactive Terminal User Interface (
 
 ## Advanced Usage
 
-For automated environments, `pharos-scan` can be run in a non-interactive mode.
-
-### Scripted Discovery
-Output all discovered nodes as a JSON stream for further processing.
-
-```bash
-# Get a list of all SSH-capable nodes not in inventory
-./pharos-scan --json --filter "service=ssh,in_inventory=false"
-```
-
 ### Targeted Scans
 When mDNS discovery isn't enough (e.g. devices that don't advertise mDNS services), scan a
 specific CIDR block directly by passing it as an argument:

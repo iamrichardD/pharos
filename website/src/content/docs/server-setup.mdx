@@ -185,6 +185,23 @@ The same reload also picks up a renewed `PHAROS_TLS_CERT`/`PHAROS_TLS_KEY` pair,
 
 ---
 
+## 🔗 Multi-Server Synchronization
+
+For a multi-node home lab, a node can replicate its writes to other Pharos servers:
+```bash
+export PHAROS_SYNC_ADDR="pharos-node-a.lan:2378"   # this node's own advertised peer address
+export PHAROS_BOOTSTRAP_PEER="pharos-node-b.lan:2378"  # optional: pull an existing peer's records on startup
+```
+`PHAROS_SYNC_ADDR` both advertises this node as a replication target and turns on relaying its own
+`add`/`change`/`delete` commands to every peer it currently knows about. `PHAROS_BOOTSTRAP_PEER` is
+a one-time pull from that peer at startup — it is not a persistent, bidirectional membership
+protocol. In practice this means peer awareness flows in the direction you bootstrap: if node B
+bootstraps from node A, B learns about A, but A does not automatically learn about B in return.
+For a fully mutual mesh today, bootstrap every node from every other node, or add each peer's
+`role="pharos-server"` record manually with `mdb add`.
+
+---
+
 ## 📊 Monitoring & Observability
 
 Pharos exposes Prometheus metrics on port `9090` to track performance and inventory health.
