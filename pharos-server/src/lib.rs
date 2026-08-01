@@ -19,6 +19,7 @@ pub mod middleware;
 pub mod tui;
 pub mod sync;
 pub mod alerting;
+pub mod notifications;
 
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader, AsyncRead, AsyncWrite};
 use tracing::{info, error, instrument};
@@ -140,6 +141,7 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                         
                         let team = context.teams.first().cloned();
 
+                        let field_map_for_notification = field_map.clone();
                         let result = {
                             let mut lock = storage.write().map_err(|_| anyhow::anyhow!("Storage lock poisoned"))?;
                             lock.upsert_record(field_map, context.fingerprint.clone(), team)
@@ -149,6 +151,10 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                             Ok(_) => {
                                 let _ = crate::tui::EVENT_TX.send(format!("[{}] Added/Updated record", context.peer_addr));
                                 writer.write_all(b"200:Ok\n").await?;
+
+                                crate::notifications::notify(crate::notifications::NotificationEvent::Add {
+                                    fields: field_map_for_notification,
+                                });
 
                                 // Replicate to peers if not already forwarded
                                 if !is_forwarded && !my_addr.is_empty() {
@@ -245,6 +251,12 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                                             crate::sync::replicate_command(storage_clone, cmd_str, my_addr_clone).await;
                                         });
                                     }
+
+                                    crate::notifications::notify(crate::notifications::NotificationEvent::Change {
+                                        selections: selections.clone(),
+                                        modifications: modifications.clone(),
+                                        count,
+                                    });
                                 } else {
                                     writer.write_all(b"501:No matches to change\n").await?;
                                 }
@@ -278,6 +290,11 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                                             crate::sync::replicate_command(storage_clone, cmd_str, my_addr_clone).await;
                                         });
                                     }
+
+                                    crate::notifications::notify(crate::notifications::NotificationEvent::Delete {
+                                        selections: selections.clone(),
+                                        count,
+                                    });
                                 } else {
                                     writer.write_all(b"501:No matches to delete\n").await?;
                                 }

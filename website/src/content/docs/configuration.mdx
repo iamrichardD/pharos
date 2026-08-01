@@ -38,6 +38,8 @@ The Pharos ecosystem is designed to be highly configurable via environment varia
 | `PHAROS_PRESENCE_ALERT_THRESHOLD_SECONDS` | Seconds a machine can go without a heartbeat before triggering a presence alert. | `7200` | Monitoring. |
 | `PHAROS_ALERT_WEBHOOK_URL` | URL to POST a JSON payload to when a machine's presence alert fires. Optional - feature is inactive if unset. | Unset | Monitoring. |
 | `PHAROS_ALERT_SCRIPT` | Local script/binary path to execute (with hostname and last-seen timestamp as arguments) when a machine's presence alert fires. Optional - feature is inactive if unset. | Unset | Monitoring. |
+| `PHAROS_WEBHOOK_URL` | URL to POST a JSON notification to on every successful add/change/delete. Optional - feature is inactive if unset. Distinct from `PHAROS_ALERT_WEBHOOK_URL` (presence-alert webhook, which only fires on node staleness) - configure independently. *Note: fires on every heartbeat `add` from `pharos-pulse` too, which may be noisy.* | Unset | Monitoring. |
+| `PHAROS_WEBHOOK_FORMAT` | Payload format for `PHAROS_WEBHOOK_URL`: `generic` (default, custom-REST-API JSON), `slack` (Slack incoming-webhook compatible), or `discord` (Discord webhook compatible). | `generic` | Monitoring. |
 | `RUST_LOG` | Log verbosity (`error`/`warn`/`info`/`debug`/`trace`, optionally per-module e.g. `pharos_server=debug`). Standard Rust ecosystem convention, intentionally not `PHAROS_`-prefixed. A value that doesn't match any known module (including plain typos) silently disables all output with no warning — if logs go quiet after setting this, check for typos first. | `info` | Observability. |
 
 ---

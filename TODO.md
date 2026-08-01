@@ -140,7 +140,7 @@ A task is considered complete and may be marked `[x]` only when:
 
 ## Phase 15: Global Resilience & Advanced Connectivity
 - [x] **Task 15.1 (Issue #59):** Engineering: Implement Multi-Server Synchronization for high-availability (HA) clusters using background replication.
-- [ ] **Task 15.2 (Issue #60):** Engineering: Implement Webhook Notification Engine for real-time Slack, Discord, and Custom API alerts on record modifications.
+- [x] **Task 15.2 (Issue #60):** Engineering: Implement Webhook Notification Engine for real-time Slack, Discord, and Custom API alerts on record modifications.
 - [x] **Task 15.3 (Issue #61):** Engineering: Implement Advanced Pulse Alerting with configurable "Dead Man's Switch" logic for node failures.
 - [x] **Task 15.4 (Issue #62):** Engineering: Sync marketing site theme with browser settings (`prefers-color-scheme`).
 
@@ -236,3 +236,4 @@ A task is considered complete and may be marked `[x]` only when:
 - [x] **Debt #20 (Issue #167):** Action: Implement the RFC 2378 `change` command server-side — parsed since day one, never wired into `lib.rs`'s dispatch, silently returning "not yet implemented" for every real request.
 - [x] **Debt #21 (Issue #168):** Action: Fix `automation.mdx`'s Proxmox pre-stop hook, which omits RFC 2378's required `make` clause and silently changes nothing even with `change` fully implemented.
 - [x] **Debt #22 (Issue #169):** Action: Install a default rustls CryptoProvider in `pharos-client::connect()` — a v1.4.0 regression from Issue #61's `reqwest` addition left every client binary (`mdb`/`ph`/`pharos-pulse`/`pharos-scan`) panicking on every TLS connection, caught only by live-testing the actual published release binaries.
+- [ ] **Debt #23 (Issue #170):** Action: Webhook notifications (Issue #60) fire once per node in a peer-replicated cluster — the `forwarded` guard that stops `Command::Add` from re-replicating a peer-forwarded write doesn't also stop it (or `Change`/`Delete`, which have no `forwarded` marker at all) from re-notifying.
