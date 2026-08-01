@@ -29,6 +29,35 @@ use crate::auth::AuthManager;
 use crate::middleware::{MiddlewareChain, ClientContext, MiddlewareAction};
 use std::sync::{Arc, RwLock};
 
+fn check_change_limits(
+    matched: &[crate::storage::Record],
+    modifications: &[(String, String)],
+    options: &crate::middleware::SessionOptions,
+) -> Result<(), crate::storage::StorageError> {
+    if options.limit.is_some_and(|limit| matched.len() > limit) {
+        return Err(crate::storage::StorageError::TooManyEntries(matched.len()));
+    }
+    if options.addonly {
+        let overridden = matched.iter().any(|record| {
+            modifications.iter().any(|(field, _)| record.fields.contains_key(field))
+        });
+        if overridden {
+            return Err(crate::storage::StorageError::AddOnlyViolation);
+        }
+    }
+    Ok(())
+}
+
+fn check_delete_limit(
+    matched: &[crate::storage::Record],
+    options: &crate::middleware::SessionOptions,
+) -> Result<(), crate::storage::StorageError> {
+    if options.limit.is_some_and(|limit| matched.len() > limit) {
+        return Err(crate::storage::StorageError::TooManyEntries(matched.len()));
+    }
+    Ok(())
+}
+
 #[instrument(skip(socket, storage, auth_manager, middleware_chain))]
 pub async fn handle_connection<S>(socket: S, peer_addr: String, storage: Arc<RwLock<dyn Storage>>, auth_manager: Arc<AuthManager>, middleware_chain: Arc<MiddlewareChain>) -> anyhow::Result<()> 
 where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
@@ -46,6 +75,7 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
         tier: crate::auth::SecurityTier::Open,
         login_alias: None,
         fingerprint: None,
+        options: crate::middleware::SessionOptions::default(),
     };
 
     let _ = crate::tui::EVENT_TX.send(format!("Connection established from {}", peer_addr));
@@ -190,7 +220,7 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
 
                         let query_result = {
                             let lock = storage.read().map_err(|_| anyhow::anyhow!("Storage lock poisoned"))?;
-                            lock.query(&selections, default_type)
+                            lock.query(selections, default_type)
                         };
 
                         let (records, count) = match query_result {
@@ -239,7 +269,18 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                         // model doesn't have. Nothing to force-override yet.
                         let result = {
                             let mut lock = storage.write().map_err(|_| anyhow::anyhow!("Storage lock poisoned"))?;
-                            lock.change_record(selections, modifications, context.fingerprint.clone(), &context.teams)
+                            if context.options.limit.is_none() && !context.options.addonly {
+                                // No session limits configured - skip the extra pre-flight scan.
+                                lock.change_record(selections, modifications, context.fingerprint.clone(), &context.teams)
+                            } else {
+                                match lock.query(selections, None) {
+                                    Ok(matched) => match check_change_limits(&matched, modifications, &context.options) {
+                                        Ok(()) => lock.change_record(selections, modifications, context.fingerprint.clone(), &context.teams),
+                                        Err(e) => Err(e),
+                                    },
+                                    Err(e) => Err(e),
+                                }
+                            }
                         };
 
                         match result {
@@ -271,6 +312,12 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                                     writer.write_all(b"501:No matches to change\n").await?;
                                 }
                             }
+                            Err(crate::storage::StorageError::TooManyEntries(n)) => {
+                                writer.write_all(format!("518:Too many entries selected by change command ({} matched)\n", n).as_bytes()).await?;
+                            }
+                            Err(crate::storage::StorageError::AddOnlyViolation) => {
+                                writer.write_all(b"521:Change command would have overridden existing field, and addonly option is on\n").await?;
+                            }
                             Err(crate::storage::StorageError::Unauthorized) => {
                                 writer.write_all(b"403:Forbidden: Unauthorized record modification\n").await?;
                             }
@@ -283,7 +330,18 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                     Command::Delete(selections) => {
                         let result = {
                             let mut lock = storage.write().map_err(|_| anyhow::anyhow!("Storage lock poisoned"))?;
-                            lock.delete_record(selections, context.fingerprint.clone(), &context.teams)
+                            if context.options.limit.is_none() {
+                                // No session limit configured - skip the extra pre-flight scan.
+                                lock.delete_record(selections, context.fingerprint.clone(), &context.teams)
+                            } else {
+                                match lock.query(selections, None) {
+                                    Ok(matched) => match check_delete_limit(&matched, &context.options) {
+                                        Ok(()) => lock.delete_record(selections, context.fingerprint.clone(), &context.teams),
+                                        Err(e) => Err(e),
+                                    },
+                                    Err(e) => Err(e),
+                                }
+                            }
                         };
 
                         match result {
@@ -312,12 +370,116 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                                     writer.write_all(b"501:No matches to delete\n").await?;
                                 }
                             }
+                            Err(crate::storage::StorageError::TooManyEntries(n)) => {
+                                writer.write_all(format!("518:Too many entries selected by delete command ({} matched)\n", n).as_bytes()).await?;
+                            }
                             Err(crate::storage::StorageError::Unauthorized) => {
                                 writer.write_all(b"403:Forbidden: Unauthorized record deletion\n").await?;
                             }
                             Err(e) => {
                                 error!("Storage error: {}", e);
                                 writer.write_all(b"500:Internal storage error\n").await?;
+                            }
+                        }
+                    }
+                    Command::Set(tokens) => {
+                        if tokens.is_empty() {
+                            writer.write_all(format!("-200:echo:{}\n", if context.options.echo { "on" } else { "off" }).as_bytes()).await?;
+                            writer.write_all(format!("-200:limit:{}\n", match context.options.limit {
+                                Some(l) => l.to_string(),
+                                None => "off".to_string(),
+                            }).as_bytes()).await?;
+                            writer.write_all(format!("-200:charset:{}\n", context.options.charset).as_bytes()).await?;
+                            writer.write_all(format!("-200:verbose:{}\n", if context.options.verbose { "on" } else { "off" }).as_bytes()).await?;
+                            writer.write_all(format!("-200:addonly:{}\n", if context.options.addonly { "on" } else { "off" }).as_bytes()).await?;
+                            writer.write_all(format!("-200:nolog:{}\n", if context.options.nolog { "on" } else { "off" }).as_bytes()).await?;
+                            writer.write_all(format!("-200:external:{}\n", if context.options.external { "on" } else { "off" }).as_bytes()).await?;
+                            writer.write_all(b"200:Done.\n").await?;
+                        } else {
+                            let mut new_options = context.options.clone();
+                            let mut valid = true;
+                            for token in tokens {
+                                let mut parts = token.splitn(2, '=');
+                                let key = parts.next().unwrap_or("").trim().to_lowercase();
+                                let val = parts.next().unwrap_or("on").trim();
+                                
+                                match key.as_str() {
+                                    "limit" => {
+                                        if val.eq_ignore_ascii_case("off") {
+                                            new_options.limit = None;
+                                        } else if let Ok(n) = val.parse::<usize>() {
+                                            new_options.limit = Some(n);
+                                        } else {
+                                            valid = false;
+                                            break;
+                                        }
+                                    }
+                                    "echo" => {
+                                        if val.eq_ignore_ascii_case("on") {
+                                            new_options.echo = true;
+                                        } else if val.eq_ignore_ascii_case("off") {
+                                            new_options.echo = false;
+                                        } else {
+                                            valid = false;
+                                            break;
+                                        }
+                                    }
+                                    "verbose" => {
+                                        if val.eq_ignore_ascii_case("on") {
+                                            new_options.verbose = true;
+                                        } else if val.eq_ignore_ascii_case("off") {
+                                            new_options.verbose = false;
+                                        } else {
+                                            valid = false;
+                                            break;
+                                        }
+                                    }
+                                    "addonly" => {
+                                        if val.eq_ignore_ascii_case("on") {
+                                            new_options.addonly = true;
+                                        } else if val.eq_ignore_ascii_case("off") {
+                                            new_options.addonly = false;
+                                        } else {
+                                            valid = false;
+                                            break;
+                                        }
+                                    }
+                                    "nolog" => {
+                                        if val.eq_ignore_ascii_case("on") {
+                                            new_options.nolog = true;
+                                        } else if val.eq_ignore_ascii_case("off") {
+                                            new_options.nolog = false;
+                                        } else {
+                                            valid = false;
+                                            break;
+                                        }
+                                    }
+                                    "external" => {
+                                        if val.eq_ignore_ascii_case("on") {
+                                            new_options.external = true;
+                                        } else if val.eq_ignore_ascii_case("off") {
+                                            new_options.external = false;
+                                        } else {
+                                            valid = false;
+                                            break;
+                                        }
+                                    }
+                                    "charset" => {
+                                        // Note: Pharos doesn't actually perform charset conversion.
+                                        // This is accepted-and-echoed state only, matching existing project convention of not building unused functionality.
+                                        new_options.charset = val.to_string();
+                                    }
+                                    _ => {
+                                        valid = false;
+                                        break;
+                                    }
+                                }
+                            }
+                            if valid {
+                                context.options = new_options;
+                                writer.write_all(b"200:Done.\n").await?;
+                            } else {
+                                writer.write_all(b"512:Illegal value\n").await?;
                             }
                         }
                     }
@@ -342,4 +504,62 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::storage::{Record, StorageError};
+    use crate::middleware::SessionOptions;
+    use std::collections::HashMap;
+
+    #[test]
+    fn test_check_delete_limit() {
+        let matched = vec![
+            Record { id: 1, record_type: None, fields: HashMap::new(), owner_fingerprint: None, owner_team: None },
+            Record { id: 2, record_type: None, fields: HashMap::new(), owner_fingerprint: None, owner_team: None },
+        ];
+        
+        let mut options = SessionOptions::default();
+        // Default is None (no limit)
+        assert!(check_delete_limit(&matched, &options).is_ok());
+
+        // Limit matches count
+        options.limit = Some(2);
+        assert!(check_delete_limit(&matched, &options).is_ok());
+
+        // Limit strictly less than count
+        options.limit = Some(1);
+        match check_delete_limit(&matched, &options) {
+            Err(StorageError::TooManyEntries(n)) => assert_eq!(n, 2),
+            _ => panic!("Expected TooManyEntries error"),
+        }
+    }
+
+    #[test]
+    fn test_check_change_limits() {
+        let mut fields = HashMap::new();
+        fields.insert("name".to_string(), "alice".to_string());
+        let matched = vec![
+            Record { id: 1, record_type: None, fields, owner_fingerprint: None, owner_team: None },
+        ];
+
+        let mut options = SessionOptions::default();
+        let modifications = vec![("name".to_string(), "bob".to_string())];
+
+        // Default limit/addonly is permissive
+        assert!(check_change_limits(&matched, &modifications, &options).is_ok());
+
+        // Addonly checks
+        options.addonly = true;
+        // Overwriting existing field "name" should fail
+        match check_change_limits(&matched, &modifications, &options) {
+            Err(StorageError::AddOnlyViolation) => {},
+            _ => panic!("Expected AddOnlyViolation error"),
+        }
+
+        // Modifying non-existent field should succeed even with addonly
+        let new_modifications = vec![("age".to_string(), "30".to_string())];
+        assert!(check_change_limits(&matched, &new_modifications, &options).is_ok());
+    }
 }

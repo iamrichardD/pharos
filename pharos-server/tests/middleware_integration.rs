@@ -47,7 +47,7 @@ async fn test_should_allow_query_in_open_tier() {
     let mut stream = TcpStream::connect(addr).await.unwrap();
     
     let mut buf = [0u8; 1024];
-    stream.read(&mut buf).await.unwrap(); // consume welcome
+    let _ = stream.read(&mut buf).await.unwrap(); // consume welcome
 
     stream.write_all(b"query return name\n").await.unwrap();
     let n = stream.read(&mut buf).await.unwrap();
@@ -64,7 +64,7 @@ async fn test_should_block_query_in_protected_tier_without_auth() {
     let mut stream = TcpStream::connect(addr).await.unwrap();
     
     let mut buf = [0u8; 1024];
-    stream.read(&mut buf).await.unwrap(); // consume welcome
+    let _ = stream.read(&mut buf).await.unwrap(); // consume welcome
 
     stream.write_all(b"query return name\n").await.unwrap();
     let n = stream.read(&mut buf).await.unwrap();
@@ -84,7 +84,7 @@ async fn test_should_block_write_in_scoped_tier_without_admin_role() {
     let mut stream = TcpStream::connect(addr).await.unwrap();
     
     let mut buf = [0u8; 1024];
-    stream.read(&mut buf).await.unwrap(); // consume welcome
+    let _ = stream.read(&mut buf).await.unwrap(); // consume welcome
 
     stream.write_all(b"add name=Test\n").await.unwrap();
     let n = stream.read(&mut buf).await.unwrap();
@@ -210,7 +210,7 @@ async fn test_should_verify_auth_check_command() {
     // 3. Connect and send auth-check
     let mut stream = TcpStream::connect(addr).await.unwrap();
     let mut buf = [0u8; 1024];
-    stream.read(&mut buf).await.unwrap(); // welcome
+    let _ = stream.read(&mut buf).await.unwrap(); // welcome
     
     let challenge = "test-challenge";
     // Sign the challenge

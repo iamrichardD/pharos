@@ -44,6 +44,12 @@ pub struct AppState {
     pub events: Vec<String>,
 }
 
+impl Default for AppState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AppState {
     pub fn new() -> Self {
         Self {
@@ -147,14 +153,9 @@ pub async fn run_tui() -> anyhow::Result<()> {
                     state.events.remove(0);
                 }
             }
-            event_res = tokio::task::spawn_blocking(|| event::read()) => {
-                match event_res {
-                    Ok(Ok(Event::Key(key))) => {
-                        if key.code == KeyCode::Char('q') {
-                            break;
-                        }
-                    }
-                    _ => {}
+            event_res = tokio::task::spawn_blocking(event::read) => {
+                if let Ok(Ok(Event::Key(crossterm::event::KeyEvent { code: KeyCode::Char('q'), .. }))) = event_res {
+                    break;
                 }
             }
         }

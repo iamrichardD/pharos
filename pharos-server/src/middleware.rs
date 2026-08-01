@@ -17,6 +17,31 @@ use crate::auth::SecurityTier;
 use std::sync::Arc;
 use tracing::info;
 
+#[derive(Debug, Clone)]
+pub struct SessionOptions {
+    pub echo: bool,
+    pub limit: Option<usize>,
+    pub charset: String,
+    pub verbose: bool,
+    pub addonly: bool,
+    pub nolog: bool,
+    pub external: bool,
+}
+
+impl Default for SessionOptions {
+    fn default() -> Self {
+        Self {
+            echo: false,
+            limit: None,
+            charset: "us-ascii".to_string(),
+            verbose: false,
+            addonly: false,
+            nolog: false,
+            external: false,
+        }
+    }
+}
+
 /// Contextual information about the current client session.
 #[derive(Debug, Clone)]
 pub struct ClientContext {
@@ -28,6 +53,7 @@ pub struct ClientContext {
     pub tier: SecurityTier,
     pub login_alias: Option<String>,
     pub fingerprint: Option<String>,
+    pub options: SessionOptions,
 }
 
 impl Default for ClientContext {
@@ -41,6 +67,7 @@ impl Default for ClientContext {
             tier: SecurityTier::Open,
             login_alias: None,
             fingerprint: None,
+            options: SessionOptions::default(),
         }
     }
 }
@@ -65,8 +92,9 @@ pub trait Middleware: Send + Sync {
 }
 
 /// A chain of middlewares to be executed in sequence.
+#[derive(Default)]
 pub struct MiddlewareChain {
-    middlewares: Vec<Arc<dyn Middleware>>,
+    pub middlewares: Vec<Arc<dyn Middleware>>,
 }
 
 impl MiddlewareChain {

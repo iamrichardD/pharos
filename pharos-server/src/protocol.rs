@@ -369,7 +369,7 @@ mod tests {
         if let Command::Change { selections, modifications, force } = cmd {
             assert_eq!(selections, vec![(Some("alias".to_string()), "j-doe".to_string())]);
             assert_eq!(modifications, vec![("fax".to_string(), "555-1212".to_string())]);
-            assert_eq!(force, false);
+            assert!(!force);
         } else {
             panic!("Expected Change command");
         }

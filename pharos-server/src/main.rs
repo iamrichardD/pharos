@@ -20,7 +20,6 @@ use pharos_server::sync;
 use pharos_server::alerting::{self, AlertState};
 use tokio::net::TcpListener;
 use tracing::{info, error};
-use tracing_subscriber;
 use std::sync::{Arc, RwLock};
 use sysinfo::System;
 use warp::Filter;
@@ -145,7 +144,8 @@ async fn main() -> anyhow::Result<()> {
     let my_addr = env::var("PHAROS_SYNC_ADDR").unwrap_or_default();
     if !my_addr.is_empty() {
         if let Ok(peer) = env::var("PHAROS_BOOTSTRAP_PEER") {
-            if let Err(e) = sync::bootstrap(Arc::clone(&storage), &peer).await {
+            let res = sync::bootstrap(Arc::clone(&storage), &peer).await;
+            if let Err(e) = res {
                 error!("Bootstrap failed: {}", e);
             }
         }
@@ -359,11 +359,9 @@ async fn main() -> anyhow::Result<()> {
                         match acceptor.accept(socket).await {
                             Ok(tls_stream) => {
                                 if let Err(e) = handle_connection(tls_stream, peer_addr.to_string(), storage_ref, auth_ref, middleware_ref).await {
-                                    if let Some(io_err) = e.downcast_ref::<std::io::Error>() {
-                                        if io_err.kind() == std::io::ErrorKind::UnexpectedEof {
-                                            tracing::debug!("Connection from {} closed improperly (EOF)", peer_addr);
-                                            return;
-                                        }
+                                    if e.downcast_ref::<std::io::Error>().is_some_and(|io_err| io_err.kind() == std::io::ErrorKind::UnexpectedEof) {
+                                        tracing::debug!("Connection from {} closed improperly (EOF)", peer_addr);
+                                        return;
                                     }
                                     error!("Error handling connection from {}: {:?}", peer_addr, e);
                                 }

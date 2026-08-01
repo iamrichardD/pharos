@@ -25,20 +25,15 @@ use rand::rngs::OsRng;
 use rand::RngCore;
 
 /// Defines the operational security tier of the server.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum SecurityTier {
     /// Unauthenticated read-only access, authenticated writes.
+    #[default]
     Open,
     /// Authenticated access for both reads and writes.
     Protected,
     /// Role-based access control based on provenance metadata.
     Scoped,
-}
-
-impl Default for SecurityTier {
-    fn default() -> Self {
-        SecurityTier::Open
-    }
 }
 
 struct Challenge {

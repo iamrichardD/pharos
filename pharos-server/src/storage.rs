@@ -67,6 +67,10 @@ pub enum StorageError {
     InvalidArgument(String),
     #[error("Internal storage error: {0}")]
     Internal(String),
+    #[error("Too many entries selected ({0} matched)")]
+    TooManyEntries(usize),
+    #[error("Change command would have overridden existing field, and addonly option is on")]
+    AddOnlyViolation,
 }
 
 pub trait Storage: Send + Sync {
@@ -84,6 +88,12 @@ pub trait Storage: Send + Sync {
 pub struct MemoryStorage {
     records: Vec<Record>,
     next_id: usize,
+}
+
+impl Default for MemoryStorage {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl MemoryStorage {
@@ -139,8 +149,7 @@ impl MemoryStorage {
         }
 
         if star_count == 1 {
-            if pattern.ends_with('*') {
-                let prefix = &pattern[..pattern.len() - 1];
+            if let Some(prefix) = pattern.strip_suffix('*') {
                 Ok(word.starts_with(prefix))
             } else {
                 Err(StorageError::InvalidArgument(format!("Only suffix wildcards supported: '{}'", pattern)))
@@ -237,11 +246,8 @@ impl Storage for MemoryStorage {
             });
 
             if let Some(record) = existing {
-                // Check Host Authorization logic (SSH Fingerprint match)
-                if let Some(ref bonded) = record.owner_fingerprint {
-                    if Some(bonded) != fingerprint.as_ref() {
-                        return Err(StorageError::Collision);
-                    }
+                if record.owner_fingerprint.as_ref().is_some_and(|bonded| Some(bonded) != fingerprint.as_ref()) {
+                    return Err(StorageError::Collision);
                 }
 
                 // Check Member Authorization logic (Team match)
@@ -580,7 +586,7 @@ impl LdapStorage {
         for (field_opt, val) in selections {
             if let Some(field_name) = field_opt {
                 let ldap_attr = self.field_map.get(field_name).map(|s| s.as_str()).unwrap_or(field_name);
-                let ldap_val = val.replace("*", "*"); // Ph uses * as well
+                let ldap_val = val; // Ph uses * as well
                 filters.push(format!("({}={})", ldap_attr, ldap_val));
             } else {
                 // Search in any mapped field (LDAP | search)
