@@ -17,6 +17,29 @@ use std::sync::{Arc, RwLock};
 use tracing::{info, error, debug};
 use std::collections::HashMap;
 
+/// Wire-level marker prefixed onto a command before it's replicated to a peer, so the receiving
+/// node's `handle_connection` loop can tell "this came from another node's replicate_command, not
+/// a real client" and avoid re-replicating it (or notifying on it) forever. Works uniformly for
+/// add/change/delete, unlike the old add-only "stuff a fake field into the command" trick, which
+/// only worked because add's wire grammar happens to be a flat field=value list - that trick can't
+/// be safely extended to change (would silently become another modification) or delete (would
+/// silently become another, almost-certainly-nonexistent selection criterion).
+pub const SYNC_PREFIX: &str = "SYNC ";
+
+/// Wraps a command for replication to a peer. Pure and total - just string concatenation.
+pub fn wrap_for_sync(command: &str) -> String {
+    format!("{}{}", SYNC_PREFIX, command)
+}
+
+/// Detects and strips the sync marker from a raw wire line. Returns `(is_forwarded, rest)`.
+/// Pure and total.
+pub fn strip_sync_prefix(line: &str) -> (bool, &str) {
+    match line.strip_prefix(SYNC_PREFIX) {
+        Some(rest) => (true, rest),
+        None => (false, line),
+    }
+}
+
 pub async fn register_self(storage: Arc<RwLock<dyn Storage>>, addr: &str) -> anyhow::Result<()> {
     info!("Registering self as pharos-server at {}", addr);
     let mut fields = HashMap::new();
@@ -78,12 +101,7 @@ pub async fn replicate_command(storage: Arc<RwLock<dyn Storage>>, command: Strin
 
     debug!("Replicating command to {} peers", peers.len());
     
-    // Add forwarded=true to the command if it's an 'add' command
-    let sync_command = if command.starts_with("add ") {
-        format!("{} forwarded=\"true\"", command)
-    } else {
-        command
-    };
+    let sync_command = wrap_for_sync(&command);
 
     for peer in peers {
         let cmd = sync_command.clone();
@@ -100,5 +118,34 @@ pub async fn replicate_command(storage: Arc<RwLock<dyn Storage>>, command: Strin
                 }
             }
         });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_should_wrap_any_command_with_sync_prefix() {
+        assert_eq!(wrap_for_sync("add hostname=x"), "SYNC add hostname=x");
+        assert_eq!(wrap_for_sync("change hostname=x make status=down"), "SYNC change hostname=x make status=down");
+        assert_eq!(wrap_for_sync("delete hostname=x"), "SYNC delete hostname=x");
+    }
+
+    #[test]
+    fn test_should_detect_and_strip_sync_prefix() {
+        assert_eq!(strip_sync_prefix("SYNC add hostname=x"), (true, "add hostname=x"));
+    }
+
+    #[test]
+    fn test_should_not_treat_unprefixed_command_as_forwarded() {
+        assert_eq!(strip_sync_prefix("add hostname=x"), (false, "add hostname=x"));
+    }
+
+    #[test]
+    fn test_should_not_misdetect_a_command_that_merely_contains_sync_as_a_substring() {
+        // Must only match a prefix at the very start of the line, not anywhere in it.
+        let line = "add hostname=SYNC-server-01 status=up";
+        assert_eq!(strip_sync_prefix(line), (false, line));
     }
 }

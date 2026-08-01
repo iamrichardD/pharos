@@ -63,12 +63,18 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
             break; // Connection closed
         }
 
-        let input = line.trim();
-        if input.is_empty() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() {
             continue;
         }
 
-        info!("Received command: {}", crate::protocol::redact_wire_line_for_logging(input));
+        let (is_forwarded, input) = crate::sync::strip_sync_prefix(trimmed);
+
+        if is_forwarded {
+            info!("Received command: [SYNC] {}", crate::protocol::redact_wire_line_for_logging(input));
+        } else {
+            info!("Received command: {}", crate::protocol::redact_wire_line_for_logging(input));
+        }
 
         match parse_command(input) {
             Ok(mut command) => {
@@ -132,8 +138,6 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                         break;
                     }
                     Command::Add(fields) => {
-                        let is_forwarded = fields.iter().any(|(k, v)| k == "forwarded" && v == "true");
-
                         let mut field_map = std::collections::HashMap::new();
                         for (k, v) in fields {
                             field_map.insert(k.clone(), v.clone());
@@ -152,9 +156,11 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                                 let _ = crate::tui::EVENT_TX.send(format!("[{}] Added/Updated record", context.peer_addr));
                                 writer.write_all(b"200:Ok\n").await?;
 
-                                crate::notifications::notify(crate::notifications::NotificationEvent::Add {
-                                    fields: field_map_for_notification,
-                                });
+                                if !is_forwarded {
+                                    crate::notifications::notify(crate::notifications::NotificationEvent::Add {
+                                        fields: field_map_for_notification,
+                                    });
+                                }
 
                                 // Replicate to peers if not already forwarded
                                 if !is_forwarded && !my_addr.is_empty() {
@@ -242,8 +248,10 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                                     let noun = if count == 1 { "entry" } else { "entries" };
                                     writer.write_all(format!("200:{} {} changed.\n", count, noun).as_bytes()).await?;
 
-                                    // Replicate change to peers
-                                    if !my_addr.is_empty() {
+                                    // Replicate change to peers, unless this command was itself a
+                                    // replica of another node's change (would otherwise ping-pong
+                                    // between peers forever - see Issue #170).
+                                    if !is_forwarded && !my_addr.is_empty() {
                                         let storage_clone = Arc::clone(&storage);
                                         let cmd_str = input.to_string();
                                         let my_addr_clone = my_addr.clone();
@@ -252,11 +260,13 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                                         });
                                     }
 
-                                    crate::notifications::notify(crate::notifications::NotificationEvent::Change {
-                                        selections: selections.clone(),
-                                        modifications: modifications.clone(),
-                                        count,
-                                    });
+                                    if !is_forwarded {
+                                        crate::notifications::notify(crate::notifications::NotificationEvent::Change {
+                                            selections: selections.clone(),
+                                            modifications: modifications.clone(),
+                                            count,
+                                        });
+                                    }
                                 } else {
                                     writer.write_all(b"501:No matches to change\n").await?;
                                 }
@@ -281,8 +291,9 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                                 if count > 0 {
                                     writer.write_all(b"200:Ok\n").await?;
 
-                                    // Replicate delete to peers
-                                    if !my_addr.is_empty() {
+                                    // Replicate delete to peers, unless this command was itself a
+                                    // replica of another node's delete.
+                                    if !is_forwarded && !my_addr.is_empty() {
                                         let storage_clone = Arc::clone(&storage);
                                         let cmd_str = input.to_string();
                                         let my_addr_clone = my_addr.clone();
@@ -291,10 +302,12 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                                         });
                                     }
 
-                                    crate::notifications::notify(crate::notifications::NotificationEvent::Delete {
-                                        selections: selections.clone(),
-                                        count,
-                                    });
+                                    if !is_forwarded {
+                                        crate::notifications::notify(crate::notifications::NotificationEvent::Delete {
+                                            selections: selections.clone(),
+                                            count,
+                                        });
+                                    }
                                 } else {
                                     writer.write_all(b"501:No matches to delete\n").await?;
                                 }
