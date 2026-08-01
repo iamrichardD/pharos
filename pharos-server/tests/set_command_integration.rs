@@ -248,9 +248,9 @@ async fn test_set_session_options() {
     }
     assert!(options.contains(&"-200:limit:off".to_string()));
 
-    // 8. set nosuchoption=on returns 512:Illegal value
+    // 8. set nosuchoption=on returns 513:Unknown option
     reader.get_mut().write_all(b"set nosuchoption=on\n").await.unwrap();
     line.clear();
     reader.read_line(&mut line).await.unwrap();
-    assert!(line.contains("512:Illegal value"));
+    assert!(line.contains("513:Unknown option"));
 }

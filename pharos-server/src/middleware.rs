@@ -154,7 +154,7 @@ impl Middleware for ReadOnlyMiddleware {
                 .unwrap_or(false);
 
             if is_read_only {
-                return Ok(MiddlewareAction::ShortCircuit("500:Read-only access permitted for this ID\n".to_string()));
+                return Ok(MiddlewareAction::ShortCircuit("517:Operation failed because database is read-only\n".to_string()));
             }
         }
 
@@ -174,7 +174,7 @@ impl Middleware for RbacMiddleware {
         // Protocol Restriction: Strictly require authentication for INSERT, UPDATE, and DELETE.
         if is_write_command && !context.authenticated {
             return Ok(MiddlewareAction::ShortCircuit(
-                "401:Authentication required for write operations. Use 'login [alias]' to receive a challenge.\n".to_string()
+                "506:Authentication required for write operations. Use 'login [alias]' to receive a challenge.\n".to_string()
             ));
         }
 
@@ -211,7 +211,7 @@ impl Middleware for SecurityTierMiddleware {
 
                 if is_write_command && !context.authenticated {
                     return Ok(MiddlewareAction::ShortCircuit(
-                        "401:Authentication required. Use 'login [alias]' to receive a challenge.\n".to_string()
+                        "506:Authentication required. Use 'login [alias]' to receive a challenge.\n".to_string()
                     ));
                 }
                 Ok(MiddlewareAction::Continue)
@@ -220,7 +220,7 @@ impl Middleware for SecurityTierMiddleware {
                 // Protected tier: ALL commands (except auth/status/id/login/quit) require authentication
                 if !is_auth_bypassed && !context.authenticated {
                     return Ok(MiddlewareAction::ShortCircuit(
-                        "401:Authentication required for Protected tier. Use 'login [alias]' to receive a challenge.\n".to_string()
+                        "506:Authentication required for Protected tier. Use 'login [alias]' to receive a challenge.\n".to_string()
                     ));
                 }
                 Ok(MiddlewareAction::Continue)
@@ -229,7 +229,7 @@ impl Middleware for SecurityTierMiddleware {
                 // Scoped tier: Same as protected, but also enforces roles
                 if !is_auth_bypassed && !context.authenticated {
                     return Ok(MiddlewareAction::ShortCircuit(
-                        "401:Authentication required for Scoped tier. Use 'login [alias]' to receive a challenge.\n".to_string()
+                        "506:Authentication required for Scoped tier. Use 'login [alias]' to receive a challenge.\n".to_string()
                     ));
                 }
 
@@ -238,7 +238,7 @@ impl Middleware for SecurityTierMiddleware {
                 );
 
                 if is_write_command && !context.roles.contains(&"admin".to_string()) {
-                    return Ok(MiddlewareAction::ShortCircuit("403:Forbidden: Admin role required for write operations\n".to_string()));
+                    return Ok(MiddlewareAction::ShortCircuit("516:Forbidden: Admin role required for write operations\n".to_string()));
                 }
 
                 Ok(MiddlewareAction::Continue)
@@ -290,7 +290,7 @@ mod tests {
         let result = chain.pre_process(&mut command, &mut context).unwrap();
         match result {
             MiddlewareAction::ShortCircuit(resp) => {
-                assert!(resp.contains("500:Read-only access"));
+                assert!(resp.contains("517:Operation failed because database is read-only"));
             },
             _ => panic!("Expected ShortCircuit"),
         }
@@ -310,7 +310,7 @@ mod tests {
         let result = chain.pre_process(&mut command, &mut context).unwrap();
         match result {
             MiddlewareAction::ShortCircuit(resp) => {
-                assert!(resp.contains("401:Authentication required"));
+                assert!(resp.contains("506:Authentication required"));
             },
             _ => panic!("Expected ShortCircuit"),
         }

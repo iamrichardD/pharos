@@ -71,6 +71,8 @@ pub enum StorageError {
     TooManyEntries(usize),
     #[error("Change command would have overridden existing field, and addonly option is on")]
     AddOnlyViolation,
+    #[error("Operation failed because database is read-only")]
+    ReadOnly,
 }
 
 pub trait Storage: Send + Sync {
@@ -701,20 +703,20 @@ impl Storage for LdapStorage {
     #[instrument(skip(self))]
     fn upsert_record(&mut self, _fields: HashMap<String, String>, _fingerprint: Option<String>, _team: Option<String>) -> Result<(), StorageError> {
         error!("LDAP storage is currently read-only (Write operations pending Task 4.3)");
-        Err(StorageError::Internal("LDAP write not implemented".to_string()))
+        Err(StorageError::ReadOnly)
     }
 
     #[instrument(skip(self))]
     fn delete_record(&mut self, _selections: &[(Option<String>, String)], _fingerprint: Option<String>, _teams: &[String]) -> Result<usize, StorageError> {
         error!("LDAP storage is currently read-only");
-        Err(StorageError::Internal("LDAP delete not implemented".to_string()))
+        Err(StorageError::ReadOnly)
     }
 
-    /// Purpose (The "Why"): Enforces read-only behavior for LDAP storage when changes are attempted.
+    /// Purpose: Enforces read-only behavior for LDAP storage when changes are attempted.
     #[instrument(skip(self))]
     fn change_record(&mut self, _selections: &[(Option<String>, String)], _modifications: &[(String, String)], _fingerprint: Option<String>, _teams: &[String]) -> Result<usize, StorageError> {
         error!("LDAP storage is currently read-only (Write operations pending Task 4.3)");
-        Err(StorageError::Internal("LDAP storage is read-only".to_string()))
+        Err(StorageError::ReadOnly)
     }
 }
 

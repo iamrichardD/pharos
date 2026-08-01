@@ -102,7 +102,7 @@ async fn test_should_allow_guest_search_but_deny_delete() {
     line.clear();
     reader.get_mut().write_all(b"delete name=any\n").await.unwrap();
     reader.read_line(&mut line).await.unwrap();
-    assert!(line.contains("401:Authentication required"));
+    assert!(line.contains("506:Authentication required"));
 }
 
 #[tokio::test]
@@ -174,7 +174,7 @@ async fn test_should_enforce_team_authorization() {
     sec_reader.get_mut().write_all(b"add hostname=prod-web-01 status=compromised\n").await.unwrap();
     line.clear();
     sec_reader.read_line(&mut line).await.unwrap();
-    assert!(line.contains("403:Forbidden: Unauthorized record modification"));
+    assert!(line.contains("511:Not authorized to add entries"));
 
     // --- SCENARIO: DevOps user updates own record ---
     devops_reader.get_mut().write_all(b"add hostname=prod-web-01 status=healthy\n").await.unwrap();
@@ -187,4 +187,127 @@ async fn test_should_enforce_team_authorization() {
         let records = lock.query(&[(Some("hostname".to_string()), "prod-web-01".to_string())], None).unwrap();
         assert_eq!(records[0].fields.get("status").unwrap(), "healthy");
     }
+}
+
+#[tokio::test]
+async fn test_should_reject_auth_with_invalid_signature() {
+    let keys_dir = tempdir().unwrap();
+    let test_user = TestUser::new("alice");
+    let impostor = TestUser::new("impostor");
+    std::fs::write(keys_dir.path().join("alice_id_ed25519.pub"), test_user.pub_key.as_bytes()).unwrap();
+
+    let (addr, _) = setup_rbac_server(keys_dir.path()).await;
+    let stream = TcpStream::connect(addr).await.unwrap();
+    let mut reader = BufReader::new(stream);
+    let mut line = String::new();
+    reader.read_line(&mut line).await.unwrap(); // welcome
+
+    reader.get_mut().write_all(b"login alice\n").await.unwrap();
+    line.clear();
+    reader.read_line(&mut line).await.unwrap();
+    let challenge = line.trim().trim_start_matches("301:").to_string();
+
+    // Sign the real challenge with a DIFFERENT key than the one being presented -
+    // the signature will not verify against test_user's public key.
+    let bad_sig = impostor.sign(&challenge);
+    let auth_cmd = format!("auth \"{}\" \"{}\"\n", test_user.pub_key, bad_sig);
+    reader.get_mut().write_all(auth_cmd.as_bytes()).await.unwrap();
+    line.clear();
+    reader.read_line(&mut line).await.unwrap();
+    assert!(line.contains("516:No authorization for request"), "Expected 516: but got: {}", line);
+}
+
+#[tokio::test]
+async fn test_should_reject_delete_by_unauthorized_team_member() {
+    let keys_dir = tempdir().unwrap();
+    let devops_user = TestUser::new("devops-user");
+    let security_user = TestUser::new("security-user");
+    std::fs::write(keys_dir.path().join("devops_id_ed25519.pub"), devops_user.pub_key.as_bytes()).unwrap();
+    std::fs::write(keys_dir.path().join("security_id_ed25519.pub"), security_user.pub_key.as_bytes()).unwrap();
+
+    let (addr, storage) = setup_rbac_server(keys_dir.path()).await;
+
+    // DevOps user creates a record owned by the devops team.
+    let devops_stream = TcpStream::connect(addr).await.unwrap();
+    let mut devops_reader = BufReader::new(devops_stream);
+    let mut line = String::new();
+    devops_reader.read_line(&mut line).await.unwrap(); // welcome
+
+    devops_reader.get_mut().write_all(b"login devops-user\n").await.unwrap();
+    line.clear();
+    devops_reader.read_line(&mut line).await.unwrap();
+    let challenge = line.trim().trim_start_matches("301:").to_string();
+    let sig = devops_user.sign(&challenge);
+    let auth_cmd = format!("auth \"{}\" \"{}\"\n", devops_user.pub_key, sig);
+    devops_reader.get_mut().write_all(auth_cmd.as_bytes()).await.unwrap();
+    line.clear();
+    devops_reader.read_line(&mut line).await.unwrap();
+    assert!(line.contains("200:Ok"));
+
+    devops_reader.get_mut().write_all(b"add hostname=prod-db-01 type=machine\n").await.unwrap();
+    line.clear();
+    devops_reader.read_line(&mut line).await.unwrap();
+    assert!(line.contains("200:Ok"));
+
+    // Security user (different team) attempts to delete it.
+    let sec_stream = TcpStream::connect(addr).await.unwrap();
+    let mut sec_reader = BufReader::new(sec_stream);
+    sec_reader.read_line(&mut line).await.unwrap(); // welcome
+
+    sec_reader.get_mut().write_all(b"login security-user\n").await.unwrap();
+    line.clear();
+    sec_reader.read_line(&mut line).await.unwrap();
+    let challenge = line.trim().trim_start_matches("301:").to_string();
+    let sig = security_user.sign(&challenge);
+    let auth_cmd = format!("auth \"{}\" \"{}\"\n", security_user.pub_key, sig);
+    sec_reader.get_mut().write_all(auth_cmd.as_bytes()).await.unwrap();
+    line.clear();
+    sec_reader.read_line(&mut line).await.unwrap();
+    assert!(line.contains("200:Ok"));
+
+    sec_reader.get_mut().write_all(b"delete hostname=prod-db-01\n").await.unwrap();
+    line.clear();
+    sec_reader.read_line(&mut line).await.unwrap();
+    assert!(line.contains("516:No authorization for request"), "Expected 516: but got: {}", line);
+
+    // Record must still exist.
+    let lock = storage.read().unwrap();
+    let records = lock.query(&[(Some("hostname".to_string()), "prod-db-01".to_string())], None).unwrap();
+    assert_eq!(records.len(), 1);
+}
+
+#[tokio::test]
+async fn test_should_reject_query_with_illegal_wildcard_value() {
+    let keys_dir = tempdir().unwrap();
+    let test_user = TestUser::new("bob");
+    std::fs::write(keys_dir.path().join("bob_id_ed25519.pub"), test_user.pub_key.as_bytes()).unwrap();
+
+    let (addr, _) = setup_rbac_server(keys_dir.path()).await;
+    let stream = TcpStream::connect(addr).await.unwrap();
+    let mut reader = BufReader::new(stream);
+    let mut line = String::new();
+    reader.read_line(&mut line).await.unwrap(); // welcome
+
+    reader.get_mut().write_all(b"login bob\n").await.unwrap();
+    line.clear();
+    reader.read_line(&mut line).await.unwrap();
+    let challenge = line.trim().trim_start_matches("301:").to_string();
+    let sig = test_user.sign(&challenge);
+    let auth_cmd = format!("auth \"{}\" \"{}\"\n", test_user.pub_key, sig);
+    reader.get_mut().write_all(auth_cmd.as_bytes()).await.unwrap();
+    line.clear();
+    reader.read_line(&mut line).await.unwrap();
+    assert!(line.contains("200:Ok"));
+
+    reader.get_mut().write_all(b"add name=johndoe\n").await.unwrap();
+    line.clear();
+    reader.read_line(&mut line).await.unwrap();
+    assert!(line.contains("200:Ok"));
+
+    // Only suffix wildcards ('doe*') are supported - a prefix wildcard must be
+    // rejected with RFC's "512 Illegal value", not silently mismatched.
+    reader.get_mut().write_all(b"query name=*doe\n").await.unwrap();
+    line.clear();
+    reader.read_line(&mut line).await.unwrap();
+    assert!(line.starts_with("512:Illegal value"), "Expected 512: but got: {}", line);
 }

@@ -117,7 +117,7 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                     Ok(MiddlewareAction::Continue) => {}
                     Err(e) => {
                         error!("Middleware error: {:?}", e);
-                        writer.write_all(b"599:Internal server error (middleware)\n").await?;
+                        writer.write_all(b"500:Internal server error (middleware)\n").await?;
                         continue;
                     }
                 }
@@ -150,7 +150,7 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                                 context.fingerprint = Some(fingerprint);
                                 writer.write_all(b"200:Ok\n").await?;
                             } else {
-                                writer.write_all(b"403:Forbidden\n").await?;
+                                writer.write_all(b"516:No authorization for request\n").await?;
                             }
                         } else {
                             writer.write_all(b"506:Request refused; must be logged in to execute (Challenge expired or not found)\n").await?;
@@ -160,7 +160,7 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                         if auth_manager.verify(public_key, signature, challenge) {
                             writer.write_all(b"200:Ok\n").await?;
                         } else {
-                            writer.write_all(b"403:Forbidden\n").await?;
+                            writer.write_all(b"516:No authorization for request\n").await?;
                         }
                     }
                     Command::Quit => {
@@ -203,7 +203,10 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                                 }
                             }
                             Err(crate::storage::StorageError::Collision) | Err(crate::storage::StorageError::Unauthorized) => {
-                                writer.write_all(b"403:Forbidden: Unauthorized record modification\n").await?;
+                                writer.write_all(b"511:Not authorized to add entries\n").await?;
+                            }
+                            Err(crate::storage::StorageError::ReadOnly) => {
+                                writer.write_all(b"517:Operation failed because database is read-only\n").await?;
                             }
                             Err(e) => {
                                 error!("Storage error: {}", e);
@@ -229,7 +232,7 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                                 (results, count)
                             }
                             Err(crate::storage::StorageError::InvalidArgument(msg)) => {
-                                writer.write_all(format!("421:Invalid argument: {}\n", msg).as_bytes()).await?;
+                                writer.write_all(format!("512:Illegal value: {}\n", msg).as_bytes()).await?;
                                 continue;
                             }
                             Err(e) => {
@@ -319,7 +322,10 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                                 writer.write_all(b"521:Change command would have overridden existing field, and addonly option is on\n").await?;
                             }
                             Err(crate::storage::StorageError::Unauthorized) => {
-                                writer.write_all(b"403:Forbidden: Unauthorized record modification\n").await?;
+                                writer.write_all(b"510:Not authorized to change this entry\n").await?;
+                            }
+                            Err(crate::storage::StorageError::ReadOnly) => {
+                                writer.write_all(b"517:Operation failed because database is read-only\n").await?;
                             }
                             Err(e) => {
                                 error!("Storage error: {}", e);
@@ -374,7 +380,10 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                                 writer.write_all(format!("518:Too many entries selected by delete command ({} matched)\n", n).as_bytes()).await?;
                             }
                             Err(crate::storage::StorageError::Unauthorized) => {
-                                writer.write_all(b"403:Forbidden: Unauthorized record deletion\n").await?;
+                                writer.write_all(b"516:No authorization for request\n").await?;
+                            }
+                            Err(crate::storage::StorageError::ReadOnly) => {
+                                writer.write_all(b"517:Operation failed because database is read-only\n").await?;
                             }
                             Err(e) => {
                                 error!("Storage error: {}", e);
@@ -397,7 +406,7 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                             writer.write_all(b"200:Done.\n").await?;
                         } else {
                             let mut new_options = context.options.clone();
-                            let mut valid = true;
+                            let mut validation_error = None;
                             for token in tokens {
                                 let mut parts = token.splitn(2, '=');
                                 let key = parts.next().unwrap_or("").trim().to_lowercase();
@@ -410,7 +419,7 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                                         } else if let Ok(n) = val.parse::<usize>() {
                                             new_options.limit = Some(n);
                                         } else {
-                                            valid = false;
+                                            validation_error = Some("512:Illegal value\n");
                                             break;
                                         }
                                     }
@@ -420,7 +429,7 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                                         } else if val.eq_ignore_ascii_case("off") {
                                             new_options.echo = false;
                                         } else {
-                                            valid = false;
+                                            validation_error = Some("512:Illegal value\n");
                                             break;
                                         }
                                     }
@@ -430,7 +439,7 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                                         } else if val.eq_ignore_ascii_case("off") {
                                             new_options.verbose = false;
                                         } else {
-                                            valid = false;
+                                            validation_error = Some("512:Illegal value\n");
                                             break;
                                         }
                                     }
@@ -440,7 +449,7 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                                         } else if val.eq_ignore_ascii_case("off") {
                                             new_options.addonly = false;
                                         } else {
-                                            valid = false;
+                                            validation_error = Some("512:Illegal value\n");
                                             break;
                                         }
                                     }
@@ -450,7 +459,7 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                                         } else if val.eq_ignore_ascii_case("off") {
                                             new_options.nolog = false;
                                         } else {
-                                            valid = false;
+                                            validation_error = Some("512:Illegal value\n");
                                             break;
                                         }
                                     }
@@ -460,7 +469,7 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                                         } else if val.eq_ignore_ascii_case("off") {
                                             new_options.external = false;
                                         } else {
-                                            valid = false;
+                                            validation_error = Some("512:Illegal value\n");
                                             break;
                                         }
                                     }
@@ -470,21 +479,24 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                                         new_options.charset = val.to_string();
                                     }
                                     _ => {
-                                        valid = false;
+                                        validation_error = Some("513:Unknown option\n");
                                         break;
                                     }
                                 }
                             }
-                            if valid {
+                            if let Some(err_msg) = validation_error {
+                                writer.write_all(err_msg.as_bytes()).await?;
+                            } else {
                                 context.options = new_options;
                                 writer.write_all(b"200:Done.\n").await?;
-                            } else {
-                                writer.write_all(b"512:Illegal value\n").await?;
                             }
                         }
                     }
                     _ => {
-                        writer.write_all(b"598:Command not yet implemented\n").await?;
+                        // Pharos extension: 597 Command recognized, but not yet implemented.
+                        // Deliberately not 598 (RFC "Command unknown" which matches ProtocolError::UnknownCommand)
+                        // and not colliding with any standard RFC-Appendix-B-defined number.
+                        writer.write_all(b"597:Command recognized, but not yet implemented\n").await?;
                     }
                 }
 
