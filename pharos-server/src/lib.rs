@@ -58,6 +58,17 @@ fn check_delete_limit(
     Ok(())
 }
 
+/// A SYNC-prefixed command's suppression effects (skip re-replication, skip webhook
+/// notification) are only honored when the connection presenting it authenticated as a
+/// recognized peer server (the `peer` role, granted via filename convention on
+/// `PHAROS_KEYS_DIR` - see `auth.rs`'s `register_key`). Any other connection can still type
+/// `SYNC ` in front of a command, but it has no effect: the write still happens, and it still
+/// replicates/notifies exactly like an ordinary write - defeating the incentive to spoof it as
+/// a way to hide a write from the audit trail.
+fn is_trusted_sync_peer(is_forwarded: bool, roles: &[String]) -> bool {
+    is_forwarded && roles.iter().any(|r| r == "peer")
+}
+
 #[instrument(skip(socket, storage, auth_manager, middleware_chain))]
 pub async fn handle_connection<S>(socket: S, peer_addr: String, storage: Arc<RwLock<dyn Storage>>, auth_manager: Arc<AuthManager>, middleware_chain: Arc<MiddlewareChain>) -> anyhow::Result<()> 
 where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
@@ -99,6 +110,16 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
         }
 
         let (is_forwarded, input) = crate::sync::strip_sync_prefix(trimmed);
+        let is_trusted_sync = is_trusted_sync_peer(is_forwarded, &context.roles);
+
+        if is_forwarded && !is_trusted_sync {
+            tracing::warn!(
+                peer = %context.peer_addr,
+                "Received SYNC-prefixed command from a non-peer connection - ignoring the prefix for \
+                 replication/notification-suppression purposes (command will still execute and will \
+                 still replicate/notify normally)"
+            );
+        }
 
         if is_forwarded {
             info!("Received command: [SYNC] {}", crate::protocol::redact_wire_line_for_logging(input));
@@ -263,14 +284,14 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                                 let _ = crate::tui::EVENT_TX.send(format!("[{}] Added/Updated record", context.peer_addr));
                                 writer.write_all(b"200:Ok\n").await?;
 
-                                if !is_forwarded {
+                                if !is_trusted_sync {
                                     crate::notifications::notify(crate::notifications::NotificationEvent::Add {
                                         fields: field_map_for_notification,
                                     });
                                 }
 
                                 // Replicate to peers if not already forwarded
-                                if !is_forwarded && !my_addr.is_empty() {
+                                if !is_trusted_sync && !my_addr.is_empty() {
                                     let storage_clone = Arc::clone(&storage);
                                     let cmd_str = input.to_string();
                                     let my_addr_clone = my_addr.clone();
@@ -372,7 +393,7 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                                     // Replicate change to peers, unless this command was itself a
                                     // replica of another node's change (would otherwise ping-pong
                                     // between peers forever - see Issue #170).
-                                    if !is_forwarded && !my_addr.is_empty() {
+                                    if !is_trusted_sync && !my_addr.is_empty() {
                                         let storage_clone = Arc::clone(&storage);
                                         let cmd_str = input.to_string();
                                         let my_addr_clone = my_addr.clone();
@@ -381,7 +402,7 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                                         });
                                     }
 
-                                    if !is_forwarded {
+                                    if !is_trusted_sync {
                                         crate::notifications::notify(crate::notifications::NotificationEvent::Change {
                                             selections: selections.clone(),
                                             modifications: modifications.clone(),
@@ -434,7 +455,7 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
 
                                     // Replicate delete to peers, unless this command was itself a
                                     // replica of another node's delete.
-                                    if !is_forwarded && !my_addr.is_empty() {
+                                    if !is_trusted_sync && !my_addr.is_empty() {
                                         let storage_clone = Arc::clone(&storage);
                                         let cmd_str = input.to_string();
                                         let my_addr_clone = my_addr.clone();
@@ -443,7 +464,7 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                                         });
                                     }
 
-                                    if !is_forwarded {
+                                    if !is_trusted_sync {
                                         crate::notifications::notify(crate::notifications::NotificationEvent::Delete {
                                             selections: selections.clone(),
                                             count,
@@ -650,5 +671,13 @@ mod tests {
         // Modifying non-existent field should succeed even with addonly
         let new_modifications = vec![("age".to_string(), "30".to_string())];
         assert!(check_change_limits(&matched, &new_modifications, &options).is_ok());
+    }
+
+    #[test]
+    fn test_is_trusted_sync_peer() {
+        assert!(is_trusted_sync_peer(true, &["peer".to_string()]));
+        assert!(!is_trusted_sync_peer(true, &["admin".to_string()]));
+        assert!(!is_trusted_sync_peer(false, &["peer".to_string()]));
+        assert!(!is_trusted_sync_peer(false, &[]));
     }
 }

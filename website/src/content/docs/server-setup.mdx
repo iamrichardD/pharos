@@ -200,6 +200,12 @@ bootstraps from node A, B learns about A, but A does not automatically learn abo
 For a fully mutual mesh today, bootstrap every node from every other node, or add each peer's
 `role="pharos-server"` record manually with `mdb add`.
 
+:::caution[Peer Authorization Required for Replication]
+For a replicated write to be correctly recognized as trusted (and therefore not re-replicated in a ping-pong loop or double-notified), each node's own SSH key must be registered in every other node's `PHAROS_KEYS_DIR` with `peer` somewhere in the filename (e.g., `nodeA-peer_id_ed25519.pub`).
+
+This uses the same hot-reloadable keys directory already used for regular client authorization (see [Enrolling SSH Keys](#enrolling-ssh-keys) above for reload guidance). Without this setup, replicated writes will still succeed, but multi-server synchronization silently loses the anti-ping-pong and duplicate-notification protection.
+:::
+
 ---
 
 ## 📊 Monitoring & Observability

@@ -323,3 +323,44 @@ async fn test_should_support_non_suffix_wildcard_in_query() {
     reader.read_line(&mut line).await.unwrap();
     assert!(line.starts_with("512:Illegal value"), "Expected 512: but got: {}", line);
 }
+
+#[tokio::test]
+async fn test_should_allow_sync_prefix_from_non_peer_and_execute_successfully() {
+    let _ = tracing_subscriber::fmt::try_init();
+    let keys_dir = tempdir().unwrap();
+
+    // Create a regular user who is NOT a peer (e.g., standard "user" role)
+    let regular_user = TestUser::new("regular-user");
+    std::fs::write(keys_dir.path().join("regular_user_id_ed25519.pub"), regular_user.pub_key.as_bytes()).unwrap();
+
+    let (addr, storage) = setup_rbac_server(keys_dir.path()).await;
+
+    let stream = TcpStream::connect(addr).await.unwrap();
+    let mut reader = BufReader::new(stream);
+    let mut line = String::new();
+    reader.read_line(&mut line).await.unwrap(); // welcome
+
+    // Login
+    reader.get_mut().write_all(b"login regular-user\n").await.unwrap();
+    line.clear();
+    reader.read_line(&mut line).await.unwrap();
+    let challenge = line.trim().trim_start_matches("301:").to_string();
+    let sig = regular_user.sign(&challenge);
+
+    let auth_cmd = format!("auth \"{}\" \"{}\"\n", regular_user.pub_key, sig);
+    reader.get_mut().write_all(auth_cmd.as_bytes()).await.unwrap();
+    line.clear();
+    reader.read_line(&mut line).await.unwrap();
+    assert!(line.contains("200:Ok"));
+
+    // Send a command prefixed with SYNC
+    reader.get_mut().write_all(b"SYNC add hostname=spoofed-peer-host type=machine\n").await.unwrap();
+    line.clear();
+    reader.read_line(&mut line).await.unwrap();
+    assert!(line.contains("200:Ok"), "Command with SYNC prefix from non-peer should still execute successfully but got: {}", line);
+
+    // Verify it actually executed and the record is in storage
+    let lock = storage.read().unwrap();
+    let records = lock.query(&[(Some("hostname".to_string()), "spoofed-peer-host".to_string())], None).unwrap();
+    assert_eq!(records.len(), 1);
+}

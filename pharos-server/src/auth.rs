@@ -279,6 +279,10 @@ impl AuthManager {
                 roles.push("user".to_string());
             }
 
+            if filename.contains("peer") {
+                roles.push("peer".to_string());
+            }
+
             // Simple team detection: e.g. "devops_id_ed25519.pub"
             if filename.contains("devops") {
                 teams.push("devops".to_string());
@@ -464,6 +468,33 @@ mod tests {
 
         let roles = auth_manager.get_roles(&pub_openssh);
         assert!(roles.contains(&"user".to_string()));
+    }
+
+    #[test]
+    fn test_should_detect_peer_role_from_filename() {
+        let dir = tempdir().unwrap();
+        let peer_pub_path = dir.path().join("nodeb-peer_id_ed25519.pub");
+        let admin_peer_pub_path = dir.path().join("admin-peer_id_ed25519.pub");
+
+        let mut rng = rand::rngs::OsRng;
+
+        let priv_key1 = PrivateKey::random(&mut rng, ssh_key::Algorithm::Ed25519).unwrap();
+        let pub_openssh1 = priv_key1.public_key().to_openssh().unwrap();
+        fs::write(&peer_pub_path, pub_openssh1.as_bytes()).unwrap();
+
+        let priv_key2 = PrivateKey::random(&mut rng, ssh_key::Algorithm::Ed25519).unwrap();
+        let pub_openssh2 = priv_key2.public_key().to_openssh().unwrap();
+        fs::write(&admin_peer_pub_path, pub_openssh2.as_bytes()).unwrap();
+
+        let auth_manager = AuthManager::new(dir.path(), SecurityTier::Open);
+
+        let roles1 = auth_manager.get_roles(&pub_openssh1);
+        assert!(roles1.contains(&"peer".to_string()));
+        assert!(!roles1.contains(&"admin".to_string()));
+
+        let roles2 = auth_manager.get_roles(&pub_openssh2);
+        assert!(roles2.contains(&"peer".to_string()));
+        assert!(roles2.contains(&"admin".to_string()));
     }
 
     #[test]
