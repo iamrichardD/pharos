@@ -242,9 +242,22 @@ download_binary() {
     local platform_suffix=""
 
     case "${OS_NAME}" in
-        linux)   platform_suffix="linux-${ARCH_NAME}";;
-        macos)   platform_suffix="macos-aarch64";;
-        windows) platform_suffix="windows-x86_64.exe";;
+        linux)
+            platform_suffix="linux-${ARCH_NAME}"
+            ;;
+        macos)
+            if [[ "${ARCH_NAME}" != "aarch64" ]]; then
+                error "Pharos does not publish macOS Intel (x86_64) binaries. Only Apple Silicon (aarch64) Macs are supported — build from source instead: https://github.com/${REPO}"
+            fi
+            case "${component}" in
+                ph|mdb) ;;
+                *) error "'${component}' is not distributed for macOS. Pharos only publishes the 'ph' and 'mdb' client tools for macOS (Apple Silicon) — 'pharos-server', 'pharos-scan', and 'pharos-pulse' are Linux-only. Run this on a Linux host, or build from source: https://github.com/${REPO}" ;;
+            esac
+            platform_suffix="macos-aarch64"
+            ;;
+        windows)
+            platform_suffix="windows-x86_64.exe"
+            ;;
     esac
 
     local url="https://github.com/${REPO}/releases/download/v${VERSION}/${component}-${platform_suffix}"
@@ -367,11 +380,15 @@ install_web_console() {
 }
 
 install_toolbelt() {
-    log "Installing Pharos Toolbelt (ph, mdb, pharos-scan)..."
+    log "Installing Pharos Toolbelt (ph, mdb$([[ "${OS_NAME}" != "macos" ]] && echo ", pharos-scan"))..."
     download_binary "ph"
     download_binary "mdb"
-    download_binary "pharos-scan"
-    
+    if [[ "${OS_NAME}" == "macos" ]]; then
+        warn "pharos-scan is not distributed for macOS (LAN discovery tooling is Linux-only) — skipping."
+    else
+        download_binary "pharos-scan"
+    fi
+
     log "Pharos Toolbelt installed to ${INSTALL_DIR}"
 }
 
