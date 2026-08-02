@@ -18,9 +18,11 @@ this is a distinct, explicit action, not something to bundle automatically after
    exceeds a 120s foreground timeout (multi-platform build + several GHCR image-publish jobs) —
    that's expected; let it background and wait for the notification rather than re-polling.
 6. Verify release assets actually published:
-   `gh release view vX.Y.Z --json assets`. Expect exactly 15 binaries:
-   `{ph,mdb,pharos-pulse,pharos-scan,pharos-server}` ×
-   `{linux-x86_64, macos-aarch64, windows-x86_64.exe}`.
+   `gh release view vX.Y.Z --json assets`. Expect exactly 17 binaries (as of v1.9.0):
+   `{ph,mdb,pharos-pulse,pharos-scan,pharos-server}` × `{linux-x86_64, linux-aarch64,
+   windows-x86_64.exe}`, plus `{ph,mdb}` × `macos-aarch64` only — macOS no longer ships
+   `pharos-server`/`pharos-scan`/`pharos-pulse` (client-tools-only platform), and there is no
+   `macos-x86_64` (Intel Macs are unsupported by design).
 7. **Non-negotiable — do not skip:** download the actual published binary or script (from the
    GitHub release download URL, or `raw.githubusercontent.com/.../main/...` for scripts) and
    live-test it against whatever this specific release changed. Never consider a release verified

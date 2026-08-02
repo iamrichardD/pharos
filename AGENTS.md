@@ -107,9 +107,11 @@ remediation dispatched → final result), not only at the very end.
 2. Commit that one-line change, push.
 3. `git tag -a vX.Y.Z -m "..."`, push the tag.
 4. Watch CI to completion.
-5. Verify all release assets actually published — expect exactly 15 binaries:
-   `{ph,mdb,pharos-pulse,pharos-scan,pharos-server}` ×
-   `{linux-x86_64, macos-aarch64, windows-x86_64.exe}`.
+5. Verify all release assets actually published — expect exactly 17 binaries (as of v1.9.0):
+   `{ph,mdb,pharos-pulse,pharos-scan,pharos-server}` × `{linux-x86_64, linux-aarch64,
+   windows-x86_64.exe}`, plus `{ph,mdb}` × `macos-aarch64` only — macOS no longer ships
+   `pharos-server`/`pharos-scan`/`pharos-pulse` (client-tools-only platform), and there is no
+   `macos-x86_64` (Intel Macs are unsupported by design).
 6. **Non-negotiable:** download the actual published binary/script and live-test it against
    whatever the release specifically changed — never consider a release verified from a local
    build alone.
