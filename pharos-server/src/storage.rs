@@ -118,7 +118,7 @@ impl MemoryStorage {
         for qw in query_words {
             let mut matched = false;
             for fw in &field_words {
-                if qw.contains('*') || qw.contains('?') || qw.contains('+') {
+                if qw.contains('*') || qw.contains('?') || qw.contains('+') || qw.contains('[') || qw.contains(']') {
                     if self.wildcard_match(fw, qw)? {
                         matched = true;
                         break;
@@ -138,27 +138,90 @@ impl MemoryStorage {
     }
 
     fn wildcard_match(&self, word: &str, pattern: &str) -> Result<bool, StorageError> {
-        // Debt #10: Support only suffix wildcards '*' for now.
-        // Return InvalidArgument for others to fail fast.
-        
-        if pattern.contains('?') || pattern.contains('+') {
-            return Err(StorageError::InvalidArgument(format!("Unsupported wildcard in '{}'", pattern)));
+        #[derive(Debug, Clone, PartialEq, Eq)]
+        enum PatternToken {
+            Literal(char),
+            Star,
+            Plus,
+            Question,
+            Set(std::collections::HashSet<char>),
         }
 
-        let star_count = pattern.chars().filter(|&c| c == '*').count();
-        if star_count > 1 {
-             return Err(StorageError::InvalidArgument(format!("Multiple wildcards not supported: '{}'", pattern)));
-        }
+        let mut tokens = Vec::new();
+        let mut chars = pattern.chars().peekable();
 
-        if star_count == 1 {
-            if let Some(prefix) = pattern.strip_suffix('*') {
-                Ok(word.starts_with(prefix))
-            } else {
-                Err(StorageError::InvalidArgument(format!("Only suffix wildcards supported: '{}'", pattern)))
+        while let Some(c) = chars.next() {
+            match c {
+                '*' => tokens.push(PatternToken::Star),
+                '+' => tokens.push(PatternToken::Plus),
+                '?' => tokens.push(PatternToken::Question),
+                '[' => {
+                    let mut set_chars = std::collections::HashSet::new();
+                    let mut closed = false;
+                    while let Some(&next_c) = chars.peek() {
+                        if next_c == ']' {
+                            chars.next();
+                            closed = true;
+                            break;
+                        } else {
+                            set_chars.insert(chars.next().unwrap());
+                        }
+                    }
+                    if !closed {
+                        return Err(StorageError::InvalidArgument(format!("Unclosed bracket in pattern '{}'", pattern)));
+                    }
+                    if set_chars.is_empty() {
+                        return Err(StorageError::InvalidArgument(format!("Empty bracket set in pattern '{}'", pattern)));
+                    }
+                    tokens.push(PatternToken::Set(set_chars));
+                }
+                ']' => {
+                    return Err(StorageError::InvalidArgument(format!("Stray ']' with no preceding '[' in pattern '{}'", pattern)));
+                }
+                other => {
+                    tokens.push(PatternToken::Literal(other));
+                }
             }
-        } else {
-            Ok(word == pattern)
         }
+
+        let w: Vec<char> = word.chars().collect();
+        let n = w.len();
+        let m = tokens.len();
+
+        let mut dp = vec![vec![false; m + 1]; n + 1];
+        dp[0][0] = true;
+
+        for j in 1..=m {
+            if let PatternToken::Star = tokens[j - 1] {
+                dp[0][j] = dp[0][j - 1];
+            } else {
+                dp[0][j] = false;
+            }
+        }
+
+        for i in 1..=n {
+            for j in 1..=m {
+                match &tokens[j - 1] {
+                    PatternToken::Literal(c) => {
+                        dp[i][j] = dp[i - 1][j - 1] && w[i - 1] == *c;
+                    }
+                    PatternToken::Question => {
+                        dp[i][j] = dp[i - 1][j - 1];
+                    }
+                    PatternToken::Set(s) => {
+                        dp[i][j] = dp[i - 1][j - 1] && s.contains(&w[i - 1]);
+                    }
+                    PatternToken::Star => {
+                        dp[i][j] = dp[i][j - 1] || dp[i - 1][j];
+                    }
+                    PatternToken::Plus => {
+                        dp[i][j] = dp[i - 1][j - 1] || dp[i - 1][j];
+                    }
+                }
+            }
+        }
+
+        Ok(dp[n][m])
     }
 }
 
@@ -795,6 +858,65 @@ mod tests {
         let selections = vec![(Some("name".to_string()), "jo*".to_string())];
         let results = storage.query(&selections, None).unwrap();
         assert_eq!(results.len(), 1);
+    }
+
+    #[test]
+    fn test_hand_checkable_cases() {
+        let storage = MemoryStorage::new();
+        assert!(storage.wildcard_match("ab", "+").unwrap());
+        assert!(!storage.wildcard_match("", "+").unwrap());
+        assert!(storage.wildcard_match("abc", "a?c").unwrap());
+        assert!(!storage.wildcard_match("ac", "a?c").unwrap());
+        assert!(storage.wildcard_match("johndoe", "*doe").unwrap());
+        assert!(storage.wildcard_match("red", "[rg]ed").unwrap());
+        assert!(!storage.wildcard_match("bed", "[rg]ed").unwrap());
+        assert!(!storage.wildcard_match("j", "j?hn").unwrap());
+    }
+
+    #[test]
+    fn test_rfc2378_full_wildcards() {
+        let mut storage = MemoryStorage::new();
+        let mut fields = HashMap::new();
+        fields.insert("name".to_string(), "John Doe".to_string());
+        storage.add_record(fields, None, None);
+
+        // 1. Non-suffix * (prefix and infix)
+        let results = storage.query(&[(Some("name".to_string()), "*doe".to_string())], None).unwrap();
+        assert_eq!(results.len(), 1);
+        let results = storage.query(&[(Some("name".to_string()), "j*n".to_string())], None).unwrap();
+        assert_eq!(results.len(), 1);
+
+        // 2. + matching one-or-more characters
+        let results = storage.query(&[(Some("name".to_string()), "jo+n".to_string())], None).unwrap();
+        assert_eq!(results.len(), 1);
+        let results = storage.query(&[(Some("name".to_string()), "jn+".to_string())], None).unwrap();
+        assert_eq!(results.len(), 0);
+
+        // 3. ? matching exactly one character
+        let results = storage.query(&[(Some("name".to_string()), "j?hn".to_string())], None).unwrap();
+        assert_eq!(results.len(), 1);
+        let results = storage.query(&[(Some("name".to_string()), "j??hn".to_string())], None).unwrap();
+        assert_eq!(results.len(), 0);
+
+        // 4. [abc] bracket-set matching
+        let results = storage.query(&[(Some("name".to_string()), "[jrg]ohn".to_string())], None).unwrap();
+        assert_eq!(results.len(), 1);
+
+        // 5. Combining multiple wildcard forms
+        let results = storage.query(&[(Some("name".to_string()), "j?hn*".to_string())], None).unwrap();
+        assert_eq!(results.len(), 1);
+        let results = storage.query(&[(Some("name".to_string()), "[jrg]oh?".to_string())], None).unwrap();
+        assert_eq!(results.len(), 1);
+
+        // 6. Malformed pattern (unclosed [ or empty []) returns Err(StorageError::InvalidArgument)
+        let results = storage.query(&[(Some("name".to_string()), "[ab".to_string())], None);
+        assert!(matches!(results, Err(StorageError::InvalidArgument(_))));
+        let results = storage.query(&[(Some("name".to_string()), "[]".to_string())], None);
+        assert!(matches!(results, Err(StorageError::InvalidArgument(_))));
+
+        // 7. A stray ] with no preceding [ returns Err(StorageError::InvalidArgument)
+        let results = storage.query(&[(Some("name".to_string()), "abc]".to_string())], None);
+        assert!(matches!(results, Err(StorageError::InvalidArgument(_))));
     }
 
     #[test]

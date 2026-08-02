@@ -277,7 +277,7 @@ async fn test_should_reject_delete_by_unauthorized_team_member() {
 }
 
 #[tokio::test]
-async fn test_should_reject_query_with_illegal_wildcard_value() {
+async fn test_should_support_non_suffix_wildcard_in_query() {
     let keys_dir = tempdir().unwrap();
     let test_user = TestUser::new("bob");
     std::fs::write(keys_dir.path().join("bob_id_ed25519.pub"), test_user.pub_key.as_bytes()).unwrap();
@@ -304,9 +304,21 @@ async fn test_should_reject_query_with_illegal_wildcard_value() {
     reader.read_line(&mut line).await.unwrap();
     assert!(line.contains("200:Ok"));
 
-    // Only suffix wildcards ('doe*') are supported - a prefix wildcard must be
-    // rejected with RFC's "512 Illegal value", not silently mismatched.
+    // Prefix wildcard query should match successfully (find johndoe)
     reader.get_mut().write_all(b"query name=*doe\n").await.unwrap();
+    line.clear();
+    reader.read_line(&mut line).await.unwrap();
+    assert!(line.starts_with("102:There were") || line.starts_with("-200:"), "Expected success response but got: {}", line);
+    loop {
+        line.clear();
+        reader.read_line(&mut line).await.unwrap();
+        if line.starts_with("200:Ok") || line.starts_with("501:No matches") || line.starts_with("512:") {
+            break;
+        }
+    }
+
+    // Genuinely malformed query (unclosed bracket) should still fail loudly with "512:Illegal value"
+    reader.get_mut().write_all(b"query name=[ab\n").await.unwrap();
     line.clear();
     reader.read_line(&mut line).await.unwrap();
     assert!(line.starts_with("512:Illegal value"), "Expected 512: but got: {}", line);
