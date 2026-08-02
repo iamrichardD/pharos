@@ -20,28 +20,51 @@ use pharos_scan::fingerprint::Fingerprinter;
 use pharos_client::{PharosClient, PharosResponse};
 use std::env;
 use inquire::{MultiSelect, Text};
+use clap::Parser;
+
+#[derive(clap::Parser)]
+#[command(name = "pharos-scan")]
+#[command(about = "Pharos Network Discovery Scanner", long_about = None)]
+struct Cli {
+    /// Optional CIDR subnet to scan directly (e.g. 192.168.1.0/24) instead of mDNS discovery
+    subnet: Option<String>,
+
+    /// Skip the interactive TUI and print discovered nodes (with enrichment data) as a JSON
+    /// array to stdout - for scripting. Pipe to `jq` for filtering.
+    #[arg(long)]
+    json: bool,
+}
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    let cli = Cli::parse();
+
     // Initialize tracing
-    let subscriber = FmtSubscriber::builder()
-        .with_max_level(Level::INFO)
-        .finish();
-    tracing::subscriber::set_global_default(subscriber)?;
+    let subscriber_builder = FmtSubscriber::builder()
+        .with_max_level(Level::INFO);
+    
+    if cli.json {
+        let subscriber = subscriber_builder.with_writer(std::io::stderr).finish();
+        tracing::subscriber::set_global_default(subscriber)?;
+    } else {
+        let subscriber = subscriber_builder.finish();
+        tracing::subscriber::set_global_default(subscriber)?;
+    }
 
     info!("Starting pharos-scan...");
 
     let engine = ScannerEngine::default();
 
-    // 1. Discover nodes: an optional CIDR subnet argument (e.g. `pharos-scan 192.168.1.0/24`)
-    // switches to a TCP-probe-based subnet scan; with no argument, the default mDNS discovery
-    // behavior below (unchanged) is used.
-    let args: Vec<String> = env::args().collect();
-    let mut nodes = if let Some(subnet) = args.get(1) {
+    // 1. Discover nodes
+    let mut nodes = if let Some(subnet) = cli.subnet.as_deref() {
         info!("Scanning subnet {}...", subnet);
         let found = engine.scan_subnet(subnet).await?;
         if found.is_empty() {
-            warn!("No live hosts found in subnet {}.", subnet);
+            if cli.json {
+                println!("[]");
+            } else {
+                warn!("No live hosts found in subnet {}.", subnet);
+            }
             return Ok(());
         }
         info!("Found {} live host(s) in {}", found.len(), subnet);
@@ -49,7 +72,11 @@ async fn main() -> Result<()> {
     } else {
         let found = engine.discover_mdns().await?;
         if found.is_empty() {
-            warn!("No nodes discovered via mDNS.");
+            if cli.json {
+                println!("[]");
+            } else {
+                warn!("No nodes discovered via mDNS.");
+            }
             return Ok(());
         }
         info!("Found {} nodes via mDNS", found.len());
@@ -78,6 +105,15 @@ async fn main() -> Result<()> {
         if let Some(ref mut c) = client {
             let _ = engine.check_existing(node, c).await;
         }
+    }
+
+    if cli.json {
+        let json_output = serde_json::to_string_pretty(&nodes)?;
+        println!("{}", json_output);
+        if let Some(c) = client {
+            let _ = c.quit().await;
+        }
+        return Ok(());
     }
 
     // 4. Interactive Selection (TUI)
@@ -150,4 +186,38 @@ async fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use clap::Parser;
+
+    #[test]
+    fn test_cli_parsing() {
+        // 1. Cli::parse_from(["pharos-scan", "--json"]) -> json is true, subnet is None.
+        let cli = Cli::parse_from(["pharos-scan", "--json"]);
+        assert!(cli.json);
+        assert_eq!(cli.subnet, None);
+
+        // 2. Cli::parse_from(["pharos-scan", "10.0.0.0/24", "--json"]) -> json is true, subnet is Some("10.0.0.0/24").
+        let cli = Cli::parse_from(["pharos-scan", "10.0.0.0/24", "--json"]);
+        assert!(cli.json);
+        assert_eq!(cli.subnet.as_deref(), Some("10.0.0.0/24"));
+
+        // 3. Cli::parse_from(["pharos-scan", "--json", "10.0.0.0/24"]) -> same result as #2.
+        let cli = Cli::parse_from(["pharos-scan", "--json", "10.0.0.0/24"]);
+        assert!(cli.json);
+        assert_eq!(cli.subnet.as_deref(), Some("10.0.0.0/24"));
+
+        // 4. Cli::parse_from(["pharos-scan"]) -> json is false, subnet is None.
+        let cli = Cli::parse_from(["pharos-scan"]);
+        assert!(!cli.json);
+        assert_eq!(cli.subnet, None);
+
+        // 5. Cli::parse_from(["pharos-scan", "10.0.0.0/24"]) -> json is false, subnet is Some("10.0.0.0/24").
+        let cli = Cli::parse_from(["pharos-scan", "10.0.0.0/24"]);
+        assert!(!cli.json);
+        assert_eq!(cli.subnet.as_deref(), Some("10.0.0.0/24"));
+    }
 }

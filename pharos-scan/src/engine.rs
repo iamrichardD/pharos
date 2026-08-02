@@ -68,23 +68,18 @@ impl ScannerEngine {
         let start = std::time::Instant::now();
 
         while start.elapsed() < scan_duration {
-            if let Ok(event) = receiver.recv_timeout(Duration::from_millis(100)) {
-                match event {
-                    ServiceEvent::ServiceResolved(info) => {
-                        for ip in info.get_addresses() {
-                            let node = DiscoveredNode {
-                                ip: *ip,
-                                hostname: Some(info.get_fullname().to_string()),
-                                mac: None,
-                                manufacturer: None,
-                                ports: Vec::new(),
-                                role: None,
-                                is_existing: false,
-                            };
-                            nodes.insert(*ip, node);
-                        }
-                    }
-                    _ => {}
+            if let Ok(ServiceEvent::ServiceResolved(info)) = receiver.recv_timeout(Duration::from_millis(100)) {
+                for ip in info.get_addresses() {
+                    let node = DiscoveredNode {
+                        ip: *ip,
+                        hostname: Some(info.get_fullname().to_string()),
+                        mac: None,
+                        manufacturer: None,
+                        ports: Vec::new(),
+                        role: None,
+                        is_existing: false,
+                    };
+                    nodes.insert(*ip, node);
                 }
             }
         }

@@ -66,6 +66,26 @@ Every live host found this way is automatically enriched, best-effort, with its 
 (resolved from the MAC's OUI prefix), and **hostname** (reverse DNS) when available, alongside the
 same port-fingerprinting used for mDNS-discovered nodes.
 
+### Scripted Discovery (JSON Output)
+For scripting, orchestration, or integration with external tools, pass the `--json` flag. This disables the interactive TUI prompt and writes the discovered nodes as a JSON array directly to `stdout`.
+
+To keep the output stream clean and valid for JSON parsers like `jq`, all status updates and logging messages are automatically routed to `stderr`.
+
+```bash
+# Scan and print all discovered nodes as JSON
+./pharos-scan --json
+
+# Run a targeted subnet scan and output JSON
+./pharos-scan --json 10.10.10.0/24
+```
+
+Because `pharos-scan` outputs clean JSON to `stdout`, you can easily pipe the results into `jq` for advanced filtering (for example, finding only newly discovered nodes that aren't already registered in Pharos):
+
+```bash
+# Find all new nodes that do not exist in the Pharos registry yet
+./pharos-scan --json | jq '.[] | select(.is_existing == false)'
+```
+
 ---
 
 ## Next Steps

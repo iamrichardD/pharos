@@ -1991,6 +1991,7 @@ name = "pharos-scan"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "clap",
  "dns-lookup",
  "futures",
  "inquire",
@@ -2003,6 +2004,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tokio",
+ "tokio-rustls",
  "tracing",
  "tracing-subscriber",
 ]
