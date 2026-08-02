@@ -120,6 +120,17 @@ sequenceDiagram
     Server-->>Client: 200: Success
 ```
 
+## Known RFC 2378 Deviations
+
+Pharos deliberately deviates from RFC 2378 in several areas to support modern environments and security models. For the complete, detailed breakdown, visit the canonical [Architecture guide](https://iamrichardd.com/pharos/architecture) on the Pharos website.
+
+- **No Field-Level Attributes/ACLs:** Pharos uses a flat, metadata-free `Record` structure with record-level authorization (fingerprint/team ownership) instead of RFC's per-field keywords/ACLs. This means schema discovery via the `fields` command is global across all records.
+- **SSH-Key Authentication:** Native password/Kerberos login methods are replaced entirely by a modern, high-rigor SSH key-based challenge-response flow. RFC commands like `answer`, `clear`, `email`, and `xlogin` parse successfully but have no dispatch logic.
+- **Parseable but Unimplemented Commands:** Commands recognized by the parser but not dispatched (`SiteInfo`, `Logout`, `Answer`, `Clear`, `Email`, `XLogin`, `Help`) fall through to a Pharos-invented extension code `597:Command recognized, but not yet implemented`.
+- **Inert `set` Options:** The `set` command enforces safety-critical options (`limit` and `addonly`) but accepts other RFC options (`echo`, `charset`, `verbose`, `nolog`, `external`) as no-ops.
+- **Response Code Customizations:** Response codes are aligned with RFC Appendix B, using the custom `597` extension code for unimplemented commands, and using `511` (for `add`), `510` (for `change`), and `516` (fallback) where specific RFC authorization codes are absent.
+- **Wildcard Escape Limitation:** Full RFC-compliant wildcard matching (`*`, `+`, `?`, `[abc]`) is supported using a hand-rolled dynamic programming matcher, but has no escape mechanism; literal wildcard characters cannot be searched.
+
 ## Core Components
 
 ### 1. Pharos Server (`pharos-server`)

@@ -124,6 +124,50 @@ sequenceDiagram
     Server-->>Client: 200: Success
 ```
 
+## Known RFC 2378 Deviations
+
+:::note[RFC 2378 Protocol Deviations]
+Pharos deliberately deviates from RFC 2378 in several places — here's what's intentional and what's still an open gap.
+:::
+
+### 1. No Field-Level Attribute or ACL System
+RFC 2378 defines per-field keywords (e.g., `Public`, `Private`, `LocalPub`, `Sacred`, `Unique`, `Encrypt`, `Indexed`, `NoMeta`, `NoPeople`, `Turn`, `Any`, `Always`, `Default`, `ForcePub`, `Change`) governing visibility and mutability on a per-field basis. 
+In contrast, Pharos's `Record` structure is implemented as a flat, metadata-free `HashMap<String, String>` inside `storage.rs`. Authorization is handled strictly at the record level (enforcing fingerprint/team ownership in `change_record` and `delete_record`). This is a deliberate, load-bearing design choice (Pharos's target use cases of home labs and small teams do not require field-level access controls).
+* **Downstream Consequence:** Because there is no concept of field-level access control, schema discovery via the `fields` command is global. It reports field names (never values) harvested across all stored records regardless of which team owns them.
+
+### 2. SSH-Key Challenge-Response Authentication
+The native password-based and Kerberos login mechanisms described in RFC 2378 are replaced entirely by a modern, high-rigor SSH key-based challenge-response flow.
+While the `login` command is supported, it is only dispatched to generate a challenge for the Pharos-specific `auth` command (which verifies cryptographic signatures using local SSH keys). Other RFC-defined authentication commands, such as `answer` (encrypted password response), `clear` (cleartext password), `email` (port/domain-based authentication), and `xlogin` (Kerberos v4/v5, GSSAPI, ANSI X9.9), parse successfully into `Command` variants but have zero dispatch logic behind them.
+
+### 3. Parseable Commands Without Dispatch Logic
+The parser recognizes all standard RFC 2378 commands. However, the server does not implement dispatch logic for the following seven commands:
+* `SiteInfo`
+* `Logout`
+* `Answer`
+* `Clear`
+* `Email`
+* `XLogin`
+* `Help`
+Any attempt to call these commands falls through to the generic Pharos extension response code `597:Command recognized, but not yet implemented` (deliberately distinct from a `598` syntax error).
+
+### 4. Inert `set` Command Options
+The `set` command is implemented in `lib.rs` with real enforcement for two safety-critical options: `limit` (capping the number of entries a `change` or `delete` may affect) and `addonly` (preventing fields from being overwritten).
+The other five RFC-defined options—`echo`, `charset`, `verbose`, `nolog`, and `external`—are settable and reportable (via `set` with no arguments) but have no behavioral effect on the server:
+* `echo` does not echo commands back.
+* `charset` is accepted but no character set conversions are performed.
+* `verbose` does not emit interim progress lines.
+* `nolog` does not affect logging.
+* `external` does not hide any fields because there is no field-keyword concept.
+
+### 5. Response Code Alignments
+Pharos aligns its response codes with Appendix B of RFC 2378. Two permanent design characteristics of this alignment include:
+* **Extension Code `597`:** Pharos introduces the `597` response code specifically to denote a command that is recognized by the parser but not implemented by the dispatcher, distinguishing it from `598` (which indicates an unknown/unparseable command).
+* **Authorization Gaps:** Where RFC 2378 does not provide specific codes for authorization failures, Pharos uses `511` ("not authorized to add entries") for `add`, `510` ("not authorized to change this entry") for `change`, and `516` ("no authorization for request") as a fallback for all other permission checks (such as unauthorized deletion or failed signature verification).
+
+### 6. Wildcard Matching Escape Limitation
+Pharos supports RFC 2378 wildcard matching for the `*`, `+`, `?`, and `[abc]` forms in any position or combination using a hand-rolled dynamic programming matcher (avoiding regular expression backtracking vulnerabilities and escaping complexity).
+However, a deliberate limitation exists: there is no escape mechanism. Literal wildcard characters (such as `*`, `+`, `?`, `[`, or `]`) cannot be matched in search values, as they are always interpreted as pattern syntax.
+
 ## Core Components
 
 ### 1. Pharos Server (`pharos-server`)
