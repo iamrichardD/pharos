@@ -130,6 +130,83 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                         context.id = Some(id.to_lowercase());
                         writer.write_all(b"200:Ok\n").await?;
                     }
+                    Command::Fields(requested) => {
+                        // Harvest all record field keys to identify dynamically added user-defined fields.
+                        let all_records = {
+                            let lock = storage.read().map_err(|_| anyhow::anyhow!("Storage lock poisoned"))?;
+                            lock.query(&[], None)
+                        };
+
+                        let mut harvested_fields = std::collections::HashSet::new();
+                        match all_records {
+                            Ok(records) => {
+                                for record in records {
+                                    for key in record.fields.keys() {
+                                        harvested_fields.insert(key.clone());
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                error!("Storage query failed for fields command: {}", e);
+                            }
+                        }
+
+                        // Combine the dynamic fields with the baseline schema.
+                        let mut merged: std::collections::HashMap<String, (usize, String)> = std::collections::HashMap::new();
+                        let baseline = [
+                            ("type", 64, "Record type discriminator (e.g. \"person\" or \"machine\")."),
+                            ("hostname", 256, "Unique identifier for a machine entry; used to detect an existing record on add/upsert."),
+                            ("alias", 32, "Unique short identifier for a person entry; used to detect an existing record on add/upsert."),
+                            ("created_at", 32, "ISO-8601 timestamp of when this entry was first created (server-injected)."),
+                            ("last_seen_at", 32, "ISO-8601 timestamp of the most recent update to this entry (server-injected)."),
+                            ("status", 64, "Free-form status/presence value (e.g. \"active\", \"online\", \"offline\")."),
+                        ];
+                        for &(name, max_len, desc) in &baseline {
+                            merged.insert(name.to_string(), (max_len, desc.to_string()));
+                        }
+
+                        for field_name in harvested_fields {
+                            merged.entry(field_name).or_insert((256, "User-defined field; no additional metadata available.".to_string()));
+                        }
+
+                        // Maintain sorting for deterministic IDs and display order.
+                        let mut sorted_names: Vec<String> = merged.keys().cloned().collect();
+                        sorted_names.sort();
+
+                        let fields_with_ids: Vec<(usize, String, usize, String)> = sorted_names
+                            .into_iter()
+                            .enumerate()
+                            .map(|(index, name)| {
+                                let (max_len, desc) = merged.get(&name).unwrap().clone();
+                                (index + 1, name, max_len, desc)
+                            })
+                            .collect();
+
+                        let to_emit = if requested.is_empty() {
+                            fields_with_ids
+                        } else {
+                            let requested_set: std::collections::HashSet<&String> = requested.iter().collect();
+                            let filtered: Vec<(usize, String, usize, String)> = fields_with_ids
+                                .into_iter()
+                                .filter(|(_, name, _, _)| requested_set.contains(name))
+                                .collect();
+
+                            if filtered.is_empty() {
+                                writer.write_all(b"507:Field does not exist\n").await?;
+                                continue;
+                            }
+                            filtered
+                        };
+
+                        // Output the fields technical details and descriptions sequentially.
+                        for (id, name, max_len, description) in to_emit {
+                            let technical_line = format!("-200:{}:{}:max {} Public\n", id, name, max_len);
+                            let description_line = format!("-200:{}:{}:{}\n", id, name, description);
+                            writer.write_all(technical_line.as_bytes()).await?;
+                            writer.write_all(description_line.as_bytes()).await?;
+                        }
+                        writer.write_all(b"200:Ok.\n").await?;
+                    }
                     Command::Login(alias) => {
                         let challenge = auth_manager.generate_challenge(alias);
                         context.login_alias = Some(alias.clone());
