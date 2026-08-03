@@ -381,19 +381,33 @@ install_pulse() {
     log "Installing Pharos Pulse Agent..."
     download_binary "pharos-pulse"
 
-    if [[ -n "${fetch_ca_ssh_target:-}" ]] && ! ${SUDO} test -f "${PHAROS_DIR}/certs/pharos-ca.crt"; then
-        fetch_ca_via_ssh "${fetch_ca_ssh_target}" || true
-    fi
-
-    # If this host already has an install.sh-provisioned CA (i.e. it also runs a
-    # server/hub, or one was manually copied here, or --fetch-ca-ssh just fetched one), trust it automatically — pulse
-    # otherwise has no way to trust the exact kind of certificate install.sh generates.
+    log "Checking whether ${host} already presents a trusted certificate (e.g. a public CA like Let's Encrypt)..."
+    ensure_openssl
     local ca_cert_line=""
-    if ${SUDO} test -f "${PHAROS_DIR}/certs/pharos-ca.crt"; then
-        ca_cert_line="Environment=PHAROS_CA_CERT=${PHAROS_DIR}/certs/pharos-ca.crt"
-        pulse_ca_found="yes"
+    local host_only="${host%%:*}"
+    local host_for_probe="${host}"
+    [[ "${host}" == *:* ]] || host_for_probe="${host}:2378"
+    if [[ "${host_only}" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        pulse_host_is_ip="yes"
     else
-        pulse_ca_found="no"
+        pulse_host_is_ip="no"
+    fi
+    if echo | timeout 10 openssl s_client -connect "${host_for_probe}" -verify_hostname "${host_only}" -verify_return_error >/dev/null 2>&1; then
+        pulse_ca_found="trusted"
+    else
+        if [[ -n "${fetch_ca_ssh_target:-}" ]] && ! ${SUDO} test -f "${PHAROS_DIR}/certs/pharos-ca.crt"; then
+            fetch_ca_via_ssh "${fetch_ca_ssh_target}" || true
+        fi
+
+        # If this host already has an install.sh-provisioned CA (i.e. it also runs a
+        # server/hub, or one was manually copied here, or --fetch-ca-ssh just fetched one), trust it automatically — pulse
+        # otherwise has no way to trust the exact kind of certificate install.sh generates.
+        if ${SUDO} test -f "${PHAROS_DIR}/certs/pharos-ca.crt"; then
+            ca_cert_line="Environment=PHAROS_CA_CERT=${PHAROS_DIR}/certs/pharos-ca.crt"
+            pulse_ca_found="yes"
+        else
+            pulse_ca_found="no"
+        fi
     fi
 
     log "Configuring Systemd service for Pharos Pulse..."
@@ -509,7 +523,9 @@ main() {
             echo -e "5. TLS: certificate SAN includes ${host_override} — clients can connect using that hostname."
         fi
     elif [[ "${target}" == "node" || "${target}" == "pulse" ]]; then
-        if [[ "${pulse_ca_found:-no}" == "yes" ]]; then
+        if [[ "${pulse_ca_found:-no}" == "trusted" ]]; then
+            echo -e "1. TLS: ${host_override:-your server} already presents a certificate this machine trusts (e.g. a public CA like Let's Encrypt) — no CA configuration needed."
+        elif [[ "${pulse_ca_found:-no}" == "yes" ]]; then
             echo -e "1. TLS: found a local Pharos CA at ${PHAROS_DIR}/certs/pharos-ca.crt — pulse trusts it automatically."
         else
             echo -e "1. TLS: no local Pharos CA found. Next time, pass --fetch-ca-ssh <user@host> to install.sh to do this automatically."
@@ -520,6 +536,9 @@ main() {
             echo -e "     ${SUDO} mkdir -p /etc/systemd/system/pharos-pulse.service.d && \\"
             echo -e "     printf '[Service]\\\\nEnvironment=PHAROS_CA_CERT=${PHAROS_DIR}/certs/pharos-ca.crt\\\\n' | ${SUDO} tee /etc/systemd/system/pharos-pulse.service.d/override.conf >/dev/null && \\"
             echo -e "     ${SUDO} systemctl daemon-reload && ${SUDO} systemctl restart pharos-pulse"
+            if [[ "${pulse_host_is_ip:-no}" == "yes" ]]; then
+                echo -e "   Note: you connected via a bare IP address. If ${host_override:-your server} uses a public certificate (e.g. Let's Encrypt), that cert won't cover a bare IP — connecting via its hostname instead may resolve this without needing any of the above."
+            fi
         fi
         echo -e "2. Verify the pulse agent is running: ${SUDO} systemctl status pharos-pulse"
         echo -e "3. Check logs: ${SUDO} journalctl -u pharos-pulse -f"
