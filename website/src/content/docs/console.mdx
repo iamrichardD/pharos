@@ -65,22 +65,16 @@ To maintain high availability, we recommend keeping these two sites separate:
 2.  **Management (Pharos Console)**: Hosted inside your private network (e.g., in a Proxmox LXC). Provides the direct interface to your `pharos-server`.
 
 ### Running the Console
-The Web Console ships as its own container image, separate from `pharos-server`. It also requires its own `PHAROS_TLS_CERT`/`PHAROS_TLS_KEY` (mandatory HTTPS — it refuses to start without them) and needs `PHAROS_HOST` pointed at your running `pharos-server`, since the container can't resolve it otherwise:
+The Web Console ships as its own container image, separate from `pharos-server`. It also requires its own `PHAROS_TLS_CERT`/`PHAROS_TLS_KEY` (mandatory HTTPS — it refuses to start without them) and needs `PHAROS_HOST` pointed at your running `pharos-server`, since the container can't resolve it otherwise. Reuse the hub's own TLS certificate at `/etc/pharos/certs/pharos-server.crt`/`.key` instead of generating a new one — this is the same cert file `pharos-server` itself uses, so if you're managing a real certificate (e.g. Let's Encrypt via an external renewal process), the console picks it up automatically with no separate sync path to maintain:
 
 ```bash
-mkdir -p ./pharos-web-certs
-openssl req -x509 -newkey rsa:2048 -nodes -days 365 \
-  -keyout ./pharos-web-certs/console.key -out ./pharos-web-certs/console.crt \
-  -subj "/CN=pharos-web" -addext "subjectAltName=DNS:localhost,IP:127.0.0.1"
-chmod 600 ./pharos-web-certs/console.key
-
-podman run -d --name pharos-web \
+sudo podman run -d --name pharos-web \
   -p 3000:3000 \
-  -v ./pharos-web-certs:/certs:Z \
-  -e PHAROS_TLS_CERT=/certs/console.crt \
-  -e PHAROS_TLS_KEY=/certs/console.key \
+  -v /etc/pharos/certs:/certs:ro,Z \
+  -e PHAROS_TLS_CERT=/certs/pharos-server.crt \
+  -e PHAROS_TLS_KEY=/certs/pharos-server.key \
   -e PHAROS_HOST=<your-pharos-server-ip-or-hostname> \
   ghcr.io/iamrichardd/pharos-console-web:latest
 ```
 
-Access the dashboard at `https://<your-server-ip>:3000`. The [Automated Installation Guide](./install)'s `hub` target prepares TLS material for the console but does not start this container for you — run it as a separate step. Didn't come up? Check `podman logs pharos-web`.
+Access the dashboard at `https://<your-server-ip>:3000`. Run with `sudo` (or as a user in the `pharos` group) — `pharos-server.key` is only readable by `root`/`pharos` group. If your certificate renews (Let's Encrypt or otherwise), restart this container (`podman restart pharos-web`) to pick up the new file — `pharos-server` itself reloads on `SIGHUP` (see the Server Setup docs), but the console container does not currently support a restart-free reload. Didn't come up? Check `podman logs pharos-web`.

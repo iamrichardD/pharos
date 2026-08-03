@@ -419,9 +419,8 @@ EOF
 install_web_console() {
     ensure_system_user
     log "Installing Pharos Web Console..."
-    setup_pki "pharos-web" "pharos-web"
 
-    warn "Pharos Web Console ships as a container image (ghcr.io/<owner>/pharos-console-web) — see the Server Setup docs' container Quick Start to run it. Native binary/systemd installation is not available yet."
+    warn "Pharos Web Console ships as a container image (ghcr.io/<owner>/pharos-console-web) — see the Server Setup docs' container Quick Start to run it. It reuses this host's existing pharos-server TLS certificate. Native binary/systemd installation is not available yet."
 }
 
 install_toolbelt() {
