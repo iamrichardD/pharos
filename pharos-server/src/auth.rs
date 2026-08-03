@@ -269,25 +269,28 @@ impl AuthManager {
         let key_b64 = STANDARD.encode(key.to_bytes().unwrap_or_default());
         authorized_keys.push(key);
 
-        // Extract roles and teams from filename
+        // Extract roles and teams from filename tokens (split on '-'/'_') — exact token match,
+        // not substring containment, so "administrator_backup_id_ed25519" does NOT match "admin".
         let mut roles = Vec::new();
         let mut teams = Vec::new();
         if let Some(filename) = path.file_stem().and_then(|s| s.to_str()) {
-            if filename.contains("admin") {
+            let tokens: Vec<&str> = filename.split(|c: char| c == '-' || c == '_').collect();
+
+            if tokens.contains(&"admin") {
                 roles.push("admin".to_string());
-            } else if filename.contains("user") {
+            } else if tokens.contains(&"user") {
                 roles.push("user".to_string());
             }
 
-            if filename.contains("peer") {
+            if tokens.contains(&"peer") {
                 roles.push("peer".to_string());
             }
 
             // Simple team detection: e.g. "devops_id_ed25519.pub"
-            if filename.contains("devops") {
+            if tokens.contains(&"devops") {
                 teams.push("devops".to_string());
             }
-            if filename.contains("security") {
+            if tokens.contains(&"security") {
                 teams.push("security".to_string());
             }
         }
@@ -495,6 +498,31 @@ mod tests {
         let roles2 = auth_manager.get_roles(&pub_openssh2);
         assert!(roles2.contains(&"peer".to_string()));
         assert!(roles2.contains(&"admin".to_string()));
+    }
+
+    #[test]
+    fn test_should_not_grant_admin_to_administrator_substring() {
+        let dir = tempdir().unwrap();
+        let admin_sub_pub_path = dir.path().join("administrator_backup_id_ed25519.pub");
+        let admin_exact_pub_path = dir.path().join("someuser-admin_id_ed25519.pub");
+
+        let mut rng = rand::rngs::OsRng;
+
+        let priv_key1 = PrivateKey::random(&mut rng, ssh_key::Algorithm::Ed25519).unwrap();
+        let pub_openssh1 = priv_key1.public_key().to_openssh().unwrap();
+        fs::write(&admin_sub_pub_path, pub_openssh1.as_bytes()).unwrap();
+
+        let priv_key2 = PrivateKey::random(&mut rng, ssh_key::Algorithm::Ed25519).unwrap();
+        let pub_openssh2 = priv_key2.public_key().to_openssh().unwrap();
+        fs::write(&admin_exact_pub_path, pub_openssh2.as_bytes()).unwrap();
+
+        let auth_manager = AuthManager::new(dir.path(), SecurityTier::Open);
+
+        let roles1 = auth_manager.get_roles(&pub_openssh1);
+        assert!(!roles1.contains(&"admin".to_string()), "administrator_backup should not get admin role");
+
+        let roles2 = auth_manager.get_roles(&pub_openssh2);
+        assert!(roles2.contains(&"admin".to_string()), "someuser-admin should get admin role");
     }
 
     #[test]

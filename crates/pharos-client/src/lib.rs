@@ -334,27 +334,43 @@ impl PharosClient {
         Ok(resp)
     }
 
-    /// Signs a message using the configured SSH private key.
-    /// Returns (Public Key SSH string, Signature Base64 string).
+    /// Pure and synchronous by design so it's cheaply unit-testable without touching real env
+    /// vars, the filesystem, or the 60s wait loop in sign_message_async.
+    fn describe_attempted_paths(
+        personal_key_path: &str,
+        used_personal_key: bool,
+        resolved_path: &str,
+        fallback_path: &str,
+    ) -> Vec<String> {
+        let mut tried = Vec::new();
+        if !used_personal_key {
+            tried.push(personal_key_path.to_string());
+        }
+        tried.push(resolved_path.to_string());
+        tried.push(fallback_path.to_string());
+        tried
+    }
+
     pub async fn sign_message_async(message: &str) -> Result<(String, String)> {
         let home = env::var("HOME").unwrap_or_else(|_| "/root".to_string());
-        let priv_key_path_str = env::var("PHAROS_PRIVATE_KEY").unwrap_or_else(|_| {
-            let p = format!("{}/.ssh/id_ed25519", home);
-            if Path::new(&p).exists() {
-                p
-            } else {
-                // Fallback for Pharos-managed admin key
-                format!("{}/.ssh/admin_id_ed25519", home)
+        let personal_key_path = format!("{}/.ssh/id_ed25519", home);
+
+        let (priv_key_path_str, used_personal_key) = match env::var("PHAROS_PRIVATE_KEY") {
+            Ok(explicit) => (explicit, false),
+            Err(_) => {
+                if Path::new(&personal_key_path).exists() {
+                    (personal_key_path.clone(), true)
+                } else {
+                    (format!("{}/.ssh/admin_id_ed25519", home), false)
+                }
             }
-        });
+        };
 
         let priv_key_path = Path::new(&priv_key_path_str);
-        
-        // Wait for private key to appear (up to 60 seconds)
-        // This is critical for Sandbox where pharos-server generates it.
+
         let start = std::time::Instant::now();
         let timeout = std::time::Duration::from_secs(60);
-        
+
         if !priv_key_path.exists() {
             log::info!("Waiting for private key at {:?} (timeout: 60s)...", priv_key_path);
         }
@@ -364,13 +380,30 @@ impl PharosClient {
         }
 
         if !priv_key_path.exists() {
-            // Check fallback path /etc/pharos/keys/ if the primary path failed
             let fallback_path = Path::new("/etc/pharos/keys/admin_id_ed25519");
             if fallback_path.exists() {
                 log::info!("Primary key not found, but found fallback at {:?}", fallback_path);
                 return Self::sign_with_key_path(fallback_path, message).await;
             }
-            return Err(anyhow!("Private key not found at {:?} after 60s. Ensure PHAROS_PRIVATE_KEY is set correctly.", priv_key_path));
+
+            let tried = Self::describe_attempted_paths(
+                &personal_key_path,
+                used_personal_key,
+                &priv_key_path_str,
+                &fallback_path.display().to_string(),
+            );
+            let tried_list = tried.iter().map(|p| format!("  - {}", p)).collect::<Vec<_>>().join("\n");
+
+            return Err(anyhow!(
+                "No private key found for signing. Checked, in order:\n{}\n\n\
+                 If this machine is separate from the hub that generated the admin key, generate \
+                 a personal key here instead of copying the sensitive admin private key: \
+                 `ssh-keygen -t ed25519 -f {}`, then enroll its PUBLIC half (the .pub file) in \
+                 the hub's /etc/pharos/keys/ directory under a filename containing \"admin\" as \
+                 its own token (e.g. <name>-admin_id_ed25519.pub), and reload pharos-server. Or \
+                 set PHAROS_PRIVATE_KEY to point at a specific key file.",
+                tried_list, personal_key_path
+            ));
         }
 
         Self::sign_with_key_path(priv_key_path, message).await
@@ -442,9 +475,32 @@ mod tests {
     }
 
     #[test]
-    fn test_should_correctly_sign_challenge_when_key_exists() {
-        // This test would need a real key. For now, we just skip it or 
-        // mock the sign_challenge function if it were more modular.
+    fn test_should_list_all_attempted_paths_when_personal_key_not_used() {
+        let tried = PharosClient::describe_attempted_paths(
+            "/home/user/.ssh/id_ed25519",
+            false,
+            "/home/user/.ssh/admin_id_ed25519",
+            "/etc/pharos/keys/admin_id_ed25519",
+        );
+        assert_eq!(tried, vec![
+            "/home/user/.ssh/id_ed25519".to_string(),
+            "/home/user/.ssh/admin_id_ed25519".to_string(),
+            "/etc/pharos/keys/admin_id_ed25519".to_string(),
+        ]);
+    }
+
+    #[test]
+    fn test_should_omit_personal_key_from_list_when_it_was_the_resolved_path() {
+        let tried = PharosClient::describe_attempted_paths(
+            "/home/user/.ssh/id_ed25519",
+            true,
+            "/home/user/.ssh/id_ed25519",
+            "/etc/pharos/keys/admin_id_ed25519",
+        );
+        assert_eq!(tried, vec![
+            "/home/user/.ssh/id_ed25519".to_string(),
+            "/etc/pharos/keys/admin_id_ed25519".to_string(),
+        ]);
     }
     
     // For more robust testing, we'd want to mock the TCP stream.
