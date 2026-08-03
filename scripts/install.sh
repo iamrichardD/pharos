@@ -36,7 +36,8 @@ error() { echo -e "${RED}[ERROR]${NC} $1" >&2; exit 1; }
 activate_systemd_service() {
     local service_name=$1
     ${SUDO} systemctl daemon-reload
-    ${SUDO} systemctl enable --now "${service_name}"
+    ${SUDO} systemctl enable "${service_name}"
+    ${SUDO} systemctl restart "${service_name}"
 }
 
 # --- Environment Detection ---
