@@ -378,6 +378,7 @@ install_pulse() {
     if [[ ! "${host}" =~ ^[A-Za-z0-9.-]+(:[0-9]+)?$ ]]; then
         error "Invalid host value for Pharos Pulse: '${host}'"
     fi
+    [[ "${host}" == *:* ]] || host="${host}:2378"
 
     log "Installing Pharos Pulse Agent..."
     download_binary "pharos-pulse"
@@ -386,14 +387,12 @@ install_pulse() {
     ensure_openssl
     local ca_cert_line=""
     local host_only="${host%%:*}"
-    local host_for_probe="${host}"
-    [[ "${host}" == *:* ]] || host_for_probe="${host}:2378"
     if [[ "${host_only}" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
         pulse_host_is_ip="yes"
     else
         pulse_host_is_ip="no"
     fi
-    if echo | timeout 10 openssl s_client -connect "${host_for_probe}" -verify_hostname "${host_only}" -verify_return_error >/dev/null 2>&1; then
+    if echo | timeout 10 openssl s_client -connect "${host}" -verify_hostname "${host_only}" -verify_return_error >/dev/null 2>&1; then
         pulse_ca_found="trusted"
     else
         if [[ -n "${fetch_ca_ssh_target:-}" ]] && ! ${SUDO} test -f "${PHAROS_DIR}/certs/pharos-ca.crt"; then
