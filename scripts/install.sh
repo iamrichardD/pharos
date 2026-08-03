@@ -512,7 +512,14 @@ main() {
         if [[ "${pulse_ca_found:-no}" == "yes" ]]; then
             echo -e "1. TLS: found a local Pharos CA at ${PHAROS_DIR}/certs/pharos-ca.crt — pulse trusts it automatically."
         else
-            echo -e "1. TLS: no local Pharos CA found. If ${host_override:-your server} is a REMOTE host, copy ITS ${PHAROS_DIR}/certs/pharos-ca.crt to this machine, add 'Environment=PHAROS_CA_CERT=<path-to-copied-file>' to /etc/systemd/system/pharos-pulse.service, then run: ${SUDO} systemctl daemon-reload && ${SUDO} systemctl restart pharos-pulse"
+            echo -e "1. TLS: no local Pharos CA found. Next time, pass --fetch-ca-ssh <user@host> to install.sh to do this automatically."
+            echo -e "   To fix this manually now, if ${host_override:-your server} is a REMOTE host, run:"
+            echo -e "     scp <user@host>:${PHAROS_DIR}/certs/pharos-ca.crt /tmp/pharos-ca.crt && \\"
+            echo -e "     ${SUDO} mkdir -p ${PHAROS_DIR}/certs && \\"
+            echo -e "     ${SUDO} mv /tmp/pharos-ca.crt ${PHAROS_DIR}/certs/pharos-ca.crt && \\"
+            echo -e "     ${SUDO} mkdir -p /etc/systemd/system/pharos-pulse.service.d && \\"
+            echo -e "     printf '[Service]\\\\nEnvironment=PHAROS_CA_CERT=${PHAROS_DIR}/certs/pharos-ca.crt\\\\n' | ${SUDO} tee /etc/systemd/system/pharos-pulse.service.d/override.conf >/dev/null && \\"
+            echo -e "     ${SUDO} systemctl daemon-reload && ${SUDO} systemctl restart pharos-pulse"
         fi
         echo -e "2. Verify the pulse agent is running: ${SUDO} systemctl status pharos-pulse"
         echo -e "3. Check logs: ${SUDO} journalctl -u pharos-pulse -f"
