@@ -1982,7 +1982,7 @@ dependencies = [
 
 [[package]]
 name = "pharos-pulse"
-version = "1.10.6"
+version = "1.10.7"
 dependencies = [
  "anyhow",
  "pharos-client",
