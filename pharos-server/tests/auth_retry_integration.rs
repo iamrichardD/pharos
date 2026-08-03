@@ -53,8 +53,12 @@ async fn test_should_transparently_auth_retry_when_506_received() {
     let temp_dir = tempdir().unwrap();
     let dir_path = temp_dir.path();
 
-    // 2. Generate SSL certificates using standard sandbox script
-    let cert_status = Command::new("/workspace/scripts/gen-sandbox-certs.sh")
+    // 2. Generate SSL certificates using standard sandbox script. CARGO_MANIFEST_DIR (this
+    // crate's own directory, baked in at compile time) is portable across environments -
+    // unlike a hardcoded absolute path, it works whether this runs in a local Podman mount,
+    // the real CI runner's checkout dir, or anywhere else.
+    let script_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../scripts/gen-sandbox-certs.sh");
+    let cert_status = Command::new(&script_path)
         .arg(dir_path)
         .status()
         .expect("Failed to execute gen-sandbox-certs.sh");
