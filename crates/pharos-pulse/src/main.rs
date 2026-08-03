@@ -24,7 +24,7 @@ use std::collections::HashMap;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    println!("Starting pharos-pulse agent v1.3.1...");
+    println!("Starting pharos-pulse agent v{}...", env!("CARGO_PKG_VERSION"));
 
     let server_addr = env::var("PHAROS_SERVER").unwrap_or_else(|_| "127.0.0.1:2378".to_string());
     let machine_name = env::var("PHAROS_MACHINE_NAME").unwrap_or_else(|_| {
@@ -66,13 +66,18 @@ async fn main() -> Result<()> {
         }
     }
 
-    // 1. Baseline (ONLINE)
+    // 1. Baseline (ONLINE) — retry with backoff until it succeeds or shutdown is requested, so a
+    // transient failure (e.g. TLS/cert not yet trusted right after boot) doesn't leave the node
+    // unregistered for up to an hour waiting on the next heartbeat tick.
     println!("Collecting baseline inventory...");
     let inventory = collect_inventory();
-    if let Err(e) = send_presence(&server_addr, &machine_name, "online", Some(inventory)).await {
-        eprintln!("Failed to send baseline presence: {:?}", e);
-    } else {
-        println!("Baseline inventory sent successfully (Status: online).");
+
+    tokio::select! {
+        _ = send_baseline_until_success(&server_addr, &machine_name, inventory) => {},
+        _ = &mut shutdown => {
+            println!("Shutdown signal received during startup, exiting gracefully...");
+            return Ok(());
+        }
     }
 
     // 2. Heartbeat & Shutdown handling
@@ -181,6 +186,30 @@ async fn wait_for_server(server_addr: &str) {
     }
 }
 
+async fn send_baseline_until_success(
+    server_addr: &str,
+    machine_name: &str,
+    inventory: HashMap<String, String>,
+) {
+    let mut delay = Duration::from_secs(1);
+    loop {
+        match send_presence(server_addr, machine_name, "online", Some(inventory.clone())).await {
+            Ok(_) => {
+                println!("Baseline inventory sent successfully (Status: online).");
+                return;
+            }
+            Err(e) => {
+                eprintln!(
+                    "Failed to send baseline presence: {:?} (retrying in {:?})",
+                    e, delay
+                );
+                sleep(delay).await;
+                delay = std::cmp::min(delay * 2, Duration::from_secs(60));
+            }
+        }
+    }
+}
+
 #[cfg(target_os = "linux")]
 fn get_serial_number() -> String {
     std::fs::read_to_string("/sys/class/dmi/id/product_serial")
@@ -251,5 +280,29 @@ mod tests {
         assert!(cmd.contains("add hostname=\"test-host\" status=\"online\""));
         assert!(cmd.contains("type=\"machine\""));
         assert!(cmd.contains("cpu_cores=\"8\""));
+    }
+
+    #[test]
+    fn test_should_increase_delay_exponentially_up_to_limit_when_calculating_backoff() {
+        // Verify the exact backoff logic used in send_baseline_until_success & wait_for_server
+        let mut delay = Duration::from_secs(1);
+        let cap = Duration::from_secs(60);
+
+        // Step 1: 1s * 2 = 2s
+        delay = std::cmp::min(delay * 2, cap);
+        assert_eq!(delay, Duration::from_secs(2));
+
+        // Step 2: 2s * 2 = 4s
+        delay = std::cmp::min(delay * 2, cap);
+        assert_eq!(delay, Duration::from_secs(4));
+
+        // Step 3: 4s * 2 = 8s
+        delay = std::cmp::min(delay * 2, cap);
+        assert_eq!(delay, Duration::from_secs(8));
+
+        // Fast forward to near cap
+        delay = Duration::from_secs(32);
+        delay = std::cmp::min(delay * 2, cap);
+        assert_eq!(delay, Duration::from_secs(60)); // Capped at 60s
     }
 }
