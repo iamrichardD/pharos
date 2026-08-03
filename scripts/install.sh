@@ -236,6 +236,47 @@ setup_pki() {
     log "Certificate generated: ${cert_dir}/${cert_name}.crt"
 }
 
+# Best-effort, opt-in CA fetch over SSH for a remote node joining an existing hub. Never
+# prompts (curl | bash has no stdin to prompt on) and never weakens SSH's own trust model —
+# if the hub's SSH host key isn't already known, or key-based auth isn't already set up, this
+# fails fast and the caller falls back to the existing manual-copy instructions.
+fetch_ca_via_ssh() {
+    local ssh_target=$1
+    local cert_dir="${PHAROS_DIR}/certs"
+
+    if ! command -v ssh >/dev/null 2>&1; then
+        warn "ssh is not installed on this machine — cannot use --fetch-ca-ssh. Falling back to manual TLS trust instructions below."
+        return 1
+    fi
+
+    log "Attempting to fetch hub CA cert via SSH from ${ssh_target}..."
+    ${SUDO} mkdir -p "${cert_dir}"
+    ${SUDO} chown root:pharos "${cert_dir}"
+    ${SUDO} chmod 750 "${cert_dir}"
+
+    local fetched
+    if ! fetched="$(ssh -o BatchMode=yes -o ConnectTimeout=10 "${ssh_target}" \
+        "sudo cat ${cert_dir}/pharos-ca.crt" 2>/dev/null)" || [[ -z "${fetched}" ]]; then
+        warn "Could not fetch hub CA cert via SSH from ${ssh_target} (no passwordless SSH/sudo, or the file doesn't exist there) — falling back to manual TLS trust instructions below."
+        warn "If you want --fetch-ca-ssh to work, grant narrowly-scoped passwordless sudo on the hub, e.g.: echo '<hub-user> ALL=(ALL) NOPASSWD: /usr/bin/cat ${cert_dir}/pharos-ca.crt' | sudo tee /etc/sudoers.d/pharos-ca-fetch — avoid a blanket 'NOPASSWD: ALL' just for this."
+        return 1
+    fi
+
+    echo "${fetched}" | ${SUDO} tee "${cert_dir}/pharos-ca.crt" > /dev/null
+    ${SUDO} chmod 644 "${cert_dir}/pharos-ca.crt"
+
+    local fingerprint
+    fingerprint="$(${SUDO} openssl x509 -in "${cert_dir}/pharos-ca.crt" -noout -fingerprint -sha256 2>/dev/null | cut -d= -f2)"
+    if [[ -z "${fingerprint}" ]]; then
+        warn "Fetched data from ${ssh_target} was not a valid certificate — removing it and falling back to manual TLS trust instructions below."
+        ${SUDO} rm -f "${cert_dir}/pharos-ca.crt"
+        return 1
+    fi
+
+    log "Fetched hub CA cert via SSH from ${ssh_target} (SHA-256 fingerprint: ${fingerprint})"
+    return 0
+}
+
 # --- Installation Logic ---
 download_binary() {
     local component=$1
@@ -340,8 +381,12 @@ install_pulse() {
     log "Installing Pharos Pulse Agent..."
     download_binary "pharos-pulse"
 
+    if [[ -n "${fetch_ca_ssh_target:-}" ]] && ! ${SUDO} test -f "${PHAROS_DIR}/certs/pharos-ca.crt"; then
+        fetch_ca_via_ssh "${fetch_ca_ssh_target}" || true
+    fi
+
     # If this host already has an install.sh-provisioned CA (i.e. it also runs a
-    # server/hub, or one was manually copied here), trust it automatically — pulse
+    # server/hub, or one was manually copied here, or --fetch-ca-ssh just fetched one), trust it automatically — pulse
     # otherwise has no way to trust the exact kind of certificate install.sh generates.
     local ca_cert_line=""
     if ${SUDO} test -f "${PHAROS_DIR}/certs/pharos-ca.crt"; then
@@ -400,6 +445,27 @@ main() {
 
     local target=${1:-"node"}
     local host_override=${2:-}
+    local fetch_ca_ssh_target=""
+
+    if [[ $# -gt 2 ]]; then
+        shift 2
+        while [[ $# -gt 0 ]]; do
+            case "$1" in
+                --fetch-ca-ssh)
+                    [[ -n "${2:-}" ]] || error "--fetch-ca-ssh requires a [user@]host argument."
+                    fetch_ca_ssh_target="$2"
+                    shift 2
+                    ;;
+                *)
+                    error "Unknown argument: $1"
+                    ;;
+            esac
+        done
+    fi
+
+    if [[ -n "${fetch_ca_ssh_target}" ]] && ! [[ "${fetch_ca_ssh_target}" =~ ^([A-Za-z0-9][A-Za-z0-9_.-]*@)?[A-Za-z0-9][A-Za-z0-9.-]*$ ]]; then
+        error "Invalid --fetch-ca-ssh target: '${fetch_ca_ssh_target}'. Expected [user@]host, e.g. admin@192.168.1.5."
+    fi
 
     log "Starting Pharos Installation: ${target} (${OS_NAME}/${ARCH_NAME})"
 
