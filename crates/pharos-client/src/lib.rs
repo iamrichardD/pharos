@@ -277,8 +277,10 @@ impl PharosClient {
                         match_count = count_str.parse().unwrap_or(0);
                     }
                 }
-                401 => {
-                    // New message format: 401:Authentication required. Use 'login [alias]' to receive a challenge.
+                506 => {
+                    // The server's actual status code for "not logged in yet" (see
+                    // pharos-server/src/middleware.rs's SecurityTierMiddleware) — triggers
+                    // execute_authenticated()'s automatic login-challenge-sign-retry flow.
                     return Ok(PharosResponse::AuthenticationRequired { challenge: String::new() });
                 }
                 c if c >= 400 => {
