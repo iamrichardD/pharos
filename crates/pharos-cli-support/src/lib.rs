@@ -270,6 +270,50 @@ pub async fn execute_with_interactive_setup(
     Err(err)
 }
 
+pub const CLIENT_CONF_PATH: &str = "/etc/pharos/client.conf";
+
+pub fn read_configured_server() -> Option<String> {
+    read_configured_server_from_path(Path::new(CLIENT_CONF_PATH))
+}
+
+pub fn read_configured_server_from_path(path: &Path) -> Option<String> {
+    let content = std::fs::read_to_string(path).ok()?;
+    for line in content.lines() {
+        let line = line.trim();
+        if line.starts_with('#') || line.is_empty() {
+            continue;
+        }
+        if let Some(val) = line.strip_prefix("PHAROS_SERVER=") {
+            let val = val.trim().trim_matches(|c| c == '\'' || c == '"');
+            if !val.is_empty() {
+                return Some(val.to_string());
+            }
+        }
+    }
+    None
+}
+
+/// Resolves the hub address the same way for every CLI client (mdb, ph), in one place, so a
+/// future change to this precedence chain (or to how the source is described in error messages)
+/// only needs to happen once. Returns the address alongside a human-readable description of
+/// where it came from, so a connection-failure message can tell the operator what to check
+/// instead of just repeating the address back at them.
+pub fn resolve_server_address() -> (String, &'static str) {
+    if let Ok(server) = env::var("PHAROS_SERVER") {
+        (server, "PHAROS_SERVER environment variable")
+    } else if let Ok(host) = env::var("PHAROS_HOST") {
+        let port = env::var("PHAROS_PORT").unwrap_or_else(|_| "2378".to_string());
+        (format!("{}:{}", host, port), "PHAROS_HOST/PHAROS_PORT environment variables")
+    } else if let Some(server) = read_configured_server() {
+        (server, "/etc/pharos/client.conf")
+    } else {
+        (
+            "127.0.0.1:2378".to_string(),
+            "built-in default — no PHAROS_SERVER/PHAROS_HOST env var set and no /etc/pharos/client.conf found",
+        )
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -302,5 +346,38 @@ mod tests {
         assert!(!is_valid_ssh_target("@host"));
         assert!(!is_valid_ssh_target("user@"));
         assert!(!is_valid_ssh_target("user@host;rm -rf /"));
+    }
+
+    #[test]
+    fn test_should_read_configured_server_when_valid_file_exists() {
+        let path = std::env::temp_dir().join(format!("test_client_conf_valid_{}.conf", std::process::id()));
+        std::fs::write(&path, "PHAROS_SERVER=192.168.1.100:2378\n").unwrap();
+        let res = read_configured_server_from_path(&path);
+        let _ = std::fs::remove_file(&path);
+        assert_eq!(res, Some("192.168.1.100:2378".to_string()));
+    }
+
+    #[test]
+    fn test_should_return_none_when_config_file_missing() {
+        let path = Path::new("/nonexistent/path/client.conf");
+        assert_eq!(read_configured_server_from_path(path), None);
+    }
+
+    #[test]
+    fn test_should_return_none_when_config_file_empty() {
+        let path = std::env::temp_dir().join(format!("test_client_conf_empty_{}.conf", std::process::id()));
+        std::fs::write(&path, "").unwrap();
+        let res = read_configured_server_from_path(&path);
+        let _ = std::fs::remove_file(&path);
+        assert_eq!(res, None);
+    }
+
+    #[test]
+    fn test_should_return_none_when_config_file_has_no_matching_line() {
+        let path = std::env::temp_dir().join(format!("test_client_conf_nomatch_{}.conf", std::process::id()));
+        std::fs::write(&path, "# Comment\nOTHER_VAR=value\nPHAROS_SERVER=\n").unwrap();
+        let res = read_configured_server_from_path(&path);
+        let _ = std::fs::remove_file(&path);
+        assert_eq!(res, None);
     }
 }

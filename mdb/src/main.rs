@@ -14,7 +14,6 @@
  * ======================================================================== */
 
 use pharos_client::{PharosClient, PharosResponse};
-use std::env;
 use std::process;
 use std::io::{self, IsTerminal};
 use anyhow::{Result, Context};
@@ -105,16 +104,10 @@ async fn main() -> Result<()> {
         return Ok(());
     }
 
-    let addr = if let Ok(server) = env::var("PHAROS_SERVER") {
-        server
-    } else {
-        let host = env::var("PHAROS_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
-        let port = env::var("PHAROS_PORT").unwrap_or_else(|_| "2378".to_string());
-        format!("{}:{}", host, port)
-    };
+    let (addr, addr_source) = pharos_cli_support::resolve_server_address();
 
     let mut client = PharosClient::connect(&addr, "mdb").await
-        .with_context(|| format!("Failed to connect to Pharos server at {}", addr))?;
+        .with_context(|| format!("Failed to connect to Pharos server at {} (resolved from {})", addr, addr_source))?;
 
     let lower_cmd = query_string.to_lowercase();
     let is_query = lower_cmd.starts_with("query ") || lower_cmd.starts_with("ph ");

@@ -486,6 +486,10 @@ ${ca_cert_line}
 WantedBy=multi-user.target
 EOF
 
+    ${SUDO} mkdir -p "${PHAROS_DIR}"
+    echo "PHAROS_SERVER=${host}" | ${SUDO} tee "${PHAROS_DIR}/client.conf" > /dev/null
+    ${SUDO} chmod 644 "${PHAROS_DIR}/client.conf"
+
     activate_systemd_service "pharos-pulse"
 }
 
