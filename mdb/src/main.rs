@@ -16,6 +16,7 @@
 use pharos_client::{PharosClient, PharosResponse};
 use std::env;
 use std::process;
+use std::io::{self, IsTerminal};
 use anyhow::{Result, Context};
 use clap::{Parser, Subcommand};
 use chrono::DateTime;
@@ -69,8 +70,20 @@ async fn main() -> Result<()> {
 
     // Handle 'auth sign' locally without server connection
     if let Some(Commands::Auth { sub: AuthCommands::Sign { challenge } }) = &cli.command {
-        let (pub_key, sig) = PharosClient::sign_message_async(challenge).await
-            .context("Error signing challenge")?;
+        let res = PharosClient::sign_message_async(challenge).await;
+        let (pub_key, sig) = match res {
+            Ok(pair) => pair,
+            Err(e) if pharos_cli_support::is_missing_key_error(&e) && io::stdin().is_terminal() => {
+                let key_path = pharos_cli_support::default_personal_key_path()?;
+                if pharos_cli_support::offer_to_generate_key(&key_path)? {
+                    PharosClient::sign_message_async(challenge).await
+                        .context("Error signing challenge")?
+                } else {
+                    return Err(e).context("Error signing challenge");
+                }
+            }
+            Err(e) => return Err(e).context("Error signing challenge"),
+        };
         println!("Public Key: {}", pub_key);
         println!("Signature:  {}", sig);
         return Ok(());
@@ -116,7 +129,7 @@ async fn main() -> Result<()> {
         }
     };
 
-    let resp = client.execute_authenticated(&cmd_to_send).await
+    let resp = pharos_cli_support::execute_with_interactive_setup(&mut client, &cmd_to_send).await
         .context("Error executing command")?;
 
     handle_response(resp, cli.human)?;
@@ -231,3 +244,4 @@ mod tests {
         assert_eq!(result, "invalid");
     }
 }
+

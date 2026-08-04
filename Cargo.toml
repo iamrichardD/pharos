@@ -16,6 +16,7 @@ members = [
     "ph",
     "mdb",
     "crates/pharos-client",
+    "crates/pharos-cli-support",
     "pharos-scan",
     "crates/pharos-pulse",
     "crates/pharos-console",

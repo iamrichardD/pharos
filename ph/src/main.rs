@@ -15,6 +15,7 @@
 use pharos_client::{PharosClient, PharosResponse};
 use std::env;
 use std::process;
+use std::io::{self, IsTerminal};
 use anyhow::{Result, Context};
 use clap::{Parser, Subcommand};
 
@@ -63,17 +64,45 @@ async fn main() -> Result<()> {
 
     // Handle 'auth sign' locally without server connection
     if let Some(Commands::Auth { sub: AuthCommands::Sign { challenge } }) = &cli.command {
-        match PharosClient::sign_message_async(challenge).await {
-            Ok((pub_key, sig)) => {
-                println!("Public Key: {}", pub_key);
-                println!("Signature:  {}", sig);
-                return Ok(());
+        let res = PharosClient::sign_message_async(challenge).await;
+        let (pub_key, sig) = match res {
+            Ok(pair) => pair,
+            Err(e) if pharos_cli_support::is_missing_key_error(&e) && io::stdin().is_terminal() => {
+                let key_path = match pharos_cli_support::default_personal_key_path() {
+                    Ok(p) => p,
+                    Err(_) => {
+                        eprintln!("Error signing challenge: {}", e);
+                        process::exit(1);
+                    }
+                };
+                match pharos_cli_support::offer_to_generate_key(&key_path) {
+                    Ok(true) => {
+                        match PharosClient::sign_message_async(challenge).await {
+                            Ok(pair) => pair,
+                            Err(retry_err) => {
+                                eprintln!("Error signing challenge: {}", retry_err);
+                                process::exit(1);
+                            }
+                        }
+                    }
+                    Ok(false) => {
+                        eprintln!("Error signing challenge: {}", e);
+                        process::exit(1);
+                    }
+                    Err(gen_err) => {
+                        eprintln!("Error generating key: {}", gen_err);
+                        process::exit(1);
+                    }
+                }
             }
             Err(e) => {
                 eprintln!("Error signing challenge: {}", e);
                 process::exit(1);
             }
-        }
+        };
+        println!("Public Key: {}", pub_key);
+        println!("Signature:  {}", sig);
+        return Ok(());
     }
 
     // Legacy fallback/Direct query support
@@ -114,7 +143,7 @@ async fn main() -> Result<()> {
         }
     };
 
-    match client.execute_authenticated(&cmd_to_send).await {
+    match pharos_cli_support::execute_with_interactive_setup(&mut client, &cmd_to_send).await {
         Ok(resp) => {
             match resp {
                 PharosResponse::Ok(msg) => println!("{}", msg),
@@ -144,3 +173,4 @@ async fn main() -> Result<()> {
     let _ = client.quit().await;
     Ok(())
 }
+

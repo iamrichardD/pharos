@@ -1609,6 +1609,7 @@ dependencies = [
  "chrono",
  "clap",
  "log",
+ "pharos-cli-support",
  "pharos-client",
  "tokio",
  "tracing-log",
@@ -1938,10 +1939,20 @@ dependencies = [
  "anyhow",
  "clap",
  "log",
+ "pharos-cli-support",
  "pharos-client",
  "tokio",
  "tracing-log",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "pharos-cli-support"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "pharos-client",
+ "tokio",
 ]
 
 [[package]]

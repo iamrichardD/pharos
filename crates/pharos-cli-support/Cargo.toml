@@ -1,0 +1,22 @@
+# ========================================================================
+# Project: pharos
+# Component: Shared CLI Support (pharos-cli-support)
+# File: crates/pharos-cli-support/Cargo.toml
+# Author: Richard D. (https://github.com/iamrichardd)
+# License: AGPL-3.0 (See LICENSE file for details)
+# * Purpose (The "Why"):
+# Provides shared interactive key-setup, error classification, and SSH enrollment
+# utilities for Pharos CLI clients (mdb and ph).
+# * Traceability:
+# Issue #185 key setup refactoring plan.
+# ========================================================================
+
+[package]
+name = "pharos-cli-support"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+pharos-client = { path = "../pharos-client" }
+anyhow = "1.0"
+tokio = { version = "1.37", features = ["full"] }
