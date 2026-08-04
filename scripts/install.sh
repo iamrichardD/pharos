@@ -370,6 +370,13 @@ install_server() {
     log "Installing Pharos Server..."
     download_binary "pharos-server"
 
+    # Atomic file persistence (write temp file + rename) in storage.rs requires write
+    # access on the parent directory itself, not just data.json. Ensure PHAROS_DIR is
+    # owned by pharos:pharos with 700 permissions before starting the service.
+    ${SUDO} mkdir -p "${PHAROS_DIR}"
+    ${SUDO} chown pharos:pharos "${PHAROS_DIR}"
+    ${SUDO} chmod 700 "${PHAROS_DIR}"
+
     setup_pki "pharos-server" "pharos-server" "${hostname_arg}"
 
     ${SUDO} mkdir -p "${PHAROS_DIR}/keys"
