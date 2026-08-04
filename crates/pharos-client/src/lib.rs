@@ -283,6 +283,13 @@ impl PharosClient {
                     // execute_authenticated()'s automatic login-challenge-sign-retry flow.
                     return Ok(PharosResponse::AuthenticationRequired { challenge: String::new() });
                 }
+                501 => {
+                    // "No matches" for query/change/delete alike - the operation itself
+                    // succeeded, it just found nothing to act on. Not a failure: represent
+                    // it the same way a real, non-empty match set is represented, just
+                    // with zero records, rather than falling into the generic Error bucket.
+                    return Ok(PharosResponse::Matches { count: 0, records: Vec::new() });
+                }
                 c if c >= 400 => {
                     return Ok(PharosResponse::Error { code: c, message: message.to_string() });
                 }

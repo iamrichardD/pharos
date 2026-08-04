@@ -135,14 +135,18 @@ fn handle_response(resp: PharosResponse, human: bool) -> Result<()> {
     match resp {
         PharosResponse::Ok(msg) => println!("{}", msg),
         PharosResponse::Matches { records, .. } => {
-            for record in records {
-                for field in record.fields {
-                    let value = if human {
-                        format_human(&field.key, &field.value)
-                    } else {
-                        field.value
-                    };
-                    println!("{:>15}: {}", field.key, value);
+            if records.is_empty() {
+                println!("No matches found.");
+            } else {
+                for record in records {
+                    for field in record.fields {
+                        let value = if human {
+                            format_human(&field.key, &field.value)
+                        } else {
+                            field.value
+                        };
+                        println!("{:>15}: {}", field.key, value);
+                    }
                 }
             }
         }
