@@ -130,7 +130,10 @@ fn collect_inventory() -> HashMap<String, String> {
     }
     
     inv.insert("cpu_cores".to_string(), sys.cpus().len().to_string());
-    inv.insert("mem_total_kb".to_string(), sys.total_memory().to_string());
+    // sysinfo 0.30's total_memory() returns bytes, not KB, despite this field's name and every
+    // downstream consumer (e.g. mdb's format_human()) treating it as genuinely in KB - confirmed
+    // live in production (a reported value was found to be the real KB total times exactly 1024).
+    inv.insert("mem_total_kb".to_string(), bytes_to_kb(sys.total_memory()).to_string());
     inv.insert("os_name".to_string(), System::name().unwrap_or_else(|| "unknown".to_string()));
     inv.insert("os_version".to_string(), System::os_version().unwrap_or_else(|| "unknown".to_string()));
     inv.insert("kernel_version".to_string(), System::kernel_version().unwrap_or_else(|| "unknown".to_string()));
@@ -140,6 +143,12 @@ fn collect_inventory() -> HashMap<String, String> {
     inv.retain(|_, v| v != "unknown");
 
     inv
+}
+
+/// sysinfo 0.30's total_memory() returns bytes; every consumer of the mem_total_kb field
+/// (including mdb's format_human()) expects genuine KB, matching the field's own name.
+fn bytes_to_kb(bytes: u64) -> u64 {
+    bytes / 1024
 }
 
 fn build_presence_command(machine_name: &str, status: &str, inventory: Option<HashMap<String, String>>) -> String {
@@ -255,6 +264,13 @@ fn get_serial_number() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_should_convert_bytes_to_kb_using_real_world_reported_value() {
+        // proxmox-01's actual reported (buggy) mem_total_kb value, confirmed live in production
+        // to be exactly the real KB total (per `free -k`) times 1024 - i.e. genuinely bytes.
+        assert_eq!(bytes_to_kb(13493395456), 13177144);
+    }
 
     #[test]
     fn test_should_collect_inventory_fields_when_invoked() {
