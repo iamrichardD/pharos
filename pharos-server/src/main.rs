@@ -283,6 +283,13 @@ async fn main() -> anyhow::Result<()> {
                 script_path.as_deref(),
             ).await;
 
+            alerting::check_version_mismatches(
+                &storage_for_monitor,
+                &mut alert_state,
+                webhook_url.as_deref(),
+                script_path.as_deref(),
+            ).await;
+
             tokio::time::sleep(Duration::from_secs(5)).await;
         }
     });

@@ -105,6 +105,7 @@ jobs:
           - name: pharos-console-web
             file: pharos-console-web/Containerfile
             context: pharos-console-web
+            build-args: PHAROS_VERSION=${{ github.ref_name }}
 
     steps:
       - name: Checkout repository
@@ -146,6 +147,7 @@ jobs:
         with:
           context: ${{ matrix.component.context }}
           file: ${{ matrix.component.file }}
+          build-args: ${{ matrix.component.build-args }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

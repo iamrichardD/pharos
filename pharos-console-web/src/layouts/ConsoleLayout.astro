@@ -22,6 +22,8 @@
 
 const { title } = Astro.props;
 const session = await getSession(Astro.cookies.get(AUTH_COOKIE_NAME)?.value);
+const rawVersion = process.env.PHAROS_CONSOLE_VERSION || 'dev';
+const displayVersion = rawVersion.startsWith('v') ? rawVersion : `v${rawVersion}`;
 ---
 
 <html lang="en">
@@ -80,7 +82,7 @@ const session = await getSession(Astro.cookies.get(AUTH_COOKIE_NAME)?.value);
 		<footer class="mt-auto border-t border-slate-200 bg-white">
             <div class="max-w-4xl mx-auto px-4 py-6">
                 <p class="text-center text-slate-500 text-sm italic">
-                    Powered by the Pharos Protocol. Optimized for Home Lab & Enterprise DevSecOps.
+                    Powered by the Pharos Protocol. Optimized for Home Lab & Enterprise DevSecOps. Pharos {displayVersion}
                 </p>
             </div>
 		</footer>

@@ -78,3 +78,12 @@ sudo podman run -d --name pharos-web \
 ```
 
 Access the dashboard at `https://<your-server-ip>:3000`. Run with `sudo` (or as a user in the `pharos` group) — `pharos-server.key` is only readable by `root`/`pharos` group. If your certificate renews (Let's Encrypt or otherwise), restart this container (`podman restart pharos-web`) to pick up the new file — `pharos-server` itself reloads on `SIGHUP` (see the Server Setup docs), but the console container does not currently support a restart-free reload. Didn't come up? Check `podman logs pharos-web`.
+
+### Version Self-Reporting & Drift Alerting
+
+On startup, `pharos-console-web` automatically registers its self-reported version with `pharos-server` using an `add` command, re-sending heartbeats on a 60-minute interval.
+
+- **Hostname Identification**: Set `PHAROS_CONSOLE_HOSTNAME` to specify the node hostname in Pharos MDB. If unset, it falls back to `os.hostname()` with a startup warning.
+- **Self-Reported Version**: Set at container build time (`PHAROS_CONSOLE_VERSION`, tied to release tags via `PHAROS_VERSION` build arg) and displayed in the console UI footer.
+- **Drift Monitoring**: Operators or Terraform can set `expected_version` on the console machine record (`mdb change hostname=<console-host> make expected_version=<tag>`). `pharos-server` evaluates `version` against `expected_version` during health monitor cycles and fires an alert webhook/script on mismatch.
+

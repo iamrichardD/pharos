@@ -272,8 +272,8 @@
                     } else {
                         resolve({ type: 'ok', message });
                     }
-                } else if (code === 401) {
-                    // 401:Authentication required.
+                } else if (code === 401 || code === 506) {
+                    // 401/506: Authentication required.
                     // Start handshake: send login
                     stage = 'login';
                     client.write(`login ${clientId}\r\n`);

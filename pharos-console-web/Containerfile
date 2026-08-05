@@ -11,7 +11,7 @@
 # Related to Task 16.1 in Phase 16.
 # ========================================================================
 
-FROM public.ecr.aws/docker/library/node:22-slim AS build
+FROM public.ecr.aws/docker/library/node:24-slim AS build
 
 WORKDIR /app
 COPY package*.json ./
@@ -19,7 +19,7 @@ RUN npm install
 COPY . .
 RUN npm run build
 
-FROM public.ecr.aws/docker/library/node:22-slim AS runtime
+FROM public.ecr.aws/docker/library/node:24-slim AS runtime
 
 LABEL org.opencontainers.image.title="pharos-console-web"
 LABEL org.opencontainers.image.description="Agent-Native Control Plane (Web Console)"
@@ -32,8 +32,12 @@ RUN apt-get update && apt-get install -y tini && rm -rf /var/lib/apt/lists/*
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package.json ./package.json
+COPY --from=build /app/src ./src
 COPY --from=build /app/server.mjs ./server.mjs
 
+ARG PHAROS_VERSION=dev
+ENV PHAROS_CONSOLE_VERSION=${PHAROS_VERSION}
+ENV NODE_OPTIONS="--experimental-strip-types"
 ENV HOST=0.0.0.0
 ENV PORT=3000
 EXPOSE 3000

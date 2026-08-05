@@ -28,7 +28,8 @@ use tracing::{info, warn};
 /// trade-off for a home-lab alerting feature - see the module-level plan/issue for the reasoning.
 #[derive(Default)]
 pub struct AlertState {
-    alerted: HashMap<String, String>,
+    pub alerted: HashMap<String, String>,
+    pub version_mismatches_alerted: HashMap<String, (String, String)>,
 }
 
 /// Pure staleness check: is `last_seen_at` (RFC3339) older than `threshold_secs` relative to
@@ -63,6 +64,34 @@ pub fn find_newly_stale<'a>(
                 return false;
             }
             alert_state.alerted.get(hostname) != Some(last_seen_at)
+        })
+        .collect()
+}
+
+/// Returns machine records whose self-reported `version` field disagrees with
+/// their own `expected_version` field (both must be present — a record with
+/// only one or neither is not a mismatch, just not opted into this check),
+/// and haven't already been alerted for this exact (version, expected_version)
+/// pair.
+pub fn find_version_mismatches<'a>(
+    records: &'a [Record],
+    alert_state: &AlertState,
+) -> Vec<&'a Record> {
+    records
+        .iter()
+        .filter(|r| {
+            let Some(hostname) = r.fields.get("hostname") else { return false; };
+            let Some(version) = r.fields.get("version") else { return false; };
+            let Some(expected_version) = r.fields.get("expected_version") else { return false; };
+
+            if version == expected_version {
+                return false;
+            }
+
+            match alert_state.version_mismatches_alerted.get(hostname) {
+                Some((prev_v, prev_exp_v)) => prev_v != version || prev_exp_v != expected_version,
+                None => true,
+            }
         })
         .collect()
 }
@@ -170,6 +199,104 @@ pub async fn check_presence(
     }
 }
 
+/// POSTs a version mismatch alert JSON payload to `url`.
+pub async fn fire_version_mismatch_webhook(
+    url: &str,
+    hostname: &str,
+    version: &str,
+    expected_version: &str,
+) {
+    let client = match reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(5))
+        .build()
+    {
+        Ok(c) => c,
+        Err(e) => {
+            warn!("Failed to build HTTP client for version mismatch webhook: {}", e);
+            return;
+        }
+    };
+
+    let payload = serde_json::json!({
+        "event": "version_mismatch",
+        "hostname": hostname,
+        "version": version,
+        "expected_version": expected_version,
+    });
+
+    match client.post(url).json(&payload).send().await {
+        Ok(resp) if resp.status().is_success() => {
+            info!("Version mismatch alert webhook delivered for {} ({})", hostname, url);
+        }
+        Ok(resp) => {
+            warn!(
+                "Version mismatch alert webhook for {} returned non-success status {}: {}",
+                hostname,
+                resp.status(),
+                url
+            );
+        }
+        Err(e) => {
+            warn!("Failed to deliver version mismatch alert webhook for {} to {}: {}", hostname, url, e);
+        }
+    }
+}
+
+/// Called once per health-monitor tick. Queries machine records, finds version mismatches,
+/// fires configured alerts, and updates `alert_state`.
+pub async fn check_version_mismatches(
+    storage: &Arc<RwLock<dyn Storage>>,
+    alert_state: &mut AlertState,
+    webhook_url: Option<&str>,
+    script_path: Option<&str>,
+) {
+    if webhook_url.is_none() && script_path.is_none() {
+        return;
+    }
+
+    let records = {
+        let Ok(lock) = storage.read() else { return; };
+        match lock.query(&[], Some(RecordType::Machine)) {
+            Ok(r) => r,
+            Err(e) => {
+                warn!("Version mismatch check: failed to query machine records: {}", e);
+                return;
+            }
+        }
+    };
+
+    let mismatches = find_version_mismatches(&records, alert_state);
+
+    for record in mismatches {
+        let hostname = record.fields.get("hostname").unwrap().clone();
+        let version = record.fields.get("version").unwrap().clone();
+        let expected_version = record.fields.get("expected_version").unwrap().clone();
+
+        warn!(
+            "Version mismatch alert: {} has version '{}', expected '{}'",
+            hostname, version, expected_version
+        );
+
+        if let Some(url) = webhook_url {
+            let url = url.to_string();
+            let hostname_c = hostname.clone();
+            let version_c = version.clone();
+            let expected_version_c = expected_version.clone();
+            tokio::spawn(async move {
+                fire_version_mismatch_webhook(&url, &hostname_c, &version_c, &expected_version_c).await;
+            });
+        }
+        if let Some(path) = script_path {
+            let detail = format!("{}:{}", version, expected_version);
+            fire_script(path, &hostname, &detail);
+        }
+
+        alert_state
+            .version_mismatches_alerted
+            .insert(hostname, (version, expected_version));
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -253,5 +380,116 @@ mod tests {
         alert_state.alerted.insert("flaky-host".to_string(), old_stale_ts);
         let result = find_newly_stale(&records, now, 7200, &alert_state);
         assert_eq!(result.len(), 1, "a node that recovered and went stale again must be re-alerted");
+    }
+
+    #[test]
+    fn test_should_flag_mismatched_version_when_expected_version_differs() {
+        let mut fields = StdHashMap::new();
+        fields.insert("hostname".to_string(), "console-host".to_string());
+        fields.insert("version".to_string(), "v9.9.9-test".to_string());
+        fields.insert("expected_version".to_string(), "v1.0.0-different".to_string());
+        let record = Record {
+            id: 1,
+            record_type: Some(RecordType::Machine),
+            fields,
+            owner_fingerprint: None,
+            owner_team: None,
+        };
+
+        let alert_state = AlertState::default();
+        let records = vec![record];
+        let result = find_version_mismatches(&records, &alert_state);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].fields.get("hostname").unwrap(), "console-host");
+    }
+
+    #[test]
+    fn test_should_not_flag_matching_version_and_expected_version() {
+        let mut fields = StdHashMap::new();
+        fields.insert("hostname".to_string(), "console-host".to_string());
+        fields.insert("version".to_string(), "v9.9.9-test".to_string());
+        fields.insert("expected_version".to_string(), "v9.9.9-test".to_string());
+        let record = Record {
+            id: 1,
+            record_type: Some(RecordType::Machine),
+            fields,
+            owner_fingerprint: None,
+            owner_team: None,
+        };
+
+        let alert_state = AlertState::default();
+        let records = vec![record];
+        let result = find_version_mismatches(&records, &alert_state);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_should_ignore_records_missing_version_or_expected_version() {
+        let mut fields1 = StdHashMap::new();
+        fields1.insert("hostname".to_string(), "host1".to_string());
+        fields1.insert("version".to_string(), "v1.0.0".to_string());
+
+        let mut fields2 = StdHashMap::new();
+        fields2.insert("hostname".to_string(), "host2".to_string());
+        fields2.insert("expected_version".to_string(), "v1.0.0".to_string());
+
+        let records = vec![
+            Record { id: 1, record_type: Some(RecordType::Machine), fields: fields1, owner_fingerprint: None, owner_team: None },
+            Record { id: 2, record_type: Some(RecordType::Machine), fields: fields2, owner_fingerprint: None, owner_team: None },
+        ];
+
+        let alert_state = AlertState::default();
+        let result = find_version_mismatches(&records, &alert_state);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_should_not_repeat_version_mismatch_alert_for_same_pair() {
+        let mut fields = StdHashMap::new();
+        fields.insert("hostname".to_string(), "console-host".to_string());
+        fields.insert("version".to_string(), "v9.9.9-test".to_string());
+        fields.insert("expected_version".to_string(), "v1.0.0-different".to_string());
+        let record = Record {
+            id: 1,
+            record_type: Some(RecordType::Machine),
+            fields,
+            owner_fingerprint: None,
+            owner_team: None,
+        };
+
+        let mut alert_state = AlertState::default();
+        alert_state.version_mismatches_alerted.insert(
+            "console-host".to_string(),
+            ("v9.9.9-test".to_string(), "v1.0.0-different".to_string()),
+        );
+
+        let records = vec![record];
+        let result = find_version_mismatches(&records, &alert_state);
+        assert!(result.is_empty(), "should dedup identical (version, expected_version) alerts");
+    }
+
+    #[test]
+    fn test_should_re_alert_when_expected_version_or_version_changes() {
+        let mut fields = StdHashMap::new();
+        fields.insert("hostname".to_string(), "console-host".to_string());
+        fields.insert("version".to_string(), "v9.9.9-test".to_string());
+        fields.insert("expected_version".to_string(), "v2.0.0-new".to_string());
+        let record = Record {
+            id: 1,
+            record_type: Some(RecordType::Machine),
+            fields,
+            owner_fingerprint: None,
+            owner_team: None,
+        };
+
+        let mut alert_state = AlertState::default();
+        alert_state.version_mismatches_alerted.insert(
+            "console-host".to_string(),
+            ("v9.9.9-test".to_string(), "v1.0.0-different".to_string()),
+        );
+
+        let records = vec![record];
+        let result = find_version_mismatches(&records, &alert_state);
+        assert_eq!(result.len(), 1, "should re-alert when expected_version changes");
     }
 }

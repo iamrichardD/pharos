@@ -16,6 +16,7 @@ import https from 'node:https';
 import fs from 'node:fs';
 import express from 'express';
 import { handler as ssrHandler } from './dist/server/entry.mjs';
+import { startSelfReporting } from './src/lib/selfReport.ts';
 
 const PORT = process.env.PORT || 3000;
 const CERT_PATH = process.env.PHAROS_TLS_CERT;
@@ -99,6 +100,10 @@ async function startServer() {
       console.log(`Pharos Web Console active on port ${PORT}`);
       console.log(`- HTTPS: https://0.0.0.0:${PORT} (Direct)`);
       console.log(`- HTTP:  http://0.0.0.0:${PORT}  (Redirecting)`);
+
+      startSelfReporting().catch((err) => {
+        console.error('Failed to start self-reporting lifecycle:', err);
+      });
     });
 
   } catch (error) {
