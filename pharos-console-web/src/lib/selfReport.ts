@@ -25,10 +25,10 @@ export function getConsoleHostname(): string {
     return envHost.trim();
   }
 
-  const fallback = os.hostname();
+  const fallback = `${os.hostname()}-console`;
   if (!warningLogged) {
     console.warn(
-      `PHAROS_CONSOLE_HOSTNAME env var not set; falling back to container hostname "${fallback}". This may be an opaque container ID unless explicitly set.`
+      `PHAROS_CONSOLE_HOSTNAME env var not set; falling back to container hostname "${fallback}" (appended -console suffix). This may be an opaque container ID unless explicitly set.`
     );
     warningLogged = true;
   }

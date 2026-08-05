@@ -9,6 +9,7 @@
  * sendSelfReport query formatting and error handling.
  * ======================================================================== */
 
+import * as os from 'node:os';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { getConsoleHostname, sendSelfReport } from './selfReport';
 import * as pharos from './pharos';
@@ -32,11 +33,12 @@ describe('selfReport', () => {
     expect(getConsoleHostname()).toBe('custom-console-host');
   });
 
-  it('test_should_fallback_to_os_hostname_and_warn_when_env_unset', () => {
+  it('test_should_fallback_to_os_hostname_with_console_suffix_and_warn_when_env_unset', () => {
     vi.stubEnv('PHAROS_CONSOLE_HOSTNAME', '');
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const hostname = getConsoleHostname();
-    expect(hostname).toBeTruthy();
+    expect(hostname).toBe(`${os.hostname()}-console`);
+    expect(warnSpy).toHaveBeenCalled();
   });
 
   it('test_should_send_add_query_with_hostname_and_version', async () => {

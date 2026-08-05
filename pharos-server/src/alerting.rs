@@ -68,6 +68,13 @@ pub fn find_newly_stale<'a>(
         .collect()
 }
 
+/// Strips a single leading 'v'/'V' if present, so "v1.10.15" and "1.10.15"
+/// compare equal. Used only for comparison — never changes what's stored
+/// or displayed.
+fn normalize_version(v: &str) -> &str {
+    v.strip_prefix(['v', 'V']).unwrap_or(v)
+}
+
 /// Returns machine records whose self-reported `version` field disagrees with
 /// their own `expected_version` field (both must be present — a record with
 /// only one or neither is not a mismatch, just not opted into this check),
@@ -84,7 +91,7 @@ pub fn find_version_mismatches<'a>(
             let Some(version) = r.fields.get("version") else { return false; };
             let Some(expected_version) = r.fields.get("expected_version") else { return false; };
 
-            if version == expected_version {
+            if normalize_version(version) == normalize_version(expected_version) {
                 return false;
             }
 
@@ -401,6 +408,34 @@ mod tests {
         let result = find_version_mismatches(&records, &alert_state);
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].fields.get("hostname").unwrap(), "console-host");
+    }
+
+    #[test]
+    fn test_normalize_version() {
+        assert_eq!(normalize_version("v1.10.15"), "1.10.15");
+        assert_eq!(normalize_version("1.10.15"), "1.10.15");
+        assert_eq!(normalize_version("V1.10.15"), "1.10.15");
+        assert_eq!(normalize_version("2.0.0"), "2.0.0");
+    }
+
+    #[test]
+    fn test_should_not_flag_matching_version_when_v_prefix_differs() {
+        let mut fields = StdHashMap::new();
+        fields.insert("hostname".to_string(), "console-host".to_string());
+        fields.insert("version".to_string(), "v1.10.15".to_string());
+        fields.insert("expected_version".to_string(), "1.10.15".to_string());
+        let record = Record {
+            id: 1,
+            record_type: Some(RecordType::Machine),
+            fields,
+            owner_fingerprint: None,
+            owner_team: None,
+        };
+
+        let alert_state = AlertState::default();
+        let records = vec![record];
+        let result = find_version_mismatches(&records, &alert_state);
+        assert!(result.is_empty(), "v1.10.15 and 1.10.15 should not be flagged as mismatch");
     }
 
     #[test]
