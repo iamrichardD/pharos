@@ -28,6 +28,12 @@ struct Cli {
     #[arg(short = 'H', long = "human")]
     human: bool,
 
+    /// Print the resolved server address/source, the exact wire command sent,
+    /// and the raw response received — off by default, zero output change
+    /// otherwise.
+    #[arg(long = "debug")]
+    debug: bool,
+
     #[command(subcommand)]
     command: Option<Commands>,
 
@@ -66,6 +72,7 @@ async fn main() -> Result<()> {
         .try_init();
 
     let cli = Cli::parse();
+    pharos_cli_support::warn_if_looks_like_glob_expansion(&cli.query);
 
     // Handle 'auth sign' locally without server connection
     if let Some(Commands::Auth { sub: AuthCommands::Sign { challenge } }) = &cli.command {
@@ -105,6 +112,9 @@ async fn main() -> Result<()> {
     }
 
     let (addr, addr_source) = pharos_cli_support::resolve_server_address();
+    if cli.debug {
+        eprintln!("[DEBUG] Server address: {} (from {})", addr, addr_source);
+    }
 
     let mut client = PharosClient::connect(&addr, "mdb").await
         .with_context(|| format!("Failed to connect to Pharos server at {} (resolved from {})", addr, addr_source))?;
@@ -121,9 +131,18 @@ async fn main() -> Result<()> {
             _ => format!("query {}", query_string),
         }
     };
+    let cmd_to_send = pharos_cli_support::enforce_add_record_type(&cmd_to_send, "machine", "mdb");
+
+    if cli.debug {
+        eprintln!("[DEBUG] Wire command: {}", cmd_to_send);
+    }
 
     let resp = pharos_cli_support::execute_with_interactive_setup(&mut client, &cmd_to_send).await
         .context("Error executing command")?;
+
+    if cli.debug {
+        eprintln!("[DEBUG] Response: {:?}", resp);
+    }
 
     handle_response(resp, cli.human)?;
 
@@ -241,4 +260,5 @@ mod tests {
         assert_eq!(result, "invalid");
     }
 }
+
 

@@ -314,6 +314,90 @@ pub fn resolve_server_address() -> (String, &'static str) {
     }
 }
 
+/// Heuristic only, never blocks execution: if a query looks like it might be an
+/// unquoted shell glob that expanded into a directory listing (many bare tokens,
+/// none in field=value form), warn to stderr so the operator notices before
+/// assuming a clean "no matches" is a genuine empty result. A single correctly-
+/// quoted `*` is exactly one token and never trips this.
+pub fn looks_like_glob_expansion(tokens: &[String]) -> bool {
+    const THRESHOLD: usize = 15;
+    if tokens.len() < THRESHOLD {
+        return false;
+    }
+    tokens.iter().all(|t| !t.contains('='))
+}
+
+pub fn warn_if_looks_like_glob_expansion(tokens: &[String]) {
+    if looks_like_glob_expansion(tokens) {
+        eprintln!(
+            "Warning: this command included {} arguments with no field=value pairs. If you meant to search with a wildcard (e.g. mdb '*'), make sure to quote it — otherwise your shell may have expanded it into a list of filenames from the current directory before mdb/ph ever saw it. Proceeding anyway.",
+            tokens.len()
+        );
+    }
+}
+
+pub fn enforce_add_record_type(cmd_str: &str, expected_type: &str, cli_name: &str) -> String {
+    let mut tokens = tokenize_cmd(cmd_str);
+    if tokens.is_empty() {
+        return cmd_str.to_string();
+    }
+    if !tokens[0].eq_ignore_ascii_case("add") {
+        return cmd_str.to_string();
+    }
+
+    let mut type_found = false;
+    for token in tokens.iter_mut().skip(1) {
+        if let Some((k, v)) = token.split_once('=') {
+            if k.eq_ignore_ascii_case("type") {
+                let unquoted = v.trim_matches('"');
+                if !unquoted.eq_ignore_ascii_case(expected_type) {
+                    eprintln!(
+                        "Note: {} always registers {}-type records; overriding type={} to type={}.",
+                        cli_name, expected_type, unquoted, expected_type
+                    );
+                }
+                *token = format!("type={}", expected_type);
+                type_found = true;
+            }
+        }
+    }
+
+    if !type_found {
+        tokens.push(format!("type={}", expected_type));
+    }
+
+    tokens.join(" ")
+}
+
+pub fn tokenize_cmd(line: &str) -> Vec<String> {
+    let mut tokens = Vec::new();
+    let mut current = String::new();
+    let mut in_quotes = false;
+    let mut escaped = false;
+    for c in line.chars() {
+        if escaped {
+            current.push(c);
+            escaped = false;
+        } else if c == '\\' {
+            escaped = true;
+        } else if c == '"' {
+            in_quotes = !in_quotes;
+            current.push(c);
+        } else if c.is_whitespace() && !in_quotes {
+            if !current.is_empty() {
+                tokens.push(current.clone());
+                current.clear();
+            }
+        } else {
+            current.push(c);
+        }
+    }
+    if !current.is_empty() {
+        tokens.push(current);
+    }
+    tokens
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -379,5 +463,54 @@ mod tests {
         let res = read_configured_server_from_path(&path);
         let _ = std::fs::remove_file(&path);
         assert_eq!(res, None);
+    }
+
+    #[test]
+    fn test_should_not_detect_glob_expansion_when_single_quoted_wildcard() {
+        let tokens = vec!["*".to_string()];
+        assert!(!looks_like_glob_expansion(&tokens));
+    }
+
+    #[test]
+    fn test_should_not_detect_glob_expansion_when_below_threshold() {
+        let tokens: Vec<String> = (0..14).map(|i| format!("file{}", i)).collect();
+        assert!(!looks_like_glob_expansion(&tokens));
+    }
+
+    #[test]
+    fn test_should_not_detect_glob_expansion_when_has_field_value_pairs() {
+        let mut tokens: Vec<String> = (0..15).map(|i| format!("token{}", i)).collect();
+        tokens[5] = "hostname=server1".to_string();
+        assert!(!looks_like_glob_expansion(&tokens));
+    }
+
+    #[test]
+    fn test_should_detect_glob_expansion_when_at_or_above_threshold_with_no_fields() {
+        let tokens: Vec<String> = (0..15).map(|i| format!("file{}.txt", i)).collect();
+        assert!(looks_like_glob_expansion(&tokens));
+    }
+
+    #[test]
+    fn test_should_force_type_machine_on_add_when_absent() {
+        let result = enforce_add_record_type("add hostname=srv-1", "machine", "mdb");
+        assert_eq!(result, "add hostname=srv-1 type=machine");
+    }
+
+    #[test]
+    fn test_should_override_conflicting_type_and_force_machine_on_add() {
+        let result = enforce_add_record_type("add hostname=srv-2 type=person", "machine", "mdb");
+        assert_eq!(result, "add hostname=srv-2 type=machine");
+    }
+
+    #[test]
+    fn test_should_force_type_person_on_add_when_absent() {
+        let result = enforce_add_record_type("add name=\"Jane Doe\"", "person", "ph");
+        assert_eq!(result, "add name=\"Jane Doe\" type=person");
+    }
+
+    #[test]
+    fn test_should_override_conflicting_type_and_force_person_on_add() {
+        let result = enforce_add_record_type("add name=\"Jane Doe\" type=machine", "person", "ph");
+        assert_eq!(result, "add name=\"Jane Doe\" type=person");
     }
 }
