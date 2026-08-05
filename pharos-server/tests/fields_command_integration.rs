@@ -153,7 +153,7 @@ async fn test_fields_with_dynamic_field() {
     authenticate(&mut reader, &test_user).await;
 
     // Add a record with an ad-hoc field: email
-    reader.get_mut().write_all(b"add hostname=x email=foo@example.com\n").await.unwrap();
+    reader.get_mut().write_all(b"add hostname=x type=machine email=foo@example.com\n").await.unwrap();
     line.clear();
     reader.read_line(&mut line).await.unwrap();
     assert!(line.contains("200:Ok"));
@@ -242,7 +242,7 @@ async fn test_fields_id_stability() {
     assert_eq!(response_lines[4], "-200:3:hostname:max 256 Public");
 
     // Add a field starting with 'z' (e.g. zipcode) - sorts after every baseline field.
-    reader.get_mut().write_all(b"add hostname=x zipcode=12345\n").await.unwrap();
+    reader.get_mut().write_all(b"add hostname=x type=machine zipcode=12345\n").await.unwrap();
     line.clear();
     reader.read_line(&mut line).await.unwrap();
     assert!(line.contains("200:Ok"));

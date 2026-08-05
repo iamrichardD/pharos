@@ -77,7 +77,7 @@ pub enum StorageError {
 
 pub trait Storage: Send + Sync {
     fn record_count(&self) -> usize;
-    fn add_record(&mut self, fields: HashMap<String, String>, fingerprint: Option<String>, team: Option<String>);
+    fn add_record(&mut self, fields: HashMap<String, String>, fingerprint: Option<String>, team: Option<String>) -> Result<(), StorageError>;
     fn query(&self, selections: &[(Option<String>, String)], default_type: Option<RecordType>) -> Result<Vec<Record>, StorageError>;
     fn upsert_record(&mut self, fields: HashMap<String, String>, fingerprint: Option<String>, team: Option<String>) -> Result<(), StorageError>;
     fn delete_record(&mut self, selections: &[(Option<String>, String)], fingerprint: Option<String>, teams: &[String]) -> Result<usize, StorageError>;
@@ -232,7 +232,14 @@ impl Storage for MemoryStorage {
     }
 
     #[instrument(skip(self))]
-    fn add_record(&mut self, mut fields: HashMap<String, String>, fingerprint: Option<String>, team: Option<String>) {
+    fn add_record(&mut self, mut fields: HashMap<String, String>, fingerprint: Option<String>, team: Option<String>) -> Result<(), StorageError> {
+        let type_val = fields.get("type").map(|s| s.trim()).unwrap_or("");
+        if type_val.is_empty() {
+            return Err(StorageError::InvalidArgument(
+                "a 'type' field is required (e.g. type=machine)".to_string(),
+            ));
+        }
+
         let now = Utc::now().to_rfc3339();
         fields.entry("created_at".to_string()).or_insert_with(|| now.clone());
         fields.insert("last_seen_at".to_string(), now);
@@ -247,6 +254,7 @@ impl Storage for MemoryStorage {
         };
         self.records.push(record);
         self.next_id += 1;
+        Ok(())
     }
 
     #[instrument(skip(self))]
@@ -327,6 +335,16 @@ impl Storage for MemoryStorage {
                     }
                 }
 
+                if let Some(incoming_type) = fields.get("type") {
+                    if let Some(existing_type) = record.fields.get("type") {
+                        if incoming_type != existing_type {
+                            return Err(StorageError::InvalidArgument(
+                                "type is immutable after creation and cannot be changed".to_string(),
+                            ));
+                        }
+                    }
+                }
+
                 if record.owner_fingerprint.is_none() {
                     record.owner_fingerprint = fingerprint;
                 }
@@ -342,8 +360,7 @@ impl Storage for MemoryStorage {
             }
         }
 
-        self.add_record(fields, fingerprint, team);
-        Ok(())
+        self.add_record(fields, fingerprint, team)
     }
 
     #[instrument(skip(self))]
@@ -409,6 +426,12 @@ impl Storage for MemoryStorage {
     /// matches, and inserts or updates fields as specified by modifications.
     #[instrument(skip(self))]
     fn change_record(&mut self, selections: &[(Option<String>, String)], modifications: &[(String, String)], fingerprint: Option<String>, teams: &[String]) -> Result<usize, StorageError> {
+        if modifications.iter().any(|(k, _)| k.eq_ignore_ascii_case("type")) {
+            return Err(StorageError::InvalidArgument(
+                "type cannot be modified via change - it is set once at record creation".to_string(),
+            ));
+        }
+
         let mut to_change_ids = Vec::new();
 
         for record in &self.records {
@@ -530,10 +553,37 @@ impl FileStorage {
         }
 
         match serde_json::from_str::<Vec<Record>>(&data) {
-            Ok(records) => {
+            Ok(mut records) => {
                 let max_id = records.iter().map(|r| r.id).max().unwrap_or(0);
+                let mut corrected_count = 0;
+
+                for record in records.iter_mut() {
+                    if let Some(type_str) = record.fields.get("type") {
+                        let parsed_type = RecordType::from(type_str.as_str());
+                        if record.record_type.as_ref() != Some(&parsed_type) {
+                            record.record_type = Some(parsed_type);
+                            corrected_count += 1;
+                        }
+                    } else {
+                        tracing::warn!(
+                            "record ID {} has no type field, cannot self-heal, remains invisible to mdb/ph queries — needs manual correction",
+                            record.id
+                        );
+                    }
+                }
+
+                if corrected_count > 0 {
+                    tracing::warn!(
+                        "Self-healed {} records with missing or stale record_type",
+                        corrected_count
+                    );
+                }
+
                 self.memory.records = records;
                 self.memory.next_id = max_id + 1;
+                if corrected_count > 0 {
+                    self.queue_persistence();
+                }
                 info!("Loaded {} records from {:?}", self.memory.records.len(), self.path);
             }
             Err(e) => {
@@ -571,9 +621,10 @@ impl Storage for FileStorage {
         self.memory.record_count()
     }
 
-    fn add_record(&mut self, fields: HashMap<String, String>, fingerprint: Option<String>, team: Option<String>) {
-        self.memory.add_record(fields, fingerprint, team);
+    fn add_record(&mut self, fields: HashMap<String, String>, fingerprint: Option<String>, team: Option<String>) -> Result<(), StorageError> {
+        self.memory.add_record(fields, fingerprint, team)?;
         self.queue_persistence();
+        Ok(())
     }
 
     fn query(&self, selections: &[(Option<String>, String)], default_type: Option<RecordType>) -> Result<Vec<Record>, StorageError> {
@@ -684,8 +735,9 @@ impl Storage for LdapStorage {
     }
 
     #[instrument(skip(self))]
-    fn add_record(&mut self, _fields: HashMap<String, String>, _fingerprint: Option<String>, _team: Option<String>) {
+    fn add_record(&mut self, _fields: HashMap<String, String>, _fingerprint: Option<String>, _team: Option<String>) -> Result<(), StorageError> {
         error!("LDAP storage is currently read-only (Write operations pending Task 4.3)");
+        Err(StorageError::ReadOnly)
     }
 
     #[instrument(skip(self))]
@@ -791,8 +843,9 @@ mod tests {
     fn test_should_inject_created_at_and_last_seen_at_on_add() {
         let mut storage = MemoryStorage::new();
         let mut fields = HashMap::new();
+        fields.insert("type".to_string(), "person".to_string());
         fields.insert("name".to_string(), "John Doe".to_string());
-        storage.add_record(fields, None, None);
+        storage.add_record(fields, None, None).unwrap();
 
         let results = storage.query(&[(Some("name".to_string()), "john".to_string())], None).unwrap();
         assert!(results[0].fields.contains_key("created_at"));
@@ -803,22 +856,19 @@ mod tests {
     fn test_should_update_last_seen_at_but_preserve_created_at_on_upsert() {
         let mut storage = MemoryStorage::new();
         let mut fields = HashMap::new();
+        fields.insert("type".to_string(), "machine".to_string());
         fields.insert("hostname".to_string(), "srv-01".to_string());
         storage.upsert_record(fields.clone(), None, None).unwrap();
 
         let initial_results = storage.query(&[(Some("hostname".to_string()), "srv-01".to_string())], None).unwrap();
         let created_at = initial_results[0].fields.get("created_at").unwrap().clone();
 
-        // Small sleep to ensure timestamp difference if it were second-based, 
-        // but RFC3339 might be fast. Utc::now() is usually fast.
-        
         let mut update_fields = fields.clone();
         update_fields.insert("status".to_string(), "online".to_string());
         storage.upsert_record(update_fields, None, None).unwrap();
 
         let updated_results = storage.query(&[(Some("hostname".to_string()), "srv-01".to_string())], None).unwrap();
         assert_eq!(updated_results[0].fields.get("created_at").unwrap(), &created_at);
-        // last_seen_at should be updated (or at least present)
         assert!(updated_results[0].fields.contains_key("last_seen_at"));
     }
 
@@ -826,9 +876,10 @@ mod tests {
     fn test_should_return_matching_record_when_query_matches_name() {
         let mut storage = MemoryStorage::new();
         let mut fields = HashMap::new();
+        fields.insert("type".to_string(), "person".to_string());
         fields.insert("name".to_string(), "John Doe".to_string());
         fields.insert("email".to_string(), "john@example.com".to_string());
-        storage.add_record(fields, None, None);
+        storage.add_record(fields, None, None).unwrap();
 
         let selections = vec![(Some("name".to_string()), "john".to_string())];
         let results = storage.query(&selections, None).unwrap();
@@ -840,8 +891,9 @@ mod tests {
     fn test_should_return_empty_when_query_does_not_match() {
         let mut storage = MemoryStorage::new();
         let mut fields = HashMap::new();
+        fields.insert("type".to_string(), "person".to_string());
         fields.insert("name".to_string(), "John Doe".to_string());
-        storage.add_record(fields, None, None);
+        storage.add_record(fields, None, None).unwrap();
 
         let selections = vec![(Some("name".to_string()), "jane".to_string())];
         let results = storage.query(&selections, None).unwrap();
@@ -852,8 +904,9 @@ mod tests {
     fn test_should_support_wildcard_matching() {
         let mut storage = MemoryStorage::new();
         let mut fields = HashMap::new();
+        fields.insert("type".to_string(), "person".to_string());
         fields.insert("name".to_string(), "John Doe".to_string());
-        storage.add_record(fields, None, None);
+        storage.add_record(fields, None, None).unwrap();
 
         let selections = vec![(Some("name".to_string()), "jo*".to_string())];
         let results = storage.query(&selections, None).unwrap();
@@ -877,8 +930,9 @@ mod tests {
     fn test_rfc2378_full_wildcards() {
         let mut storage = MemoryStorage::new();
         let mut fields = HashMap::new();
+        fields.insert("type".to_string(), "person".to_string());
         fields.insert("name".to_string(), "John Doe".to_string());
-        storage.add_record(fields, None, None);
+        storage.add_record(fields, None, None).unwrap();
 
         // 1. Non-suffix * (prefix and infix)
         let results = storage.query(&[(Some("name".to_string()), "*doe".to_string())], None).unwrap();
@@ -923,9 +977,10 @@ mod tests {
     fn test_should_match_any_field_when_no_field_name_provided() {
         let mut storage = MemoryStorage::new();
         let mut fields = HashMap::new();
+        fields.insert("type".to_string(), "person".to_string());
         fields.insert("name".to_string(), "John Doe".to_string());
         fields.insert("alias".to_string(), "jdoe".to_string());
-        storage.add_record(fields, None, None);
+        storage.add_record(fields, None, None).unwrap();
 
         let selections = vec![(None, "jdoe".to_string())];
         let results = storage.query(&selections, None).unwrap();
@@ -936,13 +991,15 @@ mod tests {
     fn test_should_match_multiple_criteria_with_implicit_and() {
         let mut storage = MemoryStorage::new();
         let mut fields1 = HashMap::new();
+        fields1.insert("type".to_string(), "person".to_string());
         fields1.insert("name".to_string(), "John Doe".to_string());
         fields1.insert("city".to_string(), "New York".to_string());
-        storage.add_record(fields1, None, None);
+        storage.add_record(fields1, None, None).unwrap();
         let mut fields2 = HashMap::new();
+        fields2.insert("type".to_string(), "person".to_string());
         fields2.insert("name".to_string(), "Jane Doe".to_string());
         fields2.insert("city".to_string(), "London".to_string());
-        storage.add_record(fields2, None, None);
+        storage.add_record(fields2, None, None).unwrap();
 
         let selections = vec![
             (Some("name".to_string()), "doe".to_string()),
@@ -960,12 +1017,12 @@ mod tests {
         let mut fields1 = HashMap::new();
         fields1.insert("name".to_string(), "John Person".to_string());
         fields1.insert("type".to_string(), "person".to_string());
-        storage.add_record(fields1, None, None);
+        storage.add_record(fields1, None, None).unwrap();
 
         let mut fields2 = HashMap::new();
         fields2.insert("name".to_string(), "Server Machine".to_string());
         fields2.insert("type".to_string(), "machine".to_string());
-        storage.add_record(fields2, None, None);
+        storage.add_record(fields2, None, None).unwrap();
 
         let selections = vec![(Some("name".to_string()), "server".to_string())];
         
@@ -984,6 +1041,7 @@ mod tests {
     fn test_should_bond_record_to_fingerprint_when_upserted_first_time() {
         let mut storage = MemoryStorage::new();
         let mut fields = HashMap::new();
+        fields.insert("type".to_string(), "machine".to_string());
         fields.insert("hostname".to_string(), "server-01".to_string());
         
         let fingerprint = Some("SHA256:abcd".to_string());
@@ -998,6 +1056,7 @@ mod tests {
     fn test_should_fail_upsert_when_fingerprint_mismatch() {
         let mut storage = MemoryStorage::new();
         let mut fields = HashMap::new();
+        fields.insert("type".to_string(), "machine".to_string());
         fields.insert("hostname".to_string(), "server-01".to_string());
         
         storage.upsert_record(fields.clone(), Some("SHA256:abcd".to_string()), None).unwrap();
@@ -1010,6 +1069,7 @@ mod tests {
     fn test_should_allow_upsert_when_fingerprint_matches() {
         let mut storage = MemoryStorage::new();
         let mut fields = HashMap::new();
+        fields.insert("type".to_string(), "machine".to_string());
         fields.insert("hostname".to_string(), "server-01".to_string());
         fields.insert("status".to_string(), "online".to_string());
         
@@ -1036,10 +1096,10 @@ mod tests {
         {
             let mut storage = FileStorage::new(storage_path.clone());
             let mut fields = HashMap::new();
+            fields.insert("type".to_string(), "person".to_string());
             fields.insert("name".to_string(), "Persistent Pete".to_string());
-            storage.add_record(fields, None, None);
+            storage.add_record(fields, None, None).unwrap();
             assert_eq!(storage.record_count(), 1);
-            // Give the background worker a moment to persist
             tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
         }
 
@@ -1053,16 +1113,14 @@ mod tests {
         let _ = std::fs::remove_file(&storage_path);
     }
 
-    /// Why: This test ensures that an authorized client can modify specific fields of a record
-    /// that matches the query selections, and that the updated values are correctly applied.
-    /// This prevents regressions in record modification correctness.
     #[test]
     fn test_should_change_matching_record_when_authorized() {
         let mut storage = MemoryStorage::new();
         let mut fields = HashMap::new();
+        fields.insert("type".to_string(), "machine".to_string());
         fields.insert("hostname".to_string(), "vm1".to_string());
         fields.insert("status".to_string(), "up".to_string());
-        storage.add_record(fields, Some("fp1".to_string()), None);
+        storage.add_record(fields, Some("fp1".to_string()), None).unwrap();
 
         let selections = vec![(Some("hostname".to_string()), "vm1".to_string())];
         let modifications = vec![("status".to_string(), "down".to_string())];
@@ -1073,27 +1131,21 @@ mod tests {
         assert_eq!(updated[0].fields.get("status").unwrap(), "down");
     }
 
-    /// Why: This test verifies that if the client is not authorized to edit a record,
-    /// the change command fails with `StorageError::Unauthorized` rather than editing the record.
-    /// This prevents security bypass regressions.
     #[test]
     fn test_should_reject_change_when_unauthorized() {
         let mut storage = MemoryStorage::new();
         let mut fields = HashMap::new();
+        fields.insert("type".to_string(), "machine".to_string());
         fields.insert("hostname".to_string(), "vm1".to_string());
-        storage.add_record(fields, Some("fp1".to_string()), None);
+        storage.add_record(fields, Some("fp1".to_string()), None).unwrap();
 
         let selections = vec![(Some("hostname".to_string()), "vm1".to_string())];
         let modifications = vec![("status".to_string(), "down".to_string())];
-        // Different fingerprint, no shared team
         let result = storage.change_record(&selections, &modifications, Some("someone-else".to_string()), &[]);
 
         assert!(matches!(result, Err(StorageError::Unauthorized)));
     }
 
-    /// Why: This test ensures that when no records match the selection, the return count is 0
-    /// and no errors or unintended modifications occur.
-    /// This prevents false success reporting on non-existent records.
     #[test]
     fn test_should_return_zero_when_no_matches_to_change() {
         let mut storage = MemoryStorage::new();
@@ -1103,9 +1155,6 @@ mod tests {
         assert_eq!(result.unwrap(), 0);
     }
 
-    /// Why: This test ensures that when multiple records match the selection query, all of them
-    /// are successfully modified.
-    /// This prevents regression where only a subset of matching records is changed.
     #[test]
     fn test_should_change_multiple_matching_records() {
         let mut storage = MemoryStorage::new();
@@ -1113,11 +1162,90 @@ mod tests {
             let mut fields = HashMap::new();
             fields.insert("type".to_string(), "machine".to_string());
             fields.insert("hostname".to_string(), format!("vm{}", i));
-            storage.add_record(fields, None, None);
+            storage.add_record(fields, None, None).unwrap();
         }
         let selections = vec![(Some("type".to_string()), "machine".to_string())];
         let modifications = vec![("status".to_string(), "maintenance".to_string())];
         let result = storage.change_record(&selections, &modifications, None, &[]);
         assert_eq!(result.unwrap(), 3);
+    }
+
+    #[test]
+    fn test_should_return_invalid_argument_when_add_record_missing_type() {
+        let mut storage = MemoryStorage::new();
+        let mut fields = HashMap::new();
+        fields.insert("hostname".to_string(), "srv-01".to_string());
+        let res = storage.add_record(fields, None, None);
+        assert!(matches!(res, Err(StorageError::InvalidArgument(_))));
+    }
+
+    #[test]
+    fn test_should_reject_upsert_when_type_mismatches_existing_field() {
+        let mut storage = MemoryStorage::new();
+        let mut fields = HashMap::new();
+        fields.insert("hostname".to_string(), "srv-01".to_string());
+        fields.insert("type".to_string(), "machine".to_string());
+        storage.upsert_record(fields.clone(), None, None).unwrap();
+
+        let mut mismatch_fields = fields.clone();
+        mismatch_fields.insert("type".to_string(), "person".to_string());
+        let res = storage.upsert_record(mismatch_fields, None, None);
+        assert!(matches!(res, Err(StorageError::InvalidArgument(_))));
+    }
+
+    #[test]
+    fn test_should_allow_upsert_when_type_matches_existing_field() {
+        let mut storage = MemoryStorage::new();
+        let mut fields = HashMap::new();
+        fields.insert("hostname".to_string(), "srv-01".to_string());
+        fields.insert("type".to_string(), "machine".to_string());
+        storage.upsert_record(fields.clone(), None, None).unwrap();
+
+        let res = storage.upsert_record(fields, None, None);
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_should_reject_change_when_modifications_contain_type() {
+        let mut storage = MemoryStorage::new();
+        let mut fields = HashMap::new();
+        fields.insert("hostname".to_string(), "srv-01".to_string());
+        fields.insert("type".to_string(), "machine".to_string());
+        storage.add_record(fields, None, None).unwrap();
+
+        let selections = vec![(Some("hostname".to_string()), "srv-01".to_string())];
+        let modifications = vec![("type".to_string(), "person".to_string())];
+        let res = storage.change_record(&selections, &modifications, None, &[]);
+        assert!(matches!(res, Err(StorageError::InvalidArgument(_))));
+    }
+
+    #[tokio::test]
+    async fn test_should_self_heal_record_type_on_load_from_disk() {
+        let temp_dir = std::env::temp_dir();
+        let storage_path = temp_dir.join("pharos_test_self_heal.json");
+        if storage_path.exists() {
+            let _ = std::fs::remove_file(&storage_path);
+        }
+
+        let raw_json = r#"[
+            {
+                "id": 1,
+                "record_type": null,
+                "fields": {
+                    "hostname": "srv-heal",
+                    "type": "machine"
+                },
+                "owner_fingerprint": null,
+                "owner_team": null
+            }
+        ]"#;
+        std::fs::write(&storage_path, raw_json).unwrap();
+
+        let storage = FileStorage::new(storage_path.clone());
+        let results = storage.query(&[(Some("hostname".to_string()), "srv-heal".to_string())], None).unwrap();
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].record_type, Some(RecordType::Machine));
+
+        let _ = std::fs::remove_file(&storage_path);
     }
 }

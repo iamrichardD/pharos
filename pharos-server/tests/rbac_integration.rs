@@ -299,7 +299,7 @@ async fn test_should_support_non_suffix_wildcard_in_query() {
     reader.read_line(&mut line).await.unwrap();
     assert!(line.contains("200:Ok"));
 
-    reader.get_mut().write_all(b"add name=johndoe\n").await.unwrap();
+    reader.get_mut().write_all(b"add name=johndoe type=person\n").await.unwrap();
     line.clear();
     reader.read_line(&mut line).await.unwrap();
     assert!(line.contains("200:Ok"));

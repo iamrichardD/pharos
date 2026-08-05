@@ -300,6 +300,9 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                                     });
                                 }
                             }
+                            Err(crate::storage::StorageError::InvalidArgument(msg)) => {
+                                writer.write_all(format!("512:Illegal value: {}\n", msg).as_bytes()).await?;
+                            }
                             Err(crate::storage::StorageError::Collision) | Err(crate::storage::StorageError::Unauthorized) => {
                                 writer.write_all(b"511:Not authorized to add entries\n").await?;
                             }
@@ -412,6 +415,9 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                                 } else {
                                     writer.write_all(b"501:No matches to change\n").await?;
                                 }
+                            }
+                            Err(crate::storage::StorageError::InvalidArgument(msg)) => {
+                                writer.write_all(format!("512:Illegal value: {}\n", msg).as_bytes()).await?;
                             }
                             Err(crate::storage::StorageError::TooManyEntries(n)) => {
                                 writer.write_all(format!("518:Too many entries selected by change command ({} matched)\n", n).as_bytes()).await?;

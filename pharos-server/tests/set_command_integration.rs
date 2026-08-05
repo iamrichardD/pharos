@@ -154,12 +154,12 @@ async fn test_set_session_options() {
     ]);
 
     // Add two records
-    reader.get_mut().write_all(b"add name=alice role=admin status=active\n").await.unwrap();
+    reader.get_mut().write_all(b"add name=alice type=person role=admin status=active\n").await.unwrap();
     line.clear();
     reader.read_line(&mut line).await.unwrap();
     assert!(line.contains("200:Ok"));
     
-    reader.get_mut().write_all(b"add name=bob role=user status=active\n").await.unwrap();
+    reader.get_mut().write_all(b"add name=bob type=person role=user status=active\n").await.unwrap();
     line.clear();
     reader.read_line(&mut line).await.unwrap();
     assert!(line.contains("200:Ok"));
