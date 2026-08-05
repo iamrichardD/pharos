@@ -63,16 +63,22 @@ mdb ip="192.168.1.50"
 mdb -H hostname="srv-web-01"
 ```
 
+:::caution[Always quote wildcard searches]
+`mdb '*'` and `ph '*'` search across every record — but only if your shell passes the `*` through untouched. An **unquoted** `mdb *` gets expanded by your shell into every filename in your current directory before mdb ever sees it, silently turning your wildcard search into a query for hundreds of local filenames. Beyond just breaking the search, this sends those filenames to your Pharos server, where they're logged — a real information-disclosure risk if any of those names are sensitive. Always quote the wildcard: `mdb '*'`, not `mdb *`. Both clients print a stderr warning if a command looks like it was affected by this.
+:::
+
 ### Adding Records
 Adding records requires authorized write access. Pharos will automatically handle the SSH challenge-response if your key is enrolled.
 
 ```bash
 # Add a new person
-ph add name="Jane Smith" email="jane@lab.local" type="person"
+ph add name="Jane Smith" email="jane@lab.local"
 
 # Add a new machine
-mdb add hostname="db-01" ip="10.0.0.5" type="machine" status="up"
+mdb add hostname="db-01" ip="10.0.0.5" status="up"
 ```
+
+`ph` always registers `person`-type records and `mdb` always registers `machine`-type records — you don't need to set `type=` yourself. If you pass a conflicting `type=` value, the client overrides it to the correct type and prints a note to stderr explaining why. Type is set once at creation and is immutable afterward: neither re-`add`-ing over an existing record nor `change` can alter it.
 
 ### Modifying & Deleting
 Keep your registry accurate with the `change` and `delete` commands.
@@ -100,6 +106,13 @@ Configure your client behavior without passing repetitive flags.
 | `PHAROS_PORT` | The port the server is listening on. | `2378` |
 | `PHAROS_SERVER` | Combined `host:port` — overrides `PHAROS_HOST`/`PHAROS_PORT` if set. | Unset |
 | `PHAROS_PRIVATE_KEY` | Path to your private SSH key for authentication. | `~/.ssh/id_ed25519` |
+
+### Debug Mode
+Pass `--debug` to either client to see exactly what's happening under the hood: the resolved server address (and which source it came from — env var, `/etc/pharos/client.conf`, or the built-in default), the exact wire command sent to the server, and the raw response received. Off by default, it produces zero extra output otherwise — useful for diagnosing "no matches" results that turn out to be a misconfigured host or an unexpected wire command.
+
+```bash
+mdb --debug hostname="srv-web-01"
+```
 
 ### Pipe-Friendly Output
 Pharos clients output clean, structured text that is easy to parse with standard Unix tools like `grep`, `awk`, or `jq`.
