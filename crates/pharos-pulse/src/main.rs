@@ -145,6 +145,9 @@ fn collect_inventory() -> InventoryPayload {
     fields.insert("os_version".to_string(), System::os_version().unwrap_or_else(|| "unknown".to_string()));
     fields.insert("kernel_version".to_string(), System::kernel_version().unwrap_or_else(|| "unknown".to_string()));
     fields.insert("serial_number".to_string(), get_serial_number());
+    fields.insert("uuid".to_string(), get_uuid());
+    fields.insert("manufacturer".to_string(), get_manufacturer());
+    fields.insert("product_name".to_string(), get_product_name());
 
     // Enumerate real network interfaces for MAC and IP address auto-population.
     // Skip any interface that has no assigned IP address at all (e.g. bond slaves, unassigned bonds, veth pairs).
@@ -288,29 +291,81 @@ async fn send_baseline_until_success(
 }
 
 #[cfg(target_os = "linux")]
-fn get_serial_number() -> String {
-    std::fs::read_to_string("/sys/class/dmi/id/product_serial")
-        .map(|s| s.trim().to_string())
-        .unwrap_or_else(|_| {
-            // Fallback for environments where the file is missing or inaccessible
-            "unknown".to_string()
+fn read_sysfs_dmi_field(path: &str) -> String {
+    std::fs::read_to_string(path)
+        .map(|s| {
+            let trimmed = s.trim();
+            if trimmed.is_empty() {
+                "unknown".to_string()
+            } else {
+                trimmed.to_string()
+            }
         })
+        .unwrap_or_else(|_| "unknown".to_string())
+}
+
+#[cfg(target_os = "linux")]
+fn get_serial_number() -> String {
+    read_sysfs_dmi_field("/sys/class/dmi/id/product_serial")
+}
+
+#[cfg(target_os = "linux")]
+fn get_uuid() -> String {
+    read_sysfs_dmi_field("/sys/class/dmi/id/product_uuid")
+}
+
+#[cfg(target_os = "linux")]
+fn get_manufacturer() -> String {
+    read_sysfs_dmi_field("/sys/class/dmi/id/sys_vendor")
+}
+
+#[cfg(target_os = "linux")]
+fn get_product_name() -> String {
+    read_sysfs_dmi_field("/sys/class/dmi/id/product_name")
 }
 
 #[cfg(target_os = "macos")]
-fn get_serial_number() -> String {
+fn get_dmi_field_macos(key: &str) -> String {
     let output = std::process::Command::new("ioreg")
         .args(&["-rd1", "-c", "IOPlatformExpertDevice"])
         .output();
     if let Ok(out) = output {
         let s = String::from_utf8_lossy(&out.stdout);
         for line in s.lines() {
-            if line.contains("IOPlatformSerialNumber") {
-                return line.split('=').last().unwrap_or("unknown").trim().replace("\"", "");
+            if line.contains(key) {
+                let val = line.split('=').last().unwrap_or("unknown").trim().replace("\"", "").replace("<", "").replace(">", "");
+                if !val.is_empty() {
+                    return val;
+                }
             }
         }
     }
     "unknown".to_string()
+}
+
+#[cfg(target_os = "macos")]
+fn get_serial_number() -> String {
+    get_dmi_field_macos("IOPlatformSerialNumber")
+}
+
+#[cfg(target_os = "macos")]
+fn get_uuid() -> String {
+    get_dmi_field_macos("IOPlatformUUID")
+}
+
+#[cfg(target_os = "macos")]
+fn get_manufacturer() -> String {
+    let val = get_dmi_field_macos("manufacturer");
+    if val == "unknown" {
+        "Apple Inc.".to_string()
+    } else {
+        val
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn get_product_name() -> String {
+    get_dmi_field_macos("model")
 }
 
 #[cfg(target_os = "windows")]
@@ -319,13 +374,73 @@ fn get_serial_number() -> String {
         .args(&["-Command", "Get-CimInstance Win32_Bios | Select-Object -ExpandProperty SerialNumber"])
         .output();
     if let Ok(out) = output {
-        return String::from_utf8_lossy(&out.stdout).trim().to_string();
+        let s = String::from_utf8_lossy(&out.stdout).trim().to_string();
+        if !s.is_empty() {
+            return s;
+        }
+    }
+    "unknown".to_string()
+}
+
+#[cfg(target_os = "windows")]
+fn get_uuid() -> String {
+    let output = std::process::Command::new("powershell")
+        .args(&["-Command", "Get-CimInstance Win32_ComputerSystemProduct | Select-Object -ExpandProperty UUID"])
+        .output();
+    if let Ok(out) = output {
+        let s = String::from_utf8_lossy(&out.stdout).trim().to_string();
+        if !s.is_empty() {
+            return s;
+        }
+    }
+    "unknown".to_string()
+}
+
+#[cfg(target_os = "windows")]
+fn get_manufacturer() -> String {
+    let output = std::process::Command::new("powershell")
+        .args(&["-Command", "Get-CimInstance Win32_ComputerSystem | Select-Object -ExpandProperty Manufacturer"])
+        .output();
+    if let Ok(out) = output {
+        let s = String::from_utf8_lossy(&out.stdout).trim().to_string();
+        if !s.is_empty() {
+            return s;
+        }
+    }
+    "unknown".to_string()
+}
+
+#[cfg(target_os = "windows")]
+fn get_product_name() -> String {
+    let output = std::process::Command::new("powershell")
+        .args(&["-Command", "Get-CimInstance Win32_ComputerSystem | Select-Object -ExpandProperty Model"])
+        .output();
+    if let Ok(out) = output {
+        let s = String::from_utf8_lossy(&out.stdout).trim().to_string();
+        if !s.is_empty() {
+            return s;
+        }
     }
     "unknown".to_string()
 }
 
 #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
 fn get_serial_number() -> String {
+    "unsupported-os".to_string()
+}
+
+#[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+fn get_uuid() -> String {
+    "unsupported-os".to_string()
+}
+
+#[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+fn get_manufacturer() -> String {
+    "unsupported-os".to_string()
+}
+
+#[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+fn get_product_name() -> String {
     "unsupported-os".to_string()
 }
 
@@ -403,5 +518,26 @@ mod tests {
         delay = Duration::from_secs(32);
         delay = std::cmp::min(delay * 2, cap);
         assert_eq!(delay, Duration::from_secs(60)); // Capped at 60s
+    }
+
+    #[test]
+    #[cfg(target_os = "linux")]
+    fn test_read_sysfs_dmi_field_with_temp_file() {
+        let temp_dir = std::env::temp_dir();
+        let test_file = temp_dir.join("test_dmi_field");
+
+        // Test valid content with whitespace
+        std::fs::write(&test_file, "  Acme Corp  \n").unwrap();
+        assert_eq!(read_sysfs_dmi_field(test_file.to_str().unwrap()), "Acme Corp");
+
+        // Test empty/whitespace-only content
+        std::fs::write(&test_file, "   \n").unwrap();
+        assert_eq!(read_sysfs_dmi_field(test_file.to_str().unwrap()), "unknown");
+
+        // Test non-existent file
+        let missing_file = temp_dir.join("non_existent_dmi_file_12345");
+        assert_eq!(read_sysfs_dmi_field(missing_file.to_str().unwrap()), "unknown");
+
+        let _ = std::fs::remove_file(&test_file);
     }
 }

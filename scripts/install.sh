@@ -493,6 +493,18 @@ ${ca_cert_line}
 WantedBy=multi-user.target
 EOF
 
+    if [[ "${OS_NAME}" == "linux" ]]; then
+        log "Configuring systemd-tmpfiles ACL drop-in for Pharos Pulse DMI read access..."
+        ${SUDO} mkdir -p /etc/tmpfiles.d
+        cat <<EOF | ${SUDO} tee /etc/tmpfiles.d/pharos-pulse-dmi.conf > /dev/null
+a /sys/class/dmi/id/product_serial - - - - u:pharos:r
+a /sys/class/dmi/id/product_uuid   - - - - u:pharos:r
+EOF
+        if command -v systemd-tmpfiles >/dev/null 2>&1; then
+            ${SUDO} systemd-tmpfiles --create /etc/tmpfiles.d/pharos-pulse-dmi.conf || true
+        fi
+    fi
+
     ${SUDO} mkdir -p "${PHAROS_DIR}"
     echo "PHAROS_SERVER=${host}" | ${SUDO} tee "${PHAROS_DIR}/client.conf" > /dev/null
     ${SUDO} chmod 644 "${PHAROS_DIR}/client.conf"
