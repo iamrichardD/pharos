@@ -177,7 +177,7 @@ async fn test_live_verification_steps_3_4_5_6_7() {
     heartbeat_fields.insert("hostname".to_string(), "srv-heal".to_string());
     heartbeat_fields.insert("type".to_string(), "machine".to_string());
     heartbeat_fields.insert("status".to_string(), "heartbeat_ok".to_string());
-    let upsert_res = heal_storage.upsert_record(heartbeat_fields, None, None);
+    let upsert_res = heal_storage.upsert_record(heartbeat_fields.into_iter().collect(), None, None);
     assert!(upsert_res.is_ok());
     let updated_heal = heal_storage.query(&[(Some("hostname".to_string()), "srv-heal".to_string())], None).unwrap();
     assert_eq!(updated_heal[0].fields.get("status").unwrap(), "heartbeat_ok");

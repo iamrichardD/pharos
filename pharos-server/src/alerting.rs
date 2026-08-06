@@ -318,6 +318,7 @@ mod tests {
             id: 1,
             record_type: Some(RecordType::Machine),
             fields,
+            multi_fields: StdHashMap::new(),
             owner_fingerprint: None,
             owner_team: None,
         }
@@ -399,6 +400,7 @@ mod tests {
             id: 1,
             record_type: Some(RecordType::Machine),
             fields,
+            multi_fields: StdHashMap::new(),
             owner_fingerprint: None,
             owner_team: None,
         };
@@ -428,6 +430,7 @@ mod tests {
             id: 1,
             record_type: Some(RecordType::Machine),
             fields,
+            multi_fields: StdHashMap::new(),
             owner_fingerprint: None,
             owner_team: None,
         };
@@ -448,6 +451,7 @@ mod tests {
             id: 1,
             record_type: Some(RecordType::Machine),
             fields,
+            multi_fields: StdHashMap::new(),
             owner_fingerprint: None,
             owner_team: None,
         };
@@ -469,8 +473,8 @@ mod tests {
         fields2.insert("expected_version".to_string(), "v1.0.0".to_string());
 
         let records = vec![
-            Record { id: 1, record_type: Some(RecordType::Machine), fields: fields1, owner_fingerprint: None, owner_team: None },
-            Record { id: 2, record_type: Some(RecordType::Machine), fields: fields2, owner_fingerprint: None, owner_team: None },
+            Record { id: 1, record_type: Some(RecordType::Machine), fields: fields1, multi_fields: StdHashMap::new(), owner_fingerprint: None, owner_team: None },
+            Record { id: 2, record_type: Some(RecordType::Machine), fields: fields2, multi_fields: StdHashMap::new(), owner_fingerprint: None, owner_team: None },
         ];
 
         let alert_state = AlertState::default();
@@ -488,6 +492,7 @@ mod tests {
             id: 1,
             record_type: Some(RecordType::Machine),
             fields,
+            multi_fields: StdHashMap::new(),
             owner_fingerprint: None,
             owner_team: None,
         };
@@ -513,6 +518,7 @@ mod tests {
             id: 1,
             record_type: Some(RecordType::Machine),
             fields,
+            multi_fields: StdHashMap::new(),
             owner_fingerprint: None,
             owner_team: None,
         };

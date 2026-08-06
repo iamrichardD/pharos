@@ -49,7 +49,7 @@ pub async fn register_self(storage: Arc<RwLock<dyn Storage>>, addr: &str) -> any
     fields.insert("status".to_string(), "online".to_string());
 
     let mut lock = storage.write().map_err(|_| anyhow::anyhow!("Storage lock poisoned"))?;
-    lock.upsert_record(fields, None, None)?;
+    lock.upsert_record(fields.into_iter().collect(), None, None)?;
     Ok(())
 }
 
@@ -63,12 +63,12 @@ pub async fn bootstrap(storage: Arc<RwLock<dyn Storage>>, peer_addr: &str) -> an
         info!("Pulling {} records from bootstrap peer", records.len());
         let mut lock = storage.write().map_err(|_| anyhow::anyhow!("Storage lock poisoned"))?;
         for record in records {
-            let mut fields = HashMap::new();
+            let mut fields: Vec<(String, String)> = Vec::new();
             for field in record.fields {
-                fields.insert(field.key, field.value);
+                fields.push((field.key, field.value));
             }
             // Tag as forwarded to avoid immediate re-replication back to the peer
-            fields.insert("forwarded".to_string(), "true".to_string());
+            fields.push(("forwarded".to_string(), "true".to_string()));
             lock.upsert_record(fields, None, None)?;
         }
     }

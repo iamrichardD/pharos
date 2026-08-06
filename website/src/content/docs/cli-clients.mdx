@@ -54,9 +54,12 @@ ph name="John Doe"
 # Search for a machine by hostname
 mdb hostname="srv-web-01"
 
-# Search by IP address
-mdb ip="192.168.1.50"
+# Search by IP or MAC address
+mdb ip_addr="192.168.86.5"
+mdb mac_addr="e0:51:d8:1d:e3:22"
 ```
+
+For hosts with multiple NICs or dual-stack IPv4/IPv6, Pharos uses RFC-native multi-valued fields (`ip_addr`, `mac_addr`) to store multiple values per record. Subsequent `add` or `change` operations supplying an `ip_addr` or `mac_addr` append new values if not already present. Note that RFC 2378 does not define a single-value delete command — removing an IP or MAC address requires deleting and re-adding the record.
 
 `mdb` also accepts a `-H`/`--human` flag, converting raw byte/KB fields and ISO8601 timestamps into human-friendly units for terminal reading — omit it (the default) when piping output to scripts, since that raw machine-readable format is what the pipe-friendly examples below expect:
 ```bash

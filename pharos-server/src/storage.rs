@@ -53,6 +53,8 @@ pub struct Record {
     pub id: usize,
     pub record_type: Option<RecordType>,
     pub fields: HashMap<String, String>,
+    #[serde(default)]
+    pub multi_fields: HashMap<String, Vec<String>>,
     pub owner_fingerprint: Option<String>,
     pub owner_team: Option<String>,
 }
@@ -77,9 +79,9 @@ pub enum StorageError {
 
 pub trait Storage: Send + Sync {
     fn record_count(&self) -> usize;
-    fn add_record(&mut self, fields: HashMap<String, String>, fingerprint: Option<String>, team: Option<String>) -> Result<(), StorageError>;
+    fn add_record(&mut self, fields: Vec<(String, String)>, fingerprint: Option<String>, team: Option<String>) -> Result<(), StorageError>;
     fn query(&self, selections: &[(Option<String>, String)], default_type: Option<RecordType>) -> Result<Vec<Record>, StorageError>;
-    fn upsert_record(&mut self, fields: HashMap<String, String>, fingerprint: Option<String>, team: Option<String>) -> Result<(), StorageError>;
+    fn upsert_record(&mut self, fields: Vec<(String, String)>, fingerprint: Option<String>, team: Option<String>) -> Result<(), StorageError>;
     fn delete_record(&mut self, selections: &[(Option<String>, String)], fingerprint: Option<String>, teams: &[String]) -> Result<usize, StorageError>;
     /// Purpose (The "Why"): Modifies matching and authorized records' fields in-place.
     /// This matches selections, authorizes modifications using fingerprint/team checks,
@@ -225,6 +227,100 @@ impl MemoryStorage {
     }
 }
 
+fn is_valid_mac_address(s: &str) -> bool {
+    let parts: Vec<&str> = s.split(|c| c == ':' || c == '-').collect();
+    if parts.len() != 6 {
+        return false;
+    }
+    for part in parts {
+        if part.is_empty() || part.len() > 2 {
+            return false;
+        }
+        if u8::from_str_radix(part, 16).is_err() {
+            return false;
+        }
+    }
+    true
+}
+
+fn validate_ip_mac_field(key: &str, value: &str) -> Result<(), StorageError> {
+    if key == "ip" || key == "ip_addr" {
+        if value.parse::<std::net::IpAddr>().is_err() {
+            return Err(StorageError::InvalidArgument(format!(
+                "invalid IP address '{}' for field '{}'",
+                value, key
+            )));
+        }
+    } else if key == "mac" || key == "mac_addr" {
+        if !is_valid_mac_address(value) {
+            return Err(StorageError::InvalidArgument(format!(
+                "invalid MAC address '{}' for field '{}'",
+                value, key
+            )));
+        }
+    }
+    Ok(())
+}
+
+impl MemoryStorage {
+    fn record_matches_selections(&self, record: &Record, selections: &[(Option<String>, String)]) -> Result<bool, StorageError> {
+        for (field_opt, value) in selections {
+            match field_opt {
+                Some(field_name) => {
+                    if field_name == "ip_addr" || field_name == "mac_addr" {
+                        if let Some(list) = record.multi_fields.get(field_name) {
+                            let mut match_found = false;
+                            for item in list {
+                                if self.matches(item, value)? {
+                                    match_found = true;
+                                    break;
+                                }
+                            }
+                            if !match_found {
+                                return Ok(false);
+                            }
+                        } else {
+                            return Ok(false);
+                        }
+                    } else if let Some(field_val) = record.fields.get(field_name) {
+                        if !self.matches(field_val, value)? {
+                            return Ok(false);
+                        }
+                    } else {
+                        return Ok(false);
+                    }
+                }
+                None => {
+                    let mut any_match = false;
+                    for field_val in record.fields.values() {
+                        if self.matches(field_val, value)? {
+                            any_match = true;
+                            break;
+                        }
+                    }
+                    if !any_match {
+                        for list in record.multi_fields.values() {
+                            for item in list {
+                                if self.matches(item, value)? {
+                                    any_match = true;
+                                    break;
+                                }
+                            }
+                            if any_match {
+                                break;
+                            }
+                        }
+                    }
+                    if !any_match {
+                        return Ok(false);
+                    }
+                }
+            }
+        }
+        Ok(true)
+    }
+}
+
 impl Storage for MemoryStorage {
     #[instrument(skip(self))]
     fn record_count(&self) -> usize {
@@ -232,23 +328,42 @@ impl Storage for MemoryStorage {
     }
 
     #[instrument(skip(self))]
-    fn add_record(&mut self, mut fields: HashMap<String, String>, fingerprint: Option<String>, team: Option<String>) -> Result<(), StorageError> {
-        let type_val = fields.get("type").map(|s| s.trim()).unwrap_or("");
+    fn add_record(&mut self, fields: Vec<(String, String)>, fingerprint: Option<String>, team: Option<String>) -> Result<(), StorageError> {
+        let type_val = fields.iter().find(|(k, _)| k == "type").map(|(_, v)| v.trim()).unwrap_or("");
         if type_val.is_empty() {
             return Err(StorageError::InvalidArgument(
                 "a 'type' field is required (e.g. type=machine)".to_string(),
             ));
         }
 
+        for (k, v) in &fields {
+            validate_ip_mac_field(k, v)?;
+        }
+
+        let mut record_fields = HashMap::new();
+        let mut multi_fields: HashMap<String, Vec<String>> = HashMap::new();
+
+        for (k, v) in fields {
+            if k == "ip_addr" || k == "mac_addr" {
+                let vec = multi_fields.entry(k).or_default();
+                if !vec.contains(&v) {
+                    vec.push(v);
+                }
+            } else {
+                record_fields.insert(k, v);
+            }
+        }
+
         let now = Utc::now().to_rfc3339();
-        fields.entry("created_at".to_string()).or_insert_with(|| now.clone());
-        fields.insert("last_seen_at".to_string(), now);
+        record_fields.entry("created_at".to_string()).or_insert_with(|| now.clone());
+        record_fields.insert("last_seen_at".to_string(), now);
         
-        let record_type = fields.get("type").map(|s| RecordType::from(s.as_str()));
+        let record_type = record_fields.get("type").map(|s| RecordType::from(s.as_str()));
         let record = Record {
             id: self.next_id,
             record_type,
-            fields,
+            fields: record_fields,
+            multi_fields,
             owner_fingerprint: fingerprint,
             owner_team: team,
         };
@@ -272,36 +387,7 @@ impl Storage for MemoryStorage {
                 }
             }
 
-            let mut matches_all = true;
-            for (field_opt, value) in selections {
-                match field_opt {
-                    Some(field_name) => {
-                        if let Some(field_val) = record.fields.get(field_name) {
-                            if !self.matches(field_val, value)? {
-                                matches_all = false;
-                                break;
-                            }
-                        } else {
-                            matches_all = false;
-                            break;
-                        }
-                    }
-                    None => {
-                        let mut any_match = false;
-                        for field_val in record.fields.values() {
-                            if self.matches(field_val, value)? {
-                                any_match = true;
-                                break;
-                            }
-                        }
-                        if !any_match {
-                            matches_all = false;
-                            break;
-                        }
-                    }
-                }
-            }
-            if matches_all {
+            if self.record_matches_selections(record, selections)? {
                 results.push(record.clone());
             }
         }
@@ -309,13 +395,17 @@ impl Storage for MemoryStorage {
     }
 
     #[instrument(skip(self))]
-    fn upsert_record(&mut self, fields: HashMap<String, String>, fingerprint: Option<String>, team: Option<String>) -> Result<(), StorageError> {
+    fn upsert_record(&mut self, fields: Vec<(String, String)>, fingerprint: Option<String>, team: Option<String>) -> Result<(), StorageError> {
+        for (k, v) in &fields {
+            validate_ip_mac_field(k, v)?;
+        }
+
         let now = Utc::now().to_rfc3339();
-        let identifier = fields.get("hostname").or_else(|| fields.get("alias"));
+        let identifier = fields.iter().find(|(k, _)| k == "hostname" || k == "alias").map(|(_, v)| v.clone());
 
         if let Some(id_val) = identifier {
             let existing = self.records.iter_mut().find(|r| {
-                r.fields.get("hostname") == Some(id_val) || r.fields.get("alias") == Some(id_val)
+                r.fields.get("hostname") == Some(&id_val) || r.fields.get("alias") == Some(&id_val)
             });
 
             if let Some(record) = existing {
@@ -335,7 +425,7 @@ impl Storage for MemoryStorage {
                     }
                 }
 
-                if let Some(incoming_type) = fields.get("type") {
+                if let Some((_, incoming_type)) = fields.iter().find(|(k, _)| k == "type") {
                     if let Some(existing_type) = record.fields.get("type") {
                         if incoming_type != existing_type {
                             return Err(StorageError::InvalidArgument(
@@ -353,7 +443,14 @@ impl Storage for MemoryStorage {
                 }
 
                 for (k, v) in fields {
-                    record.fields.insert(k, v);
+                    if k == "ip_addr" || k == "mac_addr" {
+                        let vec = record.multi_fields.entry(k).or_default();
+                        if !vec.contains(&v) {
+                            vec.push(v);
+                        }
+                    } else {
+                        record.fields.insert(k, v);
+                    }
                 }
                 record.fields.insert("last_seen_at".to_string(), now);
                 return Ok(());
@@ -368,37 +465,7 @@ impl Storage for MemoryStorage {
         let mut to_delete_ids = Vec::new();
 
         for record in &self.records {
-            let mut matches_all = true;
-            for (field_opt, value) in selections {
-                match field_opt {
-                    Some(field_name) => {
-                        if let Some(field_val) = record.fields.get(field_name) {
-                            if !self.matches(field_val, value)? {
-                                matches_all = false;
-                                break;
-                            }
-                        } else {
-                            matches_all = false;
-                            break;
-                        }
-                    }
-                    None => {
-                        let mut any_match = false;
-                        for field_val in record.fields.values() {
-                            if self.matches(field_val, value)? {
-                                any_match = true;
-                                break;
-                            }
-                        }
-                        if !any_match {
-                            matches_all = false;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if matches_all {
+            if self.record_matches_selections(record, selections)? {
                 // Check authorization for deletion
                 let authorized = match (&record.owner_fingerprint, &record.owner_team) {
                     (Some(fp), _) if fingerprint.as_ref() == Some(fp) => true,
@@ -432,40 +499,14 @@ impl Storage for MemoryStorage {
             ));
         }
 
+        for (k, v) in modifications {
+            validate_ip_mac_field(k, v)?;
+        }
+
         let mut to_change_ids = Vec::new();
 
         for record in &self.records {
-            let mut matches_all = true;
-            for (field_opt, value) in selections {
-                match field_opt {
-                    Some(field_name) => {
-                        if let Some(field_val) = record.fields.get(field_name) {
-                            if !self.matches(field_val, value)? {
-                                matches_all = false;
-                                break;
-                            }
-                        } else {
-                            matches_all = false;
-                            break;
-                        }
-                    }
-                    None => {
-                        let mut any_match = false;
-                        for field_val in record.fields.values() {
-                            if self.matches(field_val, value)? {
-                                any_match = true;
-                                break;
-                            }
-                        }
-                        if !any_match {
-                            matches_all = false;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if matches_all {
+            if self.record_matches_selections(record, selections)? {
                 // Check authorization for modification - identical policy to delete_record
                 let authorized = match (&record.owner_fingerprint, &record.owner_team) {
                     (Some(fp), _) if fingerprint.as_ref() == Some(fp) => true,
@@ -486,7 +527,14 @@ impl Storage for MemoryStorage {
         for record in self.records.iter_mut() {
             if to_change_ids.contains(&record.id) {
                 for (field, value) in modifications {
-                    record.fields.insert(field.clone(), value.clone());
+                    if field == "ip_addr" || field == "mac_addr" {
+                        let vec = record.multi_fields.entry(field.clone()).or_default();
+                        if !vec.contains(value) {
+                            vec.push(value.clone());
+                        }
+                    } else {
+                        record.fields.insert(field.clone(), value.clone());
+                    }
                 }
             }
         }
@@ -621,7 +669,7 @@ impl Storage for FileStorage {
         self.memory.record_count()
     }
 
-    fn add_record(&mut self, fields: HashMap<String, String>, fingerprint: Option<String>, team: Option<String>) -> Result<(), StorageError> {
+    fn add_record(&mut self, fields: Vec<(String, String)>, fingerprint: Option<String>, team: Option<String>) -> Result<(), StorageError> {
         self.memory.add_record(fields, fingerprint, team)?;
         self.queue_persistence();
         Ok(())
@@ -631,7 +679,7 @@ impl Storage for FileStorage {
         self.memory.query(selections, default_type)
     }
 
-    fn upsert_record(&mut self, fields: HashMap<String, String>, fingerprint: Option<String>, team: Option<String>) -> Result<(), StorageError> {
+    fn upsert_record(&mut self, fields: Vec<(String, String)>, fingerprint: Option<String>, team: Option<String>) -> Result<(), StorageError> {
         self.memory.upsert_record(fields, fingerprint, team)?;
         self.queue_persistence();
         Ok(())
@@ -690,31 +738,20 @@ impl LdapStorage {
     fn build_filter(&self, selections: &[(Option<String>, String)], default_type: Option<RecordType>) -> String {
         let mut filters = Vec::new();
 
-        // Object Class filters based on discriminator
-        if let Some(rt) = default_type {
-            match rt {
+        if let Some(ref dt) = default_type {
+            match dt {
                 RecordType::Person => filters.push("(objectClass=inetOrgPerson)".to_string()),
                 RecordType::Machine => filters.push("(objectClass=ipHost)".to_string()),
-                _ => {}
+                RecordType::Other(s) => filters.push(format!("(objectClass={})", s)),
             }
         }
 
         for (field_opt, val) in selections {
             if let Some(field_name) = field_opt {
-                let ldap_attr = self.field_map.get(field_name).map(|s| s.as_str()).unwrap_or(field_name);
-                let ldap_val = val; // Ph uses * as well
-                filters.push(format!("({}={})", ldap_attr, ldap_val));
+                let ldap_attr = self.field_map.get(field_name).cloned().unwrap_or_else(|| field_name.clone());
+                filters.push(format!("({}={})", ldap_attr, val));
             } else {
-                // Search in any mapped field (LDAP | search)
-                let mut or_filters = Vec::new();
-                for attr in self.field_map.values() {
-                    or_filters.push(format!("({}={})", attr, val));
-                }
-                if or_filters.len() > 1 {
-                    filters.push(format!("(|{})", or_filters.join("")));
-                } else if !or_filters.is_empty() {
-                    filters.push(or_filters[0].clone());
-                }
+                filters.push(format!("(|(cn={})(mail={}))", val, val));
             }
         }
 
@@ -735,7 +772,7 @@ impl Storage for LdapStorage {
     }
 
     #[instrument(skip(self))]
-    fn add_record(&mut self, _fields: HashMap<String, String>, _fingerprint: Option<String>, _team: Option<String>) -> Result<(), StorageError> {
+    fn add_record(&mut self, _fields: Vec<(String, String)>, _fingerprint: Option<String>, _team: Option<String>) -> Result<(), StorageError> {
         error!("LDAP storage is currently read-only (Write operations pending Task 4.3)");
         Err(StorageError::ReadOnly)
     }
@@ -807,6 +844,7 @@ impl Storage for LdapStorage {
                 id: i + 1,
                 record_type,
                 fields,
+                multi_fields: HashMap::new(),
                 owner_fingerprint: None,
                 owner_team: None,
             });
@@ -816,7 +854,7 @@ impl Storage for LdapStorage {
     }
 
     #[instrument(skip(self))]
-    fn upsert_record(&mut self, _fields: HashMap<String, String>, _fingerprint: Option<String>, _team: Option<String>) -> Result<(), StorageError> {
+    fn upsert_record(&mut self, _fields: Vec<(String, String)>, _fingerprint: Option<String>, _team: Option<String>) -> Result<(), StorageError> {
         error!("LDAP storage is currently read-only (Write operations pending Task 4.3)");
         Err(StorageError::ReadOnly)
     }
@@ -842,9 +880,10 @@ mod tests {
     #[test]
     fn test_should_inject_created_at_and_last_seen_at_on_add() {
         let mut storage = MemoryStorage::new();
-        let mut fields = HashMap::new();
-        fields.insert("type".to_string(), "person".to_string());
-        fields.insert("name".to_string(), "John Doe".to_string());
+        let fields = vec![
+            ("type".to_string(), "person".to_string()),
+            ("name".to_string(), "John Doe".to_string()),
+        ];
         storage.add_record(fields, None, None).unwrap();
 
         let results = storage.query(&[(Some("name".to_string()), "john".to_string())], None).unwrap();
@@ -855,16 +894,17 @@ mod tests {
     #[test]
     fn test_should_update_last_seen_at_but_preserve_created_at_on_upsert() {
         let mut storage = MemoryStorage::new();
-        let mut fields = HashMap::new();
-        fields.insert("type".to_string(), "machine".to_string());
-        fields.insert("hostname".to_string(), "srv-01".to_string());
+        let fields = vec![
+            ("type".to_string(), "machine".to_string()),
+            ("hostname".to_string(), "srv-01".to_string()),
+        ];
         storage.upsert_record(fields.clone(), None, None).unwrap();
 
         let initial_results = storage.query(&[(Some("hostname".to_string()), "srv-01".to_string())], None).unwrap();
         let created_at = initial_results[0].fields.get("created_at").unwrap().clone();
 
         let mut update_fields = fields.clone();
-        update_fields.insert("status".to_string(), "online".to_string());
+        update_fields.push(("status".to_string(), "online".to_string()));
         storage.upsert_record(update_fields, None, None).unwrap();
 
         let updated_results = storage.query(&[(Some("hostname".to_string()), "srv-01".to_string())], None).unwrap();
@@ -875,10 +915,11 @@ mod tests {
     #[test]
     fn test_should_return_matching_record_when_query_matches_name() {
         let mut storage = MemoryStorage::new();
-        let mut fields = HashMap::new();
-        fields.insert("type".to_string(), "person".to_string());
-        fields.insert("name".to_string(), "John Doe".to_string());
-        fields.insert("email".to_string(), "john@example.com".to_string());
+        let fields = vec![
+            ("type".to_string(), "person".to_string()),
+            ("name".to_string(), "John Doe".to_string()),
+            ("email".to_string(), "john@example.com".to_string()),
+        ];
         storage.add_record(fields, None, None).unwrap();
 
         let selections = vec![(Some("name".to_string()), "john".to_string())];
@@ -890,9 +931,10 @@ mod tests {
     #[test]
     fn test_should_return_empty_when_query_does_not_match() {
         let mut storage = MemoryStorage::new();
-        let mut fields = HashMap::new();
-        fields.insert("type".to_string(), "person".to_string());
-        fields.insert("name".to_string(), "John Doe".to_string());
+        let fields = vec![
+            ("type".to_string(), "person".to_string()),
+            ("name".to_string(), "John Doe".to_string()),
+        ];
         storage.add_record(fields, None, None).unwrap();
 
         let selections = vec![(Some("name".to_string()), "jane".to_string())];
@@ -903,9 +945,10 @@ mod tests {
     #[test]
     fn test_should_support_wildcard_matching() {
         let mut storage = MemoryStorage::new();
-        let mut fields = HashMap::new();
-        fields.insert("type".to_string(), "person".to_string());
-        fields.insert("name".to_string(), "John Doe".to_string());
+        let fields = vec![
+            ("type".to_string(), "person".to_string()),
+            ("name".to_string(), "John Doe".to_string()),
+        ];
         storage.add_record(fields, None, None).unwrap();
 
         let selections = vec![(Some("name".to_string()), "jo*".to_string())];
@@ -920,55 +963,45 @@ mod tests {
         assert!(!storage.wildcard_match("", "+").unwrap());
         assert!(storage.wildcard_match("abc", "a?c").unwrap());
         assert!(!storage.wildcard_match("ac", "a?c").unwrap());
-        assert!(storage.wildcard_match("johndoe", "*doe").unwrap());
-        assert!(storage.wildcard_match("red", "[rg]ed").unwrap());
-        assert!(!storage.wildcard_match("bed", "[rg]ed").unwrap());
-        assert!(!storage.wildcard_match("j", "j?hn").unwrap());
     }
 
     #[test]
-    fn test_rfc2378_full_wildcards() {
+    fn test_wildcard_advanced_patterns() {
         let mut storage = MemoryStorage::new();
-        let mut fields = HashMap::new();
-        fields.insert("type".to_string(), "person".to_string());
-        fields.insert("name".to_string(), "John Doe".to_string());
+        let fields = vec![
+            ("type".to_string(), "person".to_string()),
+            ("name".to_string(), "John Doe".to_string()),
+        ];
         storage.add_record(fields, None, None).unwrap();
 
-        // 1. Non-suffix * (prefix and infix)
         let results = storage.query(&[(Some("name".to_string()), "*doe".to_string())], None).unwrap();
         assert_eq!(results.len(), 1);
         let results = storage.query(&[(Some("name".to_string()), "j*n".to_string())], None).unwrap();
         assert_eq!(results.len(), 1);
 
-        // 2. + matching one-or-more characters
         let results = storage.query(&[(Some("name".to_string()), "jo+n".to_string())], None).unwrap();
         assert_eq!(results.len(), 1);
         let results = storage.query(&[(Some("name".to_string()), "jn+".to_string())], None).unwrap();
         assert_eq!(results.len(), 0);
 
-        // 3. ? matching exactly one character
         let results = storage.query(&[(Some("name".to_string()), "j?hn".to_string())], None).unwrap();
         assert_eq!(results.len(), 1);
         let results = storage.query(&[(Some("name".to_string()), "j??hn".to_string())], None).unwrap();
         assert_eq!(results.len(), 0);
 
-        // 4. [abc] bracket-set matching
         let results = storage.query(&[(Some("name".to_string()), "[jrg]ohn".to_string())], None).unwrap();
         assert_eq!(results.len(), 1);
 
-        // 5. Combining multiple wildcard forms
         let results = storage.query(&[(Some("name".to_string()), "j?hn*".to_string())], None).unwrap();
         assert_eq!(results.len(), 1);
         let results = storage.query(&[(Some("name".to_string()), "[jrg]oh?".to_string())], None).unwrap();
         assert_eq!(results.len(), 1);
 
-        // 6. Malformed pattern (unclosed [ or empty []) returns Err(StorageError::InvalidArgument)
         let results = storage.query(&[(Some("name".to_string()), "[ab".to_string())], None);
         assert!(matches!(results, Err(StorageError::InvalidArgument(_))));
         let results = storage.query(&[(Some("name".to_string()), "[]".to_string())], None);
         assert!(matches!(results, Err(StorageError::InvalidArgument(_))));
 
-        // 7. A stray ] with no preceding [ returns Err(StorageError::InvalidArgument)
         let results = storage.query(&[(Some("name".to_string()), "abc]".to_string())], None);
         assert!(matches!(results, Err(StorageError::InvalidArgument(_))));
     }
@@ -976,10 +1009,11 @@ mod tests {
     #[test]
     fn test_should_match_any_field_when_no_field_name_provided() {
         let mut storage = MemoryStorage::new();
-        let mut fields = HashMap::new();
-        fields.insert("type".to_string(), "person".to_string());
-        fields.insert("name".to_string(), "John Doe".to_string());
-        fields.insert("alias".to_string(), "jdoe".to_string());
+        let fields = vec![
+            ("type".to_string(), "person".to_string()),
+            ("name".to_string(), "John Doe".to_string()),
+            ("alias".to_string(), "jdoe".to_string()),
+        ];
         storage.add_record(fields, None, None).unwrap();
 
         let selections = vec![(None, "jdoe".to_string())];
@@ -990,15 +1024,17 @@ mod tests {
     #[test]
     fn test_should_match_multiple_criteria_with_implicit_and() {
         let mut storage = MemoryStorage::new();
-        let mut fields1 = HashMap::new();
-        fields1.insert("type".to_string(), "person".to_string());
-        fields1.insert("name".to_string(), "John Doe".to_string());
-        fields1.insert("city".to_string(), "New York".to_string());
+        let fields1 = vec![
+            ("type".to_string(), "person".to_string()),
+            ("name".to_string(), "John Doe".to_string()),
+            ("city".to_string(), "New York".to_string()),
+        ];
         storage.add_record(fields1, None, None).unwrap();
-        let mut fields2 = HashMap::new();
-        fields2.insert("type".to_string(), "person".to_string());
-        fields2.insert("name".to_string(), "Jane Doe".to_string());
-        fields2.insert("city".to_string(), "London".to_string());
+        let fields2 = vec![
+            ("type".to_string(), "person".to_string()),
+            ("name".to_string(), "Jane Doe".to_string()),
+            ("city".to_string(), "London".to_string()),
+        ];
         storage.add_record(fields2, None, None).unwrap();
 
         let selections = vec![
@@ -1014,14 +1050,16 @@ mod tests {
     fn test_should_filter_by_type_discriminator() {
         let mut storage = MemoryStorage::new();
         
-        let mut fields1 = HashMap::new();
-        fields1.insert("name".to_string(), "John Person".to_string());
-        fields1.insert("type".to_string(), "person".to_string());
+        let fields1 = vec![
+            ("name".to_string(), "John Person".to_string()),
+            ("type".to_string(), "person".to_string()),
+        ];
         storage.add_record(fields1, None, None).unwrap();
 
-        let mut fields2 = HashMap::new();
-        fields2.insert("name".to_string(), "Server Machine".to_string());
-        fields2.insert("type".to_string(), "machine".to_string());
+        let fields2 = vec![
+            ("name".to_string(), "Server Machine".to_string()),
+            ("type".to_string(), "machine".to_string()),
+        ];
         storage.add_record(fields2, None, None).unwrap();
 
         let selections = vec![(Some("name".to_string()), "server".to_string())];
@@ -1040,9 +1078,10 @@ mod tests {
     #[test]
     fn test_should_bond_record_to_fingerprint_when_upserted_first_time() {
         let mut storage = MemoryStorage::new();
-        let mut fields = HashMap::new();
-        fields.insert("type".to_string(), "machine".to_string());
-        fields.insert("hostname".to_string(), "server-01".to_string());
+        let fields = vec![
+            ("type".to_string(), "machine".to_string()),
+            ("hostname".to_string(), "server-01".to_string()),
+        ];
         
         let fingerprint = Some("SHA256:abcd".to_string());
         storage.upsert_record(fields, fingerprint.clone(), None).unwrap();
@@ -1055,9 +1094,10 @@ mod tests {
     #[test]
     fn test_should_fail_upsert_when_fingerprint_mismatch() {
         let mut storage = MemoryStorage::new();
-        let mut fields = HashMap::new();
-        fields.insert("type".to_string(), "machine".to_string());
-        fields.insert("hostname".to_string(), "server-01".to_string());
+        let fields = vec![
+            ("type".to_string(), "machine".to_string()),
+            ("hostname".to_string(), "server-01".to_string()),
+        ];
         
         storage.upsert_record(fields.clone(), Some("SHA256:abcd".to_string()), None).unwrap();
         
@@ -1068,16 +1108,17 @@ mod tests {
     #[test]
     fn test_should_allow_upsert_when_fingerprint_matches() {
         let mut storage = MemoryStorage::new();
-        let mut fields = HashMap::new();
-        fields.insert("type".to_string(), "machine".to_string());
-        fields.insert("hostname".to_string(), "server-01".to_string());
-        fields.insert("status".to_string(), "online".to_string());
+        let fields = vec![
+            ("type".to_string(), "machine".to_string()),
+            ("hostname".to_string(), "server-01".to_string()),
+            ("status".to_string(), "online".to_string()),
+        ];
         
         let fingerprint = Some("SHA256:abcd".to_string());
         storage.upsert_record(fields.clone(), fingerprint.clone(), None).unwrap();
         
         let mut update_fields = fields.clone();
-        update_fields.insert("status".to_string(), "busy".to_string());
+        update_fields.push(("status".to_string(), "busy".to_string()));
         storage.upsert_record(update_fields, fingerprint.clone(), None).unwrap();
         
         let results = storage.query(&[(Some("hostname".to_string()), "server-01".to_string())], None).unwrap();
@@ -1095,9 +1136,10 @@ mod tests {
 
         {
             let mut storage = FileStorage::new(storage_path.clone());
-            let mut fields = HashMap::new();
-            fields.insert("type".to_string(), "person".to_string());
-            fields.insert("name".to_string(), "Persistent Pete".to_string());
+            let fields = vec![
+                ("type".to_string(), "person".to_string()),
+                ("name".to_string(), "Persistent Pete".to_string()),
+            ];
             storage.add_record(fields, None, None).unwrap();
             assert_eq!(storage.record_count(), 1);
             tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
@@ -1116,10 +1158,11 @@ mod tests {
     #[test]
     fn test_should_change_matching_record_when_authorized() {
         let mut storage = MemoryStorage::new();
-        let mut fields = HashMap::new();
-        fields.insert("type".to_string(), "machine".to_string());
-        fields.insert("hostname".to_string(), "vm1".to_string());
-        fields.insert("status".to_string(), "up".to_string());
+        let fields = vec![
+            ("type".to_string(), "machine".to_string()),
+            ("hostname".to_string(), "vm1".to_string()),
+            ("status".to_string(), "up".to_string()),
+        ];
         storage.add_record(fields, Some("fp1".to_string()), None).unwrap();
 
         let selections = vec![(Some("hostname".to_string()), "vm1".to_string())];
@@ -1134,9 +1177,10 @@ mod tests {
     #[test]
     fn test_should_reject_change_when_unauthorized() {
         let mut storage = MemoryStorage::new();
-        let mut fields = HashMap::new();
-        fields.insert("type".to_string(), "machine".to_string());
-        fields.insert("hostname".to_string(), "vm1".to_string());
+        let fields = vec![
+            ("type".to_string(), "machine".to_string()),
+            ("hostname".to_string(), "vm1".to_string()),
+        ];
         storage.add_record(fields, Some("fp1".to_string()), None).unwrap();
 
         let selections = vec![(Some("hostname".to_string()), "vm1".to_string())];
@@ -1159,9 +1203,10 @@ mod tests {
     fn test_should_change_multiple_matching_records() {
         let mut storage = MemoryStorage::new();
         for i in 0..3 {
-            let mut fields = HashMap::new();
-            fields.insert("type".to_string(), "machine".to_string());
-            fields.insert("hostname".to_string(), format!("vm{}", i));
+            let fields = vec![
+                ("type".to_string(), "machine".to_string()),
+                ("hostname".to_string(), format!("vm{}", i)),
+            ];
             storage.add_record(fields, None, None).unwrap();
         }
         let selections = vec![(Some("type".to_string()), "machine".to_string())];
@@ -1173,8 +1218,9 @@ mod tests {
     #[test]
     fn test_should_return_invalid_argument_when_add_record_missing_type() {
         let mut storage = MemoryStorage::new();
-        let mut fields = HashMap::new();
-        fields.insert("hostname".to_string(), "srv-01".to_string());
+        let fields = vec![
+            ("hostname".to_string(), "srv-01".to_string()),
+        ];
         let res = storage.add_record(fields, None, None);
         assert!(matches!(res, Err(StorageError::InvalidArgument(_))));
     }
@@ -1182,13 +1228,16 @@ mod tests {
     #[test]
     fn test_should_reject_upsert_when_type_mismatches_existing_field() {
         let mut storage = MemoryStorage::new();
-        let mut fields = HashMap::new();
-        fields.insert("hostname".to_string(), "srv-01".to_string());
-        fields.insert("type".to_string(), "machine".to_string());
+        let fields = vec![
+            ("hostname".to_string(), "srv-01".to_string()),
+            ("type".to_string(), "machine".to_string()),
+        ];
         storage.upsert_record(fields.clone(), None, None).unwrap();
 
-        let mut mismatch_fields = fields.clone();
-        mismatch_fields.insert("type".to_string(), "person".to_string());
+        let mismatch_fields = vec![
+            ("hostname".to_string(), "srv-01".to_string()),
+            ("type".to_string(), "person".to_string()),
+        ];
         let res = storage.upsert_record(mismatch_fields, None, None);
         assert!(matches!(res, Err(StorageError::InvalidArgument(_))));
     }
@@ -1196,9 +1245,10 @@ mod tests {
     #[test]
     fn test_should_allow_upsert_when_type_matches_existing_field() {
         let mut storage = MemoryStorage::new();
-        let mut fields = HashMap::new();
-        fields.insert("hostname".to_string(), "srv-01".to_string());
-        fields.insert("type".to_string(), "machine".to_string());
+        let fields = vec![
+            ("hostname".to_string(), "srv-01".to_string()),
+            ("type".to_string(), "machine".to_string()),
+        ];
         storage.upsert_record(fields.clone(), None, None).unwrap();
 
         let res = storage.upsert_record(fields, None, None);
@@ -1208,9 +1258,10 @@ mod tests {
     #[test]
     fn test_should_reject_change_when_modifications_contain_type() {
         let mut storage = MemoryStorage::new();
-        let mut fields = HashMap::new();
-        fields.insert("hostname".to_string(), "srv-01".to_string());
-        fields.insert("type".to_string(), "machine".to_string());
+        let fields = vec![
+            ("hostname".to_string(), "srv-01".to_string()),
+            ("type".to_string(), "machine".to_string()),
+        ];
         storage.add_record(fields, None, None).unwrap();
 
         let selections = vec![(Some("hostname".to_string()), "srv-01".to_string())];
@@ -1242,10 +1293,75 @@ mod tests {
         std::fs::write(&storage_path, raw_json).unwrap();
 
         let storage = FileStorage::new(storage_path.clone());
-        let results = storage.query(&[(Some("hostname".to_string()), "srv-heal".to_string())], None).unwrap();
-        assert_eq!(results.len(), 1);
-        assert_eq!(results[0].record_type, Some(RecordType::Machine));
+        let records = storage.query(&[(Some("hostname".to_string()), "srv-heal".to_string())], None).unwrap();
+        assert_eq!(records.len(), 1);
+        assert_eq!(records[0].record_type, Some(RecordType::Machine));
 
         let _ = std::fs::remove_file(&storage_path);
+    }
+
+    #[test]
+    fn test_should_store_multi_valued_ip_and_mac_fields_on_add() {
+        let mut storage = MemoryStorage::new();
+        let fields = vec![
+            ("type".to_string(), "machine".to_string()),
+            ("hostname".to_string(), "srv-01".to_string()),
+            ("ip_addr".to_string(), "192.168.86.5".to_string()),
+            ("ip_addr".to_string(), "192.168.86.6".to_string()),
+            ("mac_addr".to_string(), "e0:51:d8:1d:e3:22".to_string()),
+        ];
+        storage.add_record(fields, None, None).unwrap();
+        let records = storage.query(&[(Some("hostname".to_string()), "srv-01".to_string())], None).unwrap();
+        assert_eq!(records.len(), 1);
+        assert_eq!(records[0].multi_fields.get("ip_addr").unwrap(), &vec!["192.168.86.5".to_string(), "192.168.86.6".to_string()]);
+        assert_eq!(records[0].multi_fields.get("mac_addr").unwrap(), &vec!["e0:51:d8:1d:e3:22".to_string()]);
+    }
+
+    #[test]
+    fn test_should_append_new_ip_on_later_change_without_duplication() {
+        let mut storage = MemoryStorage::new();
+        let fields = vec![
+            ("type".to_string(), "machine".to_string()),
+            ("hostname".to_string(), "srv-01".to_string()),
+            ("ip_addr".to_string(), "192.168.86.5".to_string()),
+            ("mac_addr".to_string(), "e0:51:d8:1d:e3:22".to_string()),
+        ];
+        storage.add_record(fields, None, None).unwrap();
+
+        let selections = vec![(Some("hostname".to_string()), "srv-01".to_string())];
+        let modifications = vec![("ip_addr".to_string(), "192.168.86.6".to_string())];
+        storage.change_record(&selections, &modifications, None, &[]).unwrap();
+
+        // Repeat change with duplicate IP
+        storage.change_record(&selections, &modifications, None, &[]).unwrap();
+
+        let records = storage.query(&selections, None).unwrap();
+        assert_eq!(records[0].multi_fields.get("ip_addr").unwrap(), &vec!["192.168.86.5".to_string(), "192.168.86.6".to_string()]);
+        assert_eq!(records[0].multi_fields.get("mac_addr").unwrap(), &vec!["e0:51:d8:1d:e3:22".to_string()]);
+    }
+
+    #[test]
+    fn test_should_reject_malformed_ip_or_mac_and_fail_closed() {
+        let mut storage = MemoryStorage::new();
+        let fields = vec![
+            ("type".to_string(), "machine".to_string()),
+            ("hostname".to_string(), "srv-01".to_string()),
+            ("ip_addr".to_string(), "192.168.86.5".to_string()),
+            ("ip_addr".to_string(), "not-an-ip".to_string()),
+        ];
+        let res = storage.add_record(fields, None, None);
+        assert!(matches!(res, Err(StorageError::InvalidArgument(_))));
+        assert_eq!(storage.record_count(), 0);
+    }
+
+    #[test]
+    fn test_should_allow_records_without_ip_mac_fields() {
+        let mut storage = MemoryStorage::new();
+        let fields = vec![
+            ("name".to_string(), "Jane Smith".to_string()),
+            ("type".to_string(), "person".to_string()),
+        ];
+        let res = storage.add_record(fields, None, None);
+        assert!(res.is_ok());
     }
 }

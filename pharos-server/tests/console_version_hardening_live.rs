@@ -161,7 +161,7 @@ async fn test_live_verification_step_6_version_mismatch_normalization() {
         fields.insert("hostname".to_string(), "test-host-console".to_string());
         fields.insert("version".to_string(), "v1.10.15".to_string());
         fields.insert("expected_version".to_string(), "1.10.15".to_string());
-        lock.upsert_record(fields, None, None).unwrap();
+        lock.upsert_record(fields.into_iter().collect(), None, None).unwrap();
     }
 
     let mut alert_state = AlertState::default();
@@ -186,7 +186,7 @@ async fn test_live_verification_step_6_version_mismatch_normalization() {
         fields.insert("hostname".to_string(), "test-host-console".to_string());
         fields.insert("version".to_string(), "v1.10.15".to_string());
         fields.insert("expected_version".to_string(), "v2.0.0-different".to_string());
-        lock.upsert_record(fields, None, None).unwrap();
+        lock.upsert_record(fields.into_iter().collect(), None, None).unwrap();
     }
 
     // Check version mismatches -> SHOULD trigger webhook for genuine mismatch!

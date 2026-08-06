@@ -165,6 +165,9 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                                     for key in record.fields.keys() {
                                         harvested_fields.insert(key.clone());
                                     }
+                                    for key in record.multi_fields.keys() {
+                                        harvested_fields.insert(key.clone());
+                                    }
                                 }
                             }
                             Err(e) => {
@@ -266,17 +269,12 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                         break;
                     }
                     Command::Add(fields) => {
-                        let mut field_map = std::collections::HashMap::new();
-                        for (k, v) in fields {
-                            field_map.insert(k.clone(), v.clone());
-                        }
-                        
                         let team = context.teams.first().cloned();
 
-                        let field_map_for_notification = field_map.clone();
+                        let field_map_for_notification: std::collections::HashMap<String, String> = fields.iter().cloned().collect();
                         let result = {
                             let mut lock = storage.write().map_err(|_| anyhow::anyhow!("Storage lock poisoned"))?;
-                            lock.upsert_record(field_map, context.fingerprint.clone(), team)
+                            lock.upsert_record(fields.clone(), context.fingerprint.clone(), team)
                         };
 
                         match result {
@@ -349,19 +347,33 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                             writer.write_all(b"501:No matches to query\n").await?;
                         } else {
                             writer.write_all(format!("102:There were {} matches to your request.\n", count).as_bytes()).await?;
-                            for (i, record) in records.iter().enumerate() {
+                             for (i, record) in records.iter().enumerate() {
                                 let index = i + 1;
                                 let mut keys: Vec<&String> = if returns.is_empty() {
-                                    record.fields.keys().collect()
+                                    let mut k_set: Vec<&String> = record.fields.keys().collect();
+                                    for mk in record.multi_fields.keys() {
+                                        if !k_set.contains(&mk) {
+                                            k_set.push(mk);
+                                        }
+                                    }
+                                    k_set
                                 } else {
-                                    returns.iter().filter(|k| record.fields.contains_key(*k)).collect()
+                                    returns.iter().filter(|k| record.fields.contains_key(*k) || record.multi_fields.contains_key(*k)).collect()
                                 };
                                 keys.sort();
 
                                 for field_name in keys {
-                                    let field_val = record.fields.get(field_name).unwrap();
-                                    let line = format!("-200:{}:{}: {}\n", index, field_name, field_val);
-                                    writer.write_all(line.as_bytes()).await?;
+                                    if let Some(field_val) = record.fields.get(field_name) {
+                                        let line = format!("-200:{}:{}: {}\n", index, field_name, field_val);
+                                        writer.write_all(line.as_bytes()).await?;
+                                    } else if let Some(values) = record.multi_fields.get(field_name) {
+                                        let padding = " ".repeat(field_name.len());
+                                        for (idx, val) in values.iter().enumerate() {
+                                            let name_to_use = if idx == 0 { field_name.as_str() } else { &padding };
+                                            let line = format!("-200:{}:{}: {}\n", index, name_to_use, val);
+                                            writer.write_all(line.as_bytes()).await?;
+                                        }
+                                    }
                                 }
                             }
                             writer.write_all(b"200:Ok\n").await?;
@@ -632,8 +644,8 @@ mod tests {
     #[test]
     fn test_check_delete_limit() {
         let matched = vec![
-            Record { id: 1, record_type: None, fields: HashMap::new(), owner_fingerprint: None, owner_team: None },
-            Record { id: 2, record_type: None, fields: HashMap::new(), owner_fingerprint: None, owner_team: None },
+            Record { id: 1, record_type: None, fields: HashMap::new(), multi_fields: HashMap::new(), owner_fingerprint: None, owner_team: None },
+            Record { id: 2, record_type: None, fields: HashMap::new(), multi_fields: HashMap::new(), owner_fingerprint: None, owner_team: None },
         ];
         
         let mut options = SessionOptions::default();
@@ -657,7 +669,7 @@ mod tests {
         let mut fields = HashMap::new();
         fields.insert("name".to_string(), "alice".to_string());
         let matched = vec![
-            Record { id: 1, record_type: None, fields, owner_fingerprint: None, owner_team: None },
+            Record { id: 1, record_type: None, fields, multi_fields: HashMap::new(), owner_fingerprint: None, owner_team: None },
         ];
 
         let mut options = SessionOptions::default();

@@ -1996,6 +1996,7 @@ name = "pharos-pulse"
 version = "1.10.16"
 dependencies = [
  "anyhow",
+ "if-addrs",
  "pharos-client",
  "sysinfo 0.30.13",
  "tokio",
