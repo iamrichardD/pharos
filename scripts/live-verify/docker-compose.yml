@@ -1,0 +1,89 @@
+# ========================================================================
+# Project: pharos
+# Component: Live Verification Harness
+# File: scripts/live-verify/docker-compose.yml
+# Author: Richard D. (https://github.com/iamrichardd)
+# License: AGPL-3.0 (See LICENSE file for details)
+# * Purpose (The "Why"):
+# Reusable disposable topology for live end-to-end verification of real
+# built binaries (pharos-server/pharos-pulse/mdb/ph) against each other -
+# real TCP, real TLS, real SSH-key auth - without hand-rolling `podman run`
+# invocations (and their cert/auth/networking mistakes) fresh every dispatch.
+# DEV/TEST ONLY. See README.md in this directory before using.
+# ========================================================================
+
+services:
+  pharos-server:
+    image: docker.io/library/ubuntu:24.04
+    volumes:
+      - ./workspace:/verify:z
+    working_dir: /verify
+    environment:
+      PHAROS_TLS_CERT: /verify/certs/server.crt
+      PHAROS_TLS_KEY: /verify/certs/server.key
+      PHAROS_STORAGE_PATH: /verify/data/data.json
+      PHAROS_KEYS_DIR: /verify/keys
+      PHAROS_SECURITY_TIER: open
+      PHAROS_ADDR: 0.0.0.0:2378
+      RUST_LOG: pharos_server=info
+    entrypoint: ["/verify/bin/pharos-server"]
+    security_opt:
+      - seccomp:unconfined
+
+  # Long-running, matching real production behavior (repeated heartbeats) -
+  # wait a few seconds after `up -d` rather than wrapping this in `timeout`.
+  pharos-pulse:
+    image: docker.io/library/ubuntu:24.04
+    volumes:
+      - ./workspace:/verify:z
+    working_dir: /verify
+    environment:
+      PHAROS_SERVER: pharos-server:2378
+      PHAROS_CA_CERT: /verify/certs/root-ca.crt
+      PHAROS_PRIVATE_KEY: /verify/keys/admin_id_ed25519
+      PHAROS_PUBLIC_KEY: /verify/keys/admin_id_ed25519.pub
+      PHAROS_MACHINE_NAME: pulse-test-node
+    entrypoint: ["/verify/bin/pharos-pulse"]
+    depends_on:
+      - pharos-server
+    security_opt:
+      - seccomp:unconfined
+    # Real network-interface enumeration (if-addrs, for the ip_addr/mac_addr
+    # and future serial_number/uuid features) needs this - a disposable test
+    # container, not a production privilege grant, so broad here is fine.
+    cap_add:
+      - ALL
+
+  # One-shot: `podman-compose run --rm mdb <query>` (or `ph` the same way,
+  # swap the entrypoint). Not started by a plain `up`.
+  mdb:
+    image: docker.io/library/ubuntu:24.04
+    volumes:
+      - ./workspace:/verify:z
+    working_dir: /verify
+    environment:
+      PHAROS_SERVER: pharos-server:2378
+      PHAROS_CA_CERT: /verify/certs/root-ca.crt
+      PHAROS_PRIVATE_KEY: /verify/keys/admin_id_ed25519
+      PHAROS_PUBLIC_KEY: /verify/keys/admin_id_ed25519.pub
+    entrypoint: ["/verify/bin/mdb"]
+    depends_on:
+      - pharos-server
+    security_opt:
+      - seccomp:unconfined
+
+  ph:
+    image: docker.io/library/ubuntu:24.04
+    volumes:
+      - ./workspace:/verify:z
+    working_dir: /verify
+    environment:
+      PHAROS_SERVER: pharos-server:2378
+      PHAROS_CA_CERT: /verify/certs/root-ca.crt
+      PHAROS_PRIVATE_KEY: /verify/keys/admin_id_ed25519
+      PHAROS_PUBLIC_KEY: /verify/keys/admin_id_ed25519.pub
+    entrypoint: ["/verify/bin/ph"]
+    depends_on:
+      - pharos-server
+    security_opt:
+      - seccomp:unconfined

@@ -29,3 +29,6 @@ keys/
 
 # Skill Packaging
 *.skill
+
+# Live Verification Harness: generated certs/keys/binaries, never committed
+scripts/live-verify/workspace/
