@@ -45,3 +45,7 @@ pharos-client = { path = "../crates/pharos-client" }
 [dev-dependencies]
 tempfile = "3"
 ed25519-dalek = "2.2"
+# Pure-Rust self-signed cert generation for the TLS-flush regression test
+# (flush_on_large_query_response.rs) - avoids depending on the host/CI
+# container having an `openssl` CLI binary installed, unlike gen-sandbox-certs.sh.
+rcgen = "0.13"

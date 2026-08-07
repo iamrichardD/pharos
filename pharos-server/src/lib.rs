@@ -94,10 +94,21 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
     // Send initial status message as per Ph protocol expectation
     // S: 200:Database ready
     writer.write_all(b"200:Database ready\n").await?;
+    writer.flush().await?;
 
     let my_addr = std::env::var("PHAROS_SYNC_ADDR").unwrap_or_default();
 
     loop {
+        // write_all() on the TLS write-half only queues plaintext; without an
+        // explicit flush, a response spanning enough write_all() calls (e.g. a
+        // multi-record full-field query) can leave its tail sitting in the TLS
+        // write buffer forever once the loop moves on to await the next read -
+        // the client blocks reading bytes that were never actually sent. Flushing
+        // whatever the previous iteration wrote, right before blocking on the next
+        // read, covers every response path (including the early `continue`s below)
+        // in one place instead of flushing after every individual write_all().
+        writer.flush().await?;
+
         line.clear();
         let bytes_read = reader.read_line(&mut line).await?;
         if bytes_read == 0 {
@@ -630,6 +641,10 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
             }
         }
     }
+
+    // Covers responses written just before a `break` (e.g. Command::Quit's
+    // "200:Bye!") that exit the loop without reaching the top-of-loop flush.
+    writer.flush().await?;
 
     Ok(())
 }
