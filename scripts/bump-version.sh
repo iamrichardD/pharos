@@ -33,9 +33,28 @@ grep -q "^version = \"${NEW_VERSION}\"\$" crates/pharos-pulse/Cargo.toml || {
     exit 1
 }
 
+# mdb/ph report their own version via clap's #[command(version)] (Debt #35/Issue #182),
+# sourced from CARGO_PKG_VERSION - each crate's own Cargo.toml, not scripts/install.sh's
+# VERSION= - so they need the same treatment or `--version` silently reports a stale 0.1.0
+# forever, exactly like crates/pharos-pulse/Cargo.toml itself used to drift before this
+# script existed.
+sed -i "s/^version = \".*\"/version = \"${NEW_VERSION}\"/" mdb/Cargo.toml
+grep -q "^version = \"${NEW_VERSION}\"\$" mdb/Cargo.toml || {
+    echo "Failed to update mdb/Cargo.toml — expected line pattern not found." >&2
+    exit 1
+}
+
+sed -i "s/^version = \".*\"/version = \"${NEW_VERSION}\"/" ph/Cargo.toml
+grep -q "^version = \"${NEW_VERSION}\"\$" ph/Cargo.toml || {
+    echo "Failed to update ph/Cargo.toml — expected line pattern not found." >&2
+    exit 1
+}
+
 echo "Bumped to ${NEW_VERSION} in:"
 echo "  scripts/install.sh"
 echo "  crates/pharos-pulse/Cargo.toml"
+echo "  mdb/Cargo.toml"
+echo "  ph/Cargo.toml"
 echo ""
 echo "Next: rebuild (cargo build -p pharos-server -p pharos-pulse, in Podman per this repo's"
 echo "Zero-Host policy) to refresh Cargo.lock before committing."

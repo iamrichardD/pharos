@@ -21,6 +21,7 @@ use clap::{Parser, Subcommand};
 #[derive(Parser)]
 #[command(name = "ph")]
 #[command(about = "Pharos People Contacts (Ph) CLI", long_about = None)]
+#[command(version)]
 struct Cli {
     /// Print the resolved server address/source, the exact wire command sent,
     /// and the raw response received — off by default, zero output change

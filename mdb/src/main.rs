@@ -23,6 +23,7 @@ use chrono::DateTime;
 #[derive(Parser)]
 #[command(name = "mdb")]
 #[command(about = "Pharos Machine Database (MDB) CLI", long_about = None)]
+#[command(version)]
 struct Cli {
     /// Enable human-readable output (units and timestamps)
     #[arg(short = 'H', long = "human")]
