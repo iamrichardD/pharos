@@ -494,11 +494,14 @@ WantedBy=multi-user.target
 EOF
 
     if [[ "${OS_NAME}" == "linux" ]]; then
-        log "Configuring systemd-tmpfiles ACL drop-in for Pharos Pulse DMI read access..."
+        log "Configuring systemd-tmpfiles drop-in for Pharos Pulse DMI read access..."
         ${SUDO} mkdir -p /etc/tmpfiles.d
+        # sysfs does not support POSIX ACLs ('a'-type tmpfiles entries fail silently
+        # with "Operation not supported" - confirmed live) - use 'z' (adjust mode/
+        # ownership of an existing path) instead, which sysfs does support.
         cat <<EOF | ${SUDO} tee /etc/tmpfiles.d/pharos-pulse-dmi.conf > /dev/null
-a /sys/class/dmi/id/product_serial - - - - u:pharos:r
-a /sys/class/dmi/id/product_uuid   - - - - u:pharos:r
+z /sys/class/dmi/id/product_serial 0640 root pharos - -
+z /sys/class/dmi/id/product_uuid 0640 root pharos - -
 EOF
         if command -v systemd-tmpfiles >/dev/null 2>&1; then
             ${SUDO} systemd-tmpfiles --create /etc/tmpfiles.d/pharos-pulse-dmi.conf || true
