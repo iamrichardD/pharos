@@ -198,7 +198,7 @@ impl Middleware for SecurityTierMiddleware {
         }
 
         let is_auth_bypassed = matches!(command,
-            Command::Status | Command::Id(_) | Command::Login(_) | Command::Auth { .. } | Command::Quit
+            Command::Status | Command::Id(_) | Command::Login(_) | Command::Auth { .. } | Command::AuthCheck { .. } | Command::Quit
         );
 
         match self.default_tier {
@@ -313,6 +313,50 @@ mod tests {
                 assert!(resp.contains("506:Authentication required"));
             },
             _ => panic!("Expected ShortCircuit"),
+        }
+    }
+
+    #[test]
+    fn test_should_allow_auth_check_when_unauthenticated_in_protected_tier() {
+        let middleware = SecurityTierMiddleware {
+            default_tier: SecurityTier::Protected,
+        };
+        let mut command = Command::AuthCheck {
+            public_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI...".to_string(),
+            signature: "sig".to_string(),
+            challenge: "challenge".to_string(),
+        };
+        let mut context = ClientContext {
+            authenticated: false,
+            ..Default::default()
+        };
+
+        let result = middleware.pre_process(&mut command, &mut context).unwrap();
+        match result {
+            MiddlewareAction::Continue => {},
+            _ => panic!("Expected Continue for AuthCheck under Protected tier"),
+        }
+    }
+
+    #[test]
+    fn test_should_allow_auth_check_when_unauthenticated_in_scoped_tier() {
+        let middleware = SecurityTierMiddleware {
+            default_tier: SecurityTier::Scoped,
+        };
+        let mut command = Command::AuthCheck {
+            public_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI...".to_string(),
+            signature: "sig".to_string(),
+            challenge: "challenge".to_string(),
+        };
+        let mut context = ClientContext {
+            authenticated: false,
+            ..Default::default()
+        };
+
+        let result = middleware.pre_process(&mut command, &mut context).unwrap();
+        match result {
+            MiddlewareAction::Continue => {},
+            _ => panic!("Expected Continue for AuthCheck under Scoped tier"),
         }
     }
 }
