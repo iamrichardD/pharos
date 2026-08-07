@@ -604,6 +604,7 @@ impl FileStorage {
             Ok(mut records) => {
                 let max_id = records.iter().map(|r| r.id).max().unwrap_or(0);
                 let mut corrected_count = 0;
+                let mut migrated_multi_value_count = 0;
 
                 for record in records.iter_mut() {
                     if let Some(type_str) = record.fields.get("type") {
@@ -618,6 +619,21 @@ impl FileStorage {
                             record.id
                         );
                     }
+
+                    // Migrate legacy plain-string ip_addr/mac_addr fields (from before these
+                    // became multi-valued) into multi_fields. A record with the same key present
+                    // in both maps would otherwise silently shadow the correct multi_fields data
+                    // forever in query responses (fields is checked first) - confirmed live in
+                    // production on a record created before this feature existed.
+                    for key in ["ip_addr", "mac_addr"] {
+                        if let Some(legacy_val) = record.fields.remove(key) {
+                            let vec = record.multi_fields.entry(key.to_string()).or_default();
+                            if !vec.contains(&legacy_val) {
+                                vec.push(legacy_val);
+                            }
+                            migrated_multi_value_count += 1;
+                        }
+                    }
                 }
 
                 if corrected_count > 0 {
@@ -626,10 +642,16 @@ impl FileStorage {
                         corrected_count
                     );
                 }
+                if migrated_multi_value_count > 0 {
+                    tracing::warn!(
+                        "Migrated {} legacy plain-string ip_addr/mac_addr fields into multi_fields",
+                        migrated_multi_value_count
+                    );
+                }
 
                 self.memory.records = records;
                 self.memory.next_id = max_id + 1;
-                if corrected_count > 0 {
+                if corrected_count > 0 || migrated_multi_value_count > 0 {
                     self.queue_persistence();
                 }
                 info!("Loaded {} records from {:?}", self.memory.records.len(), self.path);
@@ -1296,6 +1318,49 @@ mod tests {
         let records = storage.query(&[(Some("hostname".to_string()), "srv-heal".to_string())], None).unwrap();
         assert_eq!(records.len(), 1);
         assert_eq!(records[0].record_type, Some(RecordType::Machine));
+
+        let _ = std::fs::remove_file(&storage_path);
+    }
+
+    #[tokio::test]
+    async fn test_should_migrate_legacy_plain_ip_addr_field_on_load_from_disk() {
+        // Reproduces a real production record (id 2, created 2026-08-05, before ip_addr/mac_addr
+        // became multi-valued): a plain string in `fields`, no `multi_fields` key at all. Query
+        // responses check `fields` before `multi_fields` for a given key name, so an unmigrated
+        // record like this would silently shadow any correctly-collected multi_fields data with
+        // the stale single value forever - confirmed live, this is the exact bug that was found.
+        let temp_dir = std::env::temp_dir();
+        let storage_path = temp_dir.join("pharos_test_legacy_ip_addr_migration.json");
+        if storage_path.exists() {
+            let _ = std::fs::remove_file(&storage_path);
+        }
+
+        let raw_json = r#"[
+            {
+                "id": 2,
+                "record_type": "Machine",
+                "fields": {
+                    "hostname": "legacy-host",
+                    "type": "machine",
+                    "ip_addr": "172.17.0.1",
+                    "mac_addr": "de:16:42:a0:af:ee"
+                },
+                "owner_fingerprint": null,
+                "owner_team": null
+            }
+        ]"#;
+        std::fs::write(&storage_path, raw_json).unwrap();
+
+        let storage = FileStorage::new(storage_path.clone());
+        let records = storage.query(&[(Some("hostname".to_string()), "legacy-host".to_string())], None).unwrap();
+        assert_eq!(records.len(), 1);
+
+        // The stale plain-string entries must be gone from `fields`...
+        assert_eq!(records[0].fields.get("ip_addr"), None);
+        assert_eq!(records[0].fields.get("mac_addr"), None);
+        // ...and present in multi_fields instead, so query responses render them correctly.
+        assert_eq!(records[0].multi_fields.get("ip_addr"), Some(&vec!["172.17.0.1".to_string()]));
+        assert_eq!(records[0].multi_fields.get("mac_addr"), Some(&vec!["de:16:42:a0:af:ee".to_string()]));
 
         let _ = std::fs::remove_file(&storage_path);
     }
