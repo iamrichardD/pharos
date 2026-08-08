@@ -69,6 +69,21 @@ fn is_trusted_sync_peer(is_forwarded: bool, roles: &[String]) -> bool {
     is_forwarded && roles.iter().any(|r| r == "peer")
 }
 
+/// Normalizes a client identification string (`client_id`) down to a canonical source category string
+/// (`mdb`, `ph`, `pharos-scan`, `pharos-pulse`, `web-console`), or returns `None` if unrecognized.
+/// This classification allows downstream write-path telemetry and provenance tracking to categorize
+/// records into well-defined client sources regardless of specific hostnames or web tool sub-variants.
+fn normalize_source(client_id: &str) -> Option<&'static str> {
+    match client_id {
+        "mdb" => Some("mdb"),
+        "ph" => Some("ph"),
+        "pharos-scan" => Some("pharos-scan"),
+        id if id.starts_with("pulse-") => Some("pharos-pulse"),
+        id if id.starts_with("web-") || id == "pharos-console-web" => Some("web-console"),
+        _ => None,
+    }
+}
+
 #[instrument(skip(socket, storage, auth_manager, middleware_chain))]
 pub async fn handle_connection<S>(socket: S, peer_addr: String, storage: Arc<RwLock<dyn Storage>>, auth_manager: Arc<AuthManager>, middleware_chain: Arc<MiddlewareChain>) -> anyhow::Result<()> 
 where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
@@ -282,14 +297,35 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                     Command::Add(fields) => {
                         let team = context.teams.first().cloned();
 
-                        let field_map_for_notification: std::collections::HashMap<String, String> = fields.iter().cloned().collect();
+                        let mut augmented_fields: Vec<(String, String)> = fields
+                            .iter()
+                            .filter(|(k, _)| k != "source")
+                            .cloned()
+                            .collect();
+
+                        let source = context.id.as_deref().and_then(normalize_source);
+                        if let Some(s) = source {
+                            augmented_fields.push(("source".to_string(), s.to_string()));
+                        }
+
+                        let field_map_for_notification: std::collections::HashMap<String, String> = augmented_fields.iter().cloned().collect();
                         let result = {
                             let mut lock = storage.write().map_err(|_| anyhow::anyhow!("Storage lock poisoned"))?;
-                            lock.upsert_record(fields.clone(), context.fingerprint.clone(), team)
+                            lock.upsert_record(augmented_fields, context.fingerprint.clone(), team)
                         };
 
                         match result {
-                            Ok(_) => {
+                            Ok(outcome) => {
+                                let source_label = source.unwrap_or("unknown");
+                                match outcome {
+                                    crate::storage::UpsertOutcome::Created => {
+                                        crate::metrics::RECORDS_ADDED_TOTAL.with_label_values(&[source_label]).inc();
+                                    }
+                                    crate::storage::UpsertOutcome::Updated => {
+                                        crate::metrics::RECORDS_UPDATED_TOTAL.with_label_values(&[source_label]).inc();
+                                    }
+                                }
+
                                 let _ = crate::tui::EVENT_TX.send(format!("[{}] Added/Updated record", context.peer_addr));
                                 writer.write_all(b"200:Ok\n").await?;
 
@@ -480,6 +516,8 @@ where S: AsyncRead + AsyncWrite + Unpin + Send + 'static
                         match result {
                             Ok(count) => {
                                 if count > 0 {
+                                    let source_label = context.id.as_deref().and_then(normalize_source).unwrap_or("unknown");
+                                    crate::metrics::RECORDS_DELETED_TOTAL.with_label_values(&[source_label]).inc_by(count as u64);
                                     writer.write_all(b"200:Ok\n").await?;
 
                                     // Replicate delete to peers, unless this command was itself a
@@ -713,4 +751,41 @@ mod tests {
         assert!(!is_trusted_sync_peer(false, &["peer".to_string()]));
         assert!(!is_trusted_sync_peer(false, &[]));
     }
+
+    #[test]
+    fn test_should_normalize_mdb_client_id() {
+        assert_eq!(normalize_source("mdb"), Some("mdb"));
+    }
+
+    #[test]
+    fn test_should_normalize_ph_client_id() {
+        assert_eq!(normalize_source("ph"), Some("ph"));
+    }
+
+    #[test]
+    fn test_should_normalize_pharos_scan_client_id() {
+        assert_eq!(normalize_source("pharos-scan"), Some("pharos-scan"));
+    }
+
+    #[test]
+    fn test_should_normalize_pulse_prefixed_client_id_regardless_of_hostname() {
+        assert_eq!(normalize_source("pulse-technitium-01"), Some("pharos-pulse"));
+        assert_eq!(normalize_source("pulse-rdelgadoXPS15"), Some("pharos-pulse"));
+    }
+
+    #[test]
+    fn test_should_normalize_all_known_web_console_client_ids() {
+        assert_eq!(normalize_source("web-console"), Some("web-console"));
+        assert_eq!(normalize_source("web-console-add"), Some("web-console"));
+        assert_eq!(normalize_source("web-mdb-search"), Some("web-console"));
+        assert_eq!(normalize_source("web-mcp"), Some("web-console"));
+        assert_eq!(normalize_source("pharos-console-web"), Some("web-console"));
+    }
+
+    #[test]
+    fn test_should_return_none_for_unrecognized_client_id() {
+        assert_eq!(normalize_source("test-client"), None);
+        assert_eq!(normalize_source(""), None);
+    }
+
 }

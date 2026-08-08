@@ -59,6 +59,12 @@ pub struct Record {
     pub owner_team: Option<String>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum UpsertOutcome {
+    Created,
+    Updated,
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum StorageError {
     #[error("Record already exists and is bonded to a different fingerprint (Collision)")]
@@ -81,7 +87,7 @@ pub trait Storage: Send + Sync {
     fn record_count(&self) -> usize;
     fn add_record(&mut self, fields: Vec<(String, String)>, fingerprint: Option<String>, team: Option<String>) -> Result<(), StorageError>;
     fn query(&self, selections: &[(Option<String>, String)], default_type: Option<RecordType>) -> Result<Vec<Record>, StorageError>;
-    fn upsert_record(&mut self, fields: Vec<(String, String)>, fingerprint: Option<String>, team: Option<String>) -> Result<(), StorageError>;
+    fn upsert_record(&mut self, fields: Vec<(String, String)>, fingerprint: Option<String>, team: Option<String>) -> Result<UpsertOutcome, StorageError>;
     fn delete_record(&mut self, selections: &[(Option<String>, String)], fingerprint: Option<String>, teams: &[String]) -> Result<usize, StorageError>;
     /// Purpose (The "Why"): Modifies matching and authorized records' fields in-place.
     /// This matches selections, authorizes modifications using fingerprint/team checks,
@@ -395,7 +401,7 @@ impl Storage for MemoryStorage {
     }
 
     #[instrument(skip(self))]
-    fn upsert_record(&mut self, fields: Vec<(String, String)>, fingerprint: Option<String>, team: Option<String>) -> Result<(), StorageError> {
+    fn upsert_record(&mut self, fields: Vec<(String, String)>, fingerprint: Option<String>, team: Option<String>) -> Result<UpsertOutcome, StorageError> {
         for (k, v) in &fields {
             validate_ip_mac_field(k, v)?;
         }
@@ -448,16 +454,19 @@ impl Storage for MemoryStorage {
                         if !vec.contains(&v) {
                             vec.push(v);
                         }
+                    } else if k == "source" && record.fields.contains_key("source") {
+                        // source describes a record's provenance (how it was created), not who last
+                        // touched it - once set, it must never be overwritten by a later write.
                     } else {
                         record.fields.insert(k, v);
                     }
                 }
                 record.fields.insert("last_seen_at".to_string(), now);
-                return Ok(());
+                return Ok(UpsertOutcome::Updated);
             }
         }
 
-        self.add_record(fields, fingerprint, team)
+        self.add_record(fields, fingerprint, team).map(|_| UpsertOutcome::Created)
     }
 
     #[instrument(skip(self))]
@@ -701,10 +710,10 @@ impl Storage for FileStorage {
         self.memory.query(selections, default_type)
     }
 
-    fn upsert_record(&mut self, fields: Vec<(String, String)>, fingerprint: Option<String>, team: Option<String>) -> Result<(), StorageError> {
-        self.memory.upsert_record(fields, fingerprint, team)?;
+    fn upsert_record(&mut self, fields: Vec<(String, String)>, fingerprint: Option<String>, team: Option<String>) -> Result<UpsertOutcome, StorageError> {
+        let outcome = self.memory.upsert_record(fields, fingerprint, team)?;
         self.queue_persistence();
-        Ok(())
+        Ok(outcome)
     }
 
     fn delete_record(&mut self, selections: &[(Option<String>, String)], fingerprint: Option<String>, teams: &[String]) -> Result<usize, StorageError> {
@@ -876,7 +885,7 @@ impl Storage for LdapStorage {
     }
 
     #[instrument(skip(self))]
-    fn upsert_record(&mut self, _fields: Vec<(String, String)>, _fingerprint: Option<String>, _team: Option<String>) -> Result<(), StorageError> {
+    fn upsert_record(&mut self, _fields: Vec<(String, String)>, _fingerprint: Option<String>, _team: Option<String>) -> Result<UpsertOutcome, StorageError> {
         error!("LDAP storage is currently read-only (Write operations pending Task 4.3)");
         Err(StorageError::ReadOnly)
     }
@@ -1428,5 +1437,69 @@ mod tests {
         ];
         let res = storage.add_record(fields, None, None);
         assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_should_return_created_outcome_when_adding_new_record_via_upsert() {
+        let mut storage = MemoryStorage::new();
+        let fields = vec![
+            ("type".to_string(), "machine".to_string()),
+            ("hostname".to_string(), "srv-new".to_string()),
+        ];
+        let outcome = storage.upsert_record(fields, None, None).unwrap();
+        assert_eq!(outcome, UpsertOutcome::Created);
+    }
+
+    #[test]
+    fn test_should_return_updated_outcome_when_upserting_existing_record() {
+        let mut storage = MemoryStorage::new();
+        let fields = vec![
+            ("type".to_string(), "machine".to_string()),
+            ("hostname".to_string(), "srv-exist".to_string()),
+        ];
+        let outcome1 = storage.upsert_record(fields.clone(), None, None).unwrap();
+        assert_eq!(outcome1, UpsertOutcome::Created);
+
+        let mut update_fields = fields;
+        update_fields.push(("status".to_string(), "online".to_string()));
+        let outcome2 = storage.upsert_record(update_fields, None, None).unwrap();
+        assert_eq!(outcome2, UpsertOutcome::Updated);
+    }
+
+    #[test]
+    fn test_should_keep_existing_source_field_immutable_on_upsert() {
+        let mut storage = MemoryStorage::new();
+        let fields = vec![
+            ("type".to_string(), "machine".to_string()),
+            ("hostname".to_string(), "srv-source".to_string()),
+            ("source".to_string(), "pharos-scan".to_string()),
+        ];
+        storage.upsert_record(fields, None, None).unwrap();
+
+        let update_fields = vec![
+            ("type".to_string(), "machine".to_string()),
+            ("hostname".to_string(), "srv-source".to_string()),
+            ("source".to_string(), "mdb".to_string()),
+        ];
+        storage.upsert_record(update_fields, None, None).unwrap();
+
+        let records = storage.query(&[(Some("hostname".to_string()), "srv-source".to_string())], None).unwrap();
+        assert_eq!(records.len(), 1);
+        assert_eq!(records[0].fields.get("source").unwrap(), "pharos-scan");
+    }
+
+    #[test]
+    fn test_should_set_source_field_on_first_creation_via_upsert() {
+        let mut storage = MemoryStorage::new();
+        let fields = vec![
+            ("type".to_string(), "machine".to_string()),
+            ("hostname".to_string(), "srv-first".to_string()),
+            ("source".to_string(), "web-console".to_string()),
+        ];
+        storage.upsert_record(fields, None, None).unwrap();
+
+        let records = storage.query(&[(Some("hostname".to_string()), "srv-first".to_string())], None).unwrap();
+        assert_eq!(records.len(), 1);
+        assert_eq!(records[0].fields.get("source").unwrap(), "web-console");
     }
 }

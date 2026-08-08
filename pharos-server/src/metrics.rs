@@ -13,7 +13,7 @@
  * Implements Task 2.4, Issue #10.
  * ======================================================================== */
 
-use prometheus::{self, Encoder, Gauge, IntGauge, Opts, Registry, TextEncoder};
+use prometheus::{self, Encoder, Gauge, IntGauge, IntCounterVec, Opts, Registry, TextEncoder};
 use lazy_static::lazy_static;
 use tracing::warn;
 use std::sync::Once;
@@ -34,12 +34,30 @@ lazy_static! {
     pub static ref TOTAL_RECORDS: IntGauge = IntGauge::with_opts(
         Opts::new("pharos_total_records", "Total number of records in storage")
     ).expect("Failed to create records gauge");
+
+    pub static ref RECORDS_ADDED_TOTAL: IntCounterVec = IntCounterVec::new(
+        Opts::new("pharos_records_added_total", "Total number of new records created via add/upsert, labeled by source"),
+        &["source"]
+    ).expect("Failed to create records added counter");
+
+    pub static ref RECORDS_UPDATED_TOTAL: IntCounterVec = IntCounterVec::new(
+        Opts::new("pharos_records_updated_total", "Total number of existing records updated via add/upsert, labeled by source"),
+        &["source"]
+    ).expect("Failed to create records updated counter");
+
+    pub static ref RECORDS_DELETED_TOTAL: IntCounterVec = IntCounterVec::new(
+        Opts::new("pharos_records_deleted_total", "Total number of records deleted, labeled by source"),
+        &["source"]
+    ).expect("Failed to create records deleted counter");
 }
 
 pub fn register_metrics() {
     REGISTRY.register(Box::new(CPU_USAGE.clone())).expect("Failed to register CPU usage gauge");
     REGISTRY.register(Box::new(MEMORY_USAGE_BYTES.clone())).expect("Failed to register memory usage gauge");
     REGISTRY.register(Box::new(TOTAL_RECORDS.clone())).expect("Failed to register total records gauge");
+    REGISTRY.register(Box::new(RECORDS_ADDED_TOTAL.clone())).expect("Failed to register records added counter");
+    REGISTRY.register(Box::new(RECORDS_UPDATED_TOTAL.clone())).expect("Failed to register records updated counter");
+    REGISTRY.register(Box::new(RECORDS_DELETED_TOTAL.clone())).expect("Failed to register records deleted counter");
 }
 
 pub fn gather_metrics() -> String {
@@ -104,5 +122,41 @@ mod tests {
         CPU_USAGE.set(95.0);
         MEMORY_USAGE_BYTES.set(1000000);
         check_health_thresholds(90.0, 500000);
+    }
+
+    #[test]
+    fn test_should_increment_records_added_total_with_source_label() {
+        let _lock = TEST_MUTEX.lock().unwrap();
+        let before = RECORDS_ADDED_TOTAL.with_label_values(&["test-add-source"]).get();
+        RECORDS_ADDED_TOTAL.with_label_values(&["test-add-source"]).inc();
+        let after = RECORDS_ADDED_TOTAL.with_label_values(&["test-add-source"]).get();
+        assert_eq!(after - before, 1);
+    }
+
+    #[test]
+    fn test_should_increment_records_updated_total_with_source_label() {
+        let _lock = TEST_MUTEX.lock().unwrap();
+        let before = RECORDS_UPDATED_TOTAL.with_label_values(&["test-update-source"]).get();
+        RECORDS_UPDATED_TOTAL.with_label_values(&["test-update-source"]).inc();
+        let after = RECORDS_UPDATED_TOTAL.with_label_values(&["test-update-source"]).get();
+        assert_eq!(after - before, 1);
+    }
+
+    #[test]
+    fn test_should_increment_records_deleted_total_with_source_label() {
+        let _lock = TEST_MUTEX.lock().unwrap();
+        let before = RECORDS_DELETED_TOTAL.with_label_values(&["test-delete-source"]).get();
+        RECORDS_DELETED_TOTAL.with_label_values(&["test-delete-source"]).inc_by(3);
+        let after = RECORDS_DELETED_TOTAL.with_label_values(&["test-delete-source"]).get();
+        assert_eq!(after - before, 3);
+    }
+
+    #[test]
+    fn test_should_gather_records_metrics_in_prometheus_format() {
+        let _lock = TEST_MUTEX.lock().unwrap();
+        RECORDS_ADDED_TOTAL.with_label_values(&["gather-format-test"]).inc();
+        let output = gather_metrics();
+        assert!(output.contains("pharos_records_added_total"));
+        assert!(output.contains("gather-format-test"));
     }
 }
