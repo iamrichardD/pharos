@@ -73,9 +73,15 @@ pub async fn sync_discovered_device(
         );
     };
 
-    // 2. Query for an existing record first
+    // 2. Query for an existing record first. Must use execute_authenticated, not execute:
+    // under SecurityTier::Protected/Scoped, every command except a small allowlist
+    // (status/id/login/auth/quit) requires authentication - query is not exempt. Using plain
+    // execute() here only worked in testing because that test harness ran SecurityTier::Open,
+    // where query has no auth requirement; against the real production hub (Protected tier)
+    // every single query failed outright with "506: Authentication required" before ever
+    // reaching the ownership check.
     let query_cmd = format!("query type=\"machine\" {}=\"{}\"", field_name, identifier);
-    let query_resp = match client.execute(&query_cmd).await {
+    let query_resp = match client.execute_authenticated(&query_cmd).await {
         Ok(resp) => resp,
         Err(e) => return SyncOutcome::Failed(e.to_string()),
     };

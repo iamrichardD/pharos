@@ -118,6 +118,20 @@ fn get_test_auth_assets() -> (PathBuf, String) {
 }
 
 async fn setup_test_server() -> (String, Arc<RwLock<dyn Storage>>) {
+    setup_test_server_with_tier(SecurityTier::Open).await
+}
+
+// Real production hubs run SecurityTier::Protected, not Open - under Protected, every
+// command except a small allowlist (status/id/login/auth/quit) requires authentication,
+// unlike Open where `query` alone needs none. sync_discovered_device's query step
+// originally used the non-authenticating `execute()` (only its later `add` step used
+// `execute_authenticated()`), which worked fine against every test in this file (all of
+// which used Open tier) but failed outright with "506: Authentication required" against
+// the real Protected-tier hub - confirmed live, then fixed to use execute_authenticated()
+// for both steps. This parameterized variant exists so a regression test can reproduce
+// that exact real-world scenario instead of only ever exercising the tier that happened
+// to mask the bug.
+async fn setup_test_server_with_tier(tier: SecurityTier) -> (String, Arc<RwLock<dyn Storage>>) {
     let (acceptor, ca_path) = get_test_tls();
     let (keys_dir, priv_key_path) = get_test_auth_assets();
 
@@ -127,11 +141,11 @@ async fn setup_test_server() -> (String, Arc<RwLock<dyn Storage>>) {
     }
 
     let storage: Arc<RwLock<dyn Storage>> = Arc::new(RwLock::new(MemoryStorage::new()));
-    let auth_manager = Arc::new(AuthManager::new(&keys_dir, SecurityTier::Open));
+    let auth_manager = Arc::new(AuthManager::new(&keys_dir, tier));
 
     let mut chain = MiddlewareChain::new();
     chain.add(Arc::new(SecurityTierMiddleware {
-        default_tier: SecurityTier::Open,
+        default_tier: tier,
     }));
     let middleware_chain = Arc::new(chain);
 
@@ -354,5 +368,54 @@ async fn test_should_fail_gracefully_with_no_hostname_or_mac() {
         assert!(records.is_empty());
     } else {
         panic!("Expected Matches with count 0, got {:?}", resp);
+    }
+}
+
+// Regression test for a real production bug: sync_discovered_device's query step originally
+// used plain execute() (no auth retry), which only worked because every other test in this
+// file runs SecurityTier::Open, where `query` needs no authentication. The real production
+// hub runs SecurityTier::Protected, where `query` is not in the auth-bypass allowlist -
+// confirmed live against the real hub, every single sync attempt failed outright with
+// "506: Authentication required" before ever reaching the ownership check. Fixed by using
+// execute_authenticated() for the query step too, matching the write step. This test runs
+// the full create-then-update flow under Protected tier specifically, so a regression here
+// fails loudly in CI instead of only being discoverable by deploying to real production.
+#[tokio::test]
+async fn test_should_create_and_update_under_protected_tier() {
+    let (addr, _storage) = setup_test_server_with_tier(SecurityTier::Protected).await;
+
+    let mut client = PharosClient::connect(&addr, "pharos-scan").await.unwrap();
+
+    let mut node = DiscoveredNode {
+        ip: "10.10.0.1".parse().unwrap(),
+        hostname: Some("protected-tier-target".to_string()),
+        mac: Some("AA:BB:CC:00:00:01".to_string()),
+        manufacturer: Some("Test Co".to_string()),
+        ports: vec![],
+        role: None,
+        is_existing: false,
+    };
+
+    let outcome1 = sync_discovered_device(&mut client, &node).await;
+    assert_eq!(
+        outcome1,
+        SyncOutcome::Created,
+        "expected Created under Protected tier, got {:?} - the query step likely failed auth",
+        outcome1
+    );
+
+    node.ip = "10.10.0.2".parse().unwrap();
+    let outcome2 = sync_discovered_device(&mut client, &node).await;
+    assert_eq!(outcome2, SyncOutcome::Updated, "expected Updated on second sync under Protected tier, got {:?}", outcome2);
+
+    let resp = client
+        .execute_authenticated("query type=\"machine\" hostname=\"protected-tier-target\"")
+        .await
+        .unwrap();
+    if let PharosResponse::Matches { count, records } = resp {
+        assert_eq!(count, 1, "expected exactly one record, not a duplicate");
+        assert_eq!(records.len(), 1);
+    } else {
+        panic!("Expected PharosResponse::Matches, got {:?}", resp);
     }
 }
