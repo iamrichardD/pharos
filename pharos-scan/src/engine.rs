@@ -185,7 +185,7 @@ fn parse_arp_cache(contents: &str) -> std::collections::HashMap<IpAddr, String> 
 /// Reads the OS's ARP/neighbor cache. Linux-specific (`/proc/net/arp`); returns an empty map
 /// (not an error) if the file is unavailable - MAC enrichment is best-effort, not required for
 /// a scan to succeed.
-fn read_arp_cache() -> std::collections::HashMap<IpAddr, String> {
+pub fn read_arp_cache() -> std::collections::HashMap<IpAddr, String> {
     std::fs::read_to_string("/proc/net/arp")
         .map(|contents| parse_arp_cache(&contents))
         .unwrap_or_default()
@@ -194,7 +194,7 @@ fn read_arp_cache() -> std::collections::HashMap<IpAddr, String> {
 /// Best-effort reverse-DNS lookup for a discovered host's hostname. Returns `None` (not an
 /// error) if there's no PTR record - this must never fail the overall scan. Wrapped in
 /// `spawn_blocking` because `dns_lookup::lookup_addr` is a blocking libc call.
-async fn lookup_hostname(ip: IpAddr) -> Option<String> {
+pub(crate) async fn lookup_hostname(ip: IpAddr) -> Option<String> {
     tokio::task::spawn_blocking(move || dns_lookup::lookup_addr(&ip).ok())
         .await
         .ok()

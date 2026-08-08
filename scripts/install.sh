@@ -310,6 +310,30 @@ enroll_pulse_key_via_ssh() {
     fi
 }
 
+# Enrolls a freshly-generated Scan signing key on a hub via the same SSH target
+# --fetch-ca-ssh already uses. Sets the global scan_key_remote_path on success.
+# This is a SEPARATE remote operation from fetch_ca_via_ssh (different sudo-gated
+# commands: 'tee' into the keys dir and 'systemctl reload', not 'cat' on the CA
+# cert) — an operator who scoped sudoers only for CA fetching will see this fail
+# even though CA fetching itself succeeded; the failure message below says so.
+enroll_scan_key_via_ssh() {
+    local ssh_target=$1
+    local pub_key_path=$2
+    scan_key_remote_path="${PHAROS_DIR}/keys/${scan_node_label}-scan-admin_id_ed25519.pub"
+
+    local ssh_err
+    if ssh_err="$(${SUDO} cat "${pub_key_path}" | ssh -o BatchMode=yes -o ConnectTimeout=10 "${ssh_target}" \
+        "sudo tee ${scan_key_remote_path} >/dev/null && sudo systemctl reload pharos-server" 2>&1 >/dev/null)"; then
+        log "Enrolled Scan's key on ${ssh_target} as ${scan_key_remote_path} (admin-equivalent trust — treat it accordingly)."
+        return 0
+    else
+        warn "Could not auto-enroll Scan's key via SSH on ${ssh_target}: ${ssh_err:-connection failed or command was rejected}"
+        warn "This needs passwordless sudo on the hub for 'tee ${PHAROS_DIR}/keys/*' and 'systemctl reload pharos-server' — a separate grant from the 'cat pharos-ca.crt' permission --fetch-ca-ssh's CA-fetch step uses. See the manual command in Next Steps below."
+        return 1
+    fi
+}
+
+
 # --- Installation Logic ---
 download_binary() {
     local component=$1
@@ -515,6 +539,106 @@ EOF
     activate_systemd_service "pharos-pulse"
 }
 
+install_scan_auto() {
+    local host_arg="${1:-}"
+    ensure_system_user
+
+    local scan_key_dir="${PHAROS_DIR}/keys"
+    local scan_key_path="${scan_key_dir}/scan_id_ed25519"
+    scan_key_freshly_generated="no"
+    scan_node_label="$(hostname -s | tr -cd 'A-Za-z0-9-')"
+
+    ${SUDO} mkdir -p "${scan_key_dir}"
+    ${SUDO} chown pharos:pharos "${scan_key_dir}"
+    ${SUDO} chmod 700 "${scan_key_dir}"
+
+    if ! ${SUDO} test -f "${scan_key_path}"; then
+        command -v ssh-keygen >/dev/null 2>&1 || error "ssh-keygen is required to provision the Scan agent's signing key but is not installed."
+        ${SUDO} ssh-keygen -t ed25519 -N "" -f "${scan_key_path}" -C "pharos-scan@$(hostname -s)" >/dev/null
+        ${SUDO} chown pharos:pharos "${scan_key_path}" "${scan_key_path}.pub"
+        ${SUDO} chmod 600 "${scan_key_path}"
+        ${SUDO} chmod 644 "${scan_key_path}.pub"
+        scan_key_freshly_generated="yes"
+        warn "Generated a new signing key for Pharos Scan at ${scan_key_path} — this key grants the admin role once enrolled. Treat it accordingly."
+    fi
+
+    local host="${host_arg:-${PHAROS_HOST:-127.0.0.1:2378}}"
+    if [[ ! "${host}" =~ ^[A-Za-z0-9.-]+(:[0-9]+)?$ ]]; then
+        error "Invalid host value for Pharos Scan: '${host}'"
+    fi
+    [[ "${host}" == *:* ]] || host="${host}:2378"
+
+    log "Installing Pharos Scan Agent..."
+    download_binary "pharos-scan"
+
+    log "Checking whether ${host} already presents a trusted certificate (e.g. a public CA like Let's Encrypt)..."
+    ensure_openssl
+    local ca_cert_line=""
+    local host_only="${host%%:*}"
+    if [[ "${host_only}" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        scan_host_is_ip="yes"
+    else
+        scan_host_is_ip="no"
+    fi
+    if echo | timeout 10 openssl s_client -connect "${host}" -verify_hostname "${host_only}" -verify_return_error >/dev/null 2>&1; then
+        scan_ca_found="trusted"
+    else
+        if [[ -n "${fetch_ca_ssh_target:-}" ]] && ! ${SUDO} test -f "${PHAROS_DIR}/certs/pharos-ca.crt"; then
+            fetch_ca_via_ssh "${fetch_ca_ssh_target}" || true
+        fi
+
+        if ${SUDO} test -f "${PHAROS_DIR}/certs/pharos-ca.crt"; then
+            ca_cert_line="Environment=PHAROS_CA_CERT=${PHAROS_DIR}/certs/pharos-ca.crt"
+            scan_ca_found="yes"
+        else
+            scan_ca_found="no"
+        fi
+    fi
+
+    scan_key_enrolled="no"
+    if [[ "${scan_key_freshly_generated}" == "yes" && -n "${fetch_ca_ssh_target:-}" ]]; then
+        if enroll_scan_key_via_ssh "${fetch_ca_ssh_target}" "${scan_key_path}.pub"; then
+            scan_key_enrolled="yes"
+        fi
+    fi
+
+    log "Configuring Systemd service for Pharos Scan..."
+    cat <<EOF | ${SUDO} tee /etc/systemd/system/pharos-scan-auto.service > /dev/null
+[Unit]
+Description=Pharos Scan - Periodic Passive Device Discovery
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=${INSTALL_DIR}/pharos-scan --auto
+User=pharos
+Environment=PHAROS_HOST=${host%%:*}
+Environment=PHAROS_PORT=${host##*:}
+Environment=PHAROS_PRIVATE_KEY=${scan_key_path}
+${ca_cert_line}
+EOF
+
+    log "Configuring Systemd timer for Pharos Scan..."
+    cat <<EOF | ${SUDO} tee /etc/systemd/system/pharos-scan-auto.timer > /dev/null
+[Unit]
+Description=Run Pharos Scan discovery every 10 minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=10min
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+
+    ${SUDO} systemctl daemon-reload
+    ${SUDO} systemctl enable --now pharos-scan-auto.timer
+
+    log "Pharos Scan timer enabled (runs every 10 minutes, first run 2 minutes after boot)."
+}
+
+
 install_web_console() {
     ensure_system_user
     log "Installing Pharos Web Console..."
@@ -580,10 +704,11 @@ main() {
             download_binary "ph"
             download_binary "mdb"
             ;;
-        server)   install_server "${host_override}";;
-        pulse)    install_pulse "${host_override}";;
-        toolbelt) install_toolbelt;;
-        *)        error "Unknown target: ${target}. Use hub, node, server, pulse, or toolbelt.";;
+        server)    install_server "${host_override}";;
+        pulse)     install_pulse "${host_override}";;
+        scan-auto) install_scan_auto "${host_override}";;
+        toolbelt)  install_toolbelt;;
+        *)         error "Unknown target: ${target}. Use hub, node, server, pulse, toolbelt, or scan-auto.";;
     esac
 
     echo -e "\n${GREEN}Successfully installed Pharos ${target}!${NC}"
@@ -634,6 +759,34 @@ main() {
         if [[ "${pulse_key_freshly_generated:-no}" == "yes" && "${pulse_key_enrolled:-no}" != "yes" ]]; then
             echo -e "4. Signing key: generated locally at ${PHAROS_DIR}/keys/pulse_id_ed25519 but not enrolled on a hub yet. To enroll it now, run:"
             echo -e "     ${SUDO} cat ${PHAROS_DIR}/keys/pulse_id_ed25519.pub | ssh <user@host> 'sudo tee /etc/pharos/keys/${pulse_node_label}-admin_id_ed25519.pub >/dev/null && sudo systemctl reload pharos-server'"
+        fi
+    elif [[ "${target}" == "scan-auto" ]]; then
+        if [[ "${scan_ca_found:-no}" == "trusted" ]]; then
+            echo -e "1. TLS: ${host_override:-your server} already presents a certificate this machine trusts (e.g. a public CA like Let's Encrypt) — no CA configuration needed."
+        elif [[ "${scan_ca_found:-no}" == "yes" ]]; then
+            echo -e "1. TLS: found a local Pharos CA at ${PHAROS_DIR}/certs/pharos-ca.crt — scan trusts it automatically."
+        else
+            if [[ "${scan_key_freshly_generated:-no}" == "yes" ]]; then
+                echo -e "1. TLS: no local Pharos CA found. Next time, pass --fetch-ca-ssh <user@host> to install.sh to do this automatically (it also auto-enrolls Scan's signing key on the hub — see item 4 below)."
+            else
+                echo -e "1. TLS: no local Pharos CA found. Next time, pass --fetch-ca-ssh <user@host> to install.sh to do this automatically (it also auto-enrolls Scan's signing key on the hub)."
+            fi
+            echo -e "   To fix this manually now, if ${host_override:-your server} is a REMOTE host, run:"
+            echo -e "     scp <user@host>:${PHAROS_DIR}/certs/pharos-ca.crt /tmp/pharos-ca.crt && \\"
+            echo -e "     ${SUDO} mkdir -p ${PHAROS_DIR}/certs && \\"
+            echo -e "     ${SUDO} mv /tmp/pharos-ca.crt ${PHAROS_DIR}/certs/pharos-ca.crt && \\"
+            echo -e "     ${SUDO} mkdir -p /etc/systemd/system/pharos-scan-auto.service.d && \\"
+            echo -e "     printf '[Service]\\\\nEnvironment=PHAROS_CA_CERT=${PHAROS_DIR}/certs/pharos-ca.crt\\\\n' | ${SUDO} tee /etc/systemd/system/pharos-scan-auto.service.d/override.conf >/dev/null && \\"
+            echo -e "     ${SUDO} systemctl daemon-reload"
+            if [[ "${scan_host_is_ip:-no}" == "yes" ]]; then
+                echo -e "   Note: you connected via a bare IP address. If ${host_override:-your server} uses a public certificate (e.g. Let's Encrypt), that cert won't cover a bare IP — connecting via its hostname instead may resolve this without needing any of the above."
+            fi
+        fi
+        echo -e "2. Verify the scan timer is scheduled: ${SUDO} systemctl list-timers pharos-scan-auto.timer"
+        echo -e "3. Check logs: ${SUDO} journalctl -u pharos-scan-auto -f"
+        if [[ "${scan_key_freshly_generated:-no}" == "yes" && "${scan_key_enrolled:-no}" != "yes" ]]; then
+            echo -e "4. Signing key: generated locally at ${PHAROS_DIR}/keys/scan_id_ed25519 but not enrolled on a hub yet. To enroll it now, run:"
+            echo -e "     ${SUDO} cat ${PHAROS_DIR}/keys/scan_id_ed25519.pub | ssh <user@host> 'sudo tee /etc/pharos/keys/${scan_node_label}-scan-admin_id_ed25519.pub >/dev/null && sudo systemctl reload pharos-server'"
         fi
     else
         echo -e "1. Try running 'ph search' or 'mdb status'"

@@ -45,6 +45,20 @@ impl OUIResolver {
     }
 }
 
+/// Synthesizes a stable scan alias from a MAC address by stripping delimiters (`:` and `-`),
+/// lowercasing the result, and prefixing with `"device-"` (e.g., `"AA:BB:CC:DD:EE:FF"` -> `"device-aabbccddeeff"`).
+///
+/// Used by unattended discovery to assign a stable identifier for devices without a resolvable hostname,
+/// allowing records to be correlated across repeated scans even if IP addresses change via DHCP.
+pub fn derive_scan_alias(mac: &str) -> String {
+    let stripped: String = mac
+        .chars()
+        .filter(|&c| c != ':' && c != '-')
+        .collect::<String>()
+        .to_lowercase();
+    format!("device-{stripped}")
+}
+
 /// Parses raw IEEE OUI CSV data into a MAC-prefix-to-organization-name mapping.
 ///
 /// IEEE MAC registries (MA-L, MA-M, MA-S) are formatted as CSV with headers:
@@ -219,6 +233,22 @@ mod tests {
     fn test_should_have_loaded_a_large_number_of_prefixes() {
         let resolver = OUIResolver::default();
         assert!(resolver.prefixes.len() >= 40000);
+    }
+
+    #[test]
+    fn test_should_derive_alias_from_colon_separated_mac() {
+        assert_eq!(derive_scan_alias("AA:BB:CC:DD:EE:FF"), "device-aabbccddeeff");
+    }
+
+    #[test]
+    fn test_should_derive_alias_from_dash_separated_mac() {
+        assert_eq!(derive_scan_alias("AA-BB-CC-DD-EE-FF"), "device-aabbccddeeff");
+    }
+
+    #[test]
+    fn test_should_lowercase_the_derived_alias_regardless_of_input_case() {
+        assert_eq!(derive_scan_alias("AA:BB:CC:DD:EE:FF"), "device-aabbccddeeff");
+        assert_eq!(derive_scan_alias("aa:bb:cc:dd:ee:ff"), "device-aabbccddeeff");
     }
 }
 

@@ -12,9 +12,13 @@
  * Related to Task 10.2 (Issue #40)
  * ======================================================================== */
 
+pub mod discover;
 pub mod engine;
 pub mod fingerprint;
 pub mod oui;
+pub mod subnet;
+pub mod sweep;
+pub mod sync;
 
 use std::net::IpAddr;
 
