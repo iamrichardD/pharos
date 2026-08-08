@@ -155,20 +155,10 @@ fn handle_response(resp: PharosResponse, human: bool) -> Result<()> {
     match resp {
         PharosResponse::Ok(msg) => println!("{}", msg),
         PharosResponse::Matches { records, .. } => {
-            if records.is_empty() {
-                println!("No matches found.");
-            } else {
-                for record in records {
-                    for field in record.fields {
-                        let value = if human {
-                            format_human(&field.key, &field.value)
-                        } else {
-                            field.value
-                        };
-                        println!("{:>15}: {}", field.key, value);
-                    }
-                }
-            }
+            let format_value = |key: &str, value: &str| {
+                if human { format_human(key, value) } else { value.to_string() }
+            };
+            println!("{}", pharos_cli_support::render_matches(&records, format_value));
         }
         PharosResponse::Error { code, message } => {
             anyhow::bail!("{}: {}", code, message);

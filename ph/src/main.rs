@@ -160,15 +160,7 @@ async fn main() -> Result<()> {
             match resp {
                 PharosResponse::Ok(msg) => println!("{}", msg),
                 PharosResponse::Matches { records, .. } => {
-                    if records.is_empty() {
-                        println!("No matches found.");
-                    } else {
-                        for record in records {
-                            for field in record.fields {
-                                println!("{:>15}: {}", field.key, field.value);
-                            }
-                        }
-                    }
+                    println!("{}", pharos_cli_support::render_matches(&records, |_, v| v.to_string()));
                 }
                 PharosResponse::Error { code, message } => {
                     eprintln!("{}: {}", code, message);

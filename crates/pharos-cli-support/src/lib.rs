@@ -12,7 +12,7 @@
  * ======================================================================== */
 
 use anyhow::{Context, Result};
-use pharos_client::{PharosClient, PharosResponse};
+use pharos_client::{PharosClient, PharosRecord, PharosResponse};
 use std::env;
 use std::io::{self, IsTerminal, Write};
 use std::path::{Path, PathBuf};
@@ -398,9 +398,51 @@ pub fn tokenize_cmd(line: &str) -> Vec<String> {
     tokens
 }
 
+/// Renders matched records as the plain-text block both `mdb` and `ph` print to stdout.
+///
+/// The returned string has no trailing newline - callers are expected to print it with
+/// `println!("{}", ...)`, which supplies exactly one.
+///
+/// Only multi-record responses (`records.len() > 1`) get a "N matches:" header and blank-line
+/// separators between records; single-record and empty output have no header or separator, since
+/// mdb/ph's plain-text output is a real interface other scripts may already parse.
+///
+/// `format_value` lets a caller apply per-field formatting (mdb's `-H`/`--human` unit/timestamp
+/// conversion) without this function needing to know that flag exists; pass `|_, v| v.to_string()`
+/// for callers with no such formatting (ph).
+pub fn render_matches(
+    records: &[PharosRecord],
+    format_value: impl Fn(&str, &str) -> String,
+) -> String {
+    if records.is_empty() {
+        return "No matches found.".to_string();
+    }
+
+    let multi = records.len() > 1;
+    let mut lines: Vec<String> = Vec::new();
+    if multi {
+        lines.push(format!("{} matches:", records.len()));
+        lines.push(String::new());
+    }
+
+    let last = records.len() - 1;
+    for (i, record) in records.iter().enumerate() {
+        for field in &record.fields {
+            let value = format_value(&field.key, &field.value);
+            lines.push(format!("{:>15}: {}", field.key, value));
+        }
+        if multi && i != last {
+            lines.push(String::new());
+        }
+    }
+
+    lines.join("\n")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pharos_client::PharosField;
 
     #[test]
     fn test_should_identify_missing_key_error() {
@@ -512,5 +554,58 @@ mod tests {
     fn test_should_override_conflicting_type_and_force_person_on_add() {
         let result = enforce_add_record_type("add name=\"Jane Doe\" type=machine", "person", "ph");
         assert_eq!(result, "add name=\"Jane Doe\" type=person");
+    }
+
+    fn record(id: i32, fields: &[(&str, &str)]) -> PharosRecord {
+        PharosRecord {
+            id,
+            fields: fields
+                .iter()
+                .map(|(k, v)| PharosField { key: k.to_string(), value: v.to_string() })
+                .collect(),
+        }
+    }
+
+    fn identity(_key: &str, value: &str) -> String {
+        value.to_string()
+    }
+
+    #[test]
+    fn test_should_report_no_matches_found_when_records_empty() {
+        assert_eq!(render_matches(&[], identity), "No matches found.");
+    }
+
+    #[test]
+    fn test_should_omit_header_and_separator_when_single_record() {
+        let records = vec![record(1, &[("hostname", "srv-1"), ("ip_addr", "10.0.0.1")])];
+        let result = render_matches(&records, identity);
+        assert_eq!(result, "       hostname: srv-1\n        ip_addr: 10.0.0.1");
+    }
+
+    #[test]
+    fn test_should_print_count_header_and_blank_separators_when_multiple_records() {
+        let records = vec![
+            record(1, &[("ip_addr", "10.0.0.1")]),
+            record(2, &[("ip_addr", "10.0.0.2")]),
+            record(3, &[("ip_addr", "10.0.0.3")]),
+        ];
+        let result = render_matches(&records, identity);
+        assert_eq!(
+            result,
+            "3 matches:\n\n        ip_addr: 10.0.0.1\n\n        ip_addr: 10.0.0.2\n\n        ip_addr: 10.0.0.3"
+        );
+    }
+
+    #[test]
+    fn test_should_apply_format_value_callback_per_field() {
+        let records = vec![record(1, &[("mem_total_kb", "1024")])];
+        let result = render_matches(&records, |key, value| {
+            if key == "mem_total_kb" {
+                format!("{}KB-formatted", value)
+            } else {
+                value.to_string()
+            }
+        });
+        assert_eq!(result, "   mem_total_kb: 1024KB-formatted");
     }
 }
